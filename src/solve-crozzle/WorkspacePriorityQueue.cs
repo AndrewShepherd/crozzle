@@ -19,8 +19,8 @@ namespace solve_crozzle
 			while ((i*2+1) < _length)
 			{
 				(int j, int k) = ((i * 2) + 1, (i * 2) + 2);
-				int l = _workspaces[j].Score > (_workspaces[k]?.Score ?? 0) ? j : k;
-				if(_workspaces[l].Score <= _workspaces[i].Score)
+				int l = _workspaces[j].PotentialScore > (_workspaces[k]?.PotentialScore ?? 0) ? j : k;
+				if(_workspaces[l].PotentialScore <= _workspaces[i].PotentialScore)
 				{
 					break;
 				}
@@ -36,11 +36,11 @@ namespace solve_crozzle
 		{
 			int i = _length++;
 			_workspaces[i] = workspace;
-			var thisScore = workspace.Score;
+			var thisPotentialScore = workspace.PotentialScore;
 			while(i != 0)
 			{
 				var j = (i - 1) / 2;
-				if (_workspaces[i].Score > thisScore)
+				if (_workspaces[i].PotentialScore > thisPotentialScore)
 				{
 					return;
 				}

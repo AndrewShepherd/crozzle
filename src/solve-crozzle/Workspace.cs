@@ -34,6 +34,8 @@ namespace solve_crozzle
 		public int YStart = 0;
 		public char[] Values = new char[0];
 		public ulong AvailableWords = 0;
+		public int MaxWidth = 17;
+		public int MaxHeight = 17;
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
 		public ImmutableList<PartialWord> PartialWords = ImmutableList<PartialWord>.Empty;
@@ -91,5 +93,8 @@ namespace solve_crozzle
 			}
 			return sb.ToString();
 		}
+
+		public int PotentialScore =>
+			this.Score + this.Slots.Select(c => Scoring.Score(c.Letter)).Sum();
 	}
 }

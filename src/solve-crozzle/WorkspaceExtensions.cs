@@ -76,6 +76,11 @@ namespace solve_crozzle
 
 		public static bool CanPlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
 		{
+			var r = workspace.GetRectangleForWord(direction, word, x, y)
+				.Union(workspace.GetCurrentRectangle());
+			if ((r.Width > workspace.MaxWidth) || (r.Height > workspace.MaxHeight))
+				return false;
+
 			(var startMarker, var endMarker) =
 				direction == Direction.Across
 				? (workspace.CharAt(x - 1, y), workspace.CharAt(x + word.Length, y))
@@ -104,26 +109,30 @@ namespace solve_crozzle
 			return true;
 		}
 
-		public static Workspace ExpandSize(this Workspace workspace, int minX, int minY, int maxX, int maxY)
+		public static Workspace ExpandSize(this Workspace workspace, Rectangle newRectangle)
 		{
-			minX = Math.Min(workspace.XStart, minX);
-			minY = Math.Min(workspace.YStart, minY);
-			maxX = Math.Max(workspace.Width, maxX);
-			maxY = workspace.Width == 0
-				? maxY 
-				: Math.Max(workspace.Values.Length / workspace.Width + workspace.YStart, maxY);
-			var newWidth = maxX - minX + 1;
-			var newHeight = maxY - minY + 1;
+			var currentRectangle = workspace.GetCurrentRectangle();
+			var rectangle = workspace.GetCurrentRectangle().Union(newRectangle);
 
-			var newArray = new char[newWidth * newHeight];
+			var newArray = new char[rectangle.Width * rectangle.Height];
 			// Now we have to calculate
 			// The original point
-			(int originalX, int originalY) = CalculateLocation(workspace.Width, workspace.XStart, workspace.YStart, 0);
-			var destIndex = CalculateIndex(newWidth, minX, minY, originalX, originalY);
+			(int originalX, int originalY) = CalculateLocation(
+				workspace.Width,
+				workspace.XStart,
+				workspace.YStart, 
+				0
+			);
+			var destIndex = CalculateIndex(
+				rectangle.Width,
+				rectangle.MinX,
+				rectangle.MinY,
+				originalX, 
+				originalY);
 			for(
 				int sourceIndex = 0;
 				sourceIndex < workspace.Values.Length;
-				sourceIndex += workspace.Width, destIndex += newWidth
+				sourceIndex += workspace.Width, destIndex += rectangle.Width
 			)
 			{
 				Array.Copy(
@@ -136,27 +145,45 @@ namespace solve_crozzle
 			}
 
 			var newWorkspace = workspace.Clone();
-			newWorkspace.XStart = minX;
-			newWorkspace.YStart = minY;
-			newWorkspace.Width = newWidth;
-			newWorkspace.Height = maxY - minY + 1;
+			newWorkspace.XStart = rectangle.MinX;
+			newWorkspace.YStart = rectangle.MinY;
+			newWorkspace.Width = rectangle.Width;
+			newWorkspace.Height = rectangle.Height;
 			newWorkspace.Values = newArray;
 			return newWorkspace;
 		}
 
+
+
+		public static Rectangle GetRectangleForWord(this Workspace workspace, Direction direction, string word, int x, int y) =>
+			new Rectangle
+			{
+				MinX = x - (direction == Direction.Across ? 1 : 0),
+				MaxX = direction == Direction.Across ? x + word.Length : x,
+				MinY = y - (direction == Direction.Down ? 1 : 0),
+				MaxY = direction == Direction.Across ? y : y + word.Length
+			};
+
+		public static Rectangle GetCurrentRectangle(this Workspace workspace) =>
+			new Rectangle
+			{
+				MinX = workspace.XStart,
+				MinY = workspace.YStart,
+				MaxX = workspace.XStart + workspace.Width -1,
+				MaxY = workspace.Width == 0 
+					? workspace.YStart
+					: workspace.YStart + (workspace.Values.Length / workspace.Width)
+			};
+
 		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
 		{
-			// Figure out the new dimensions
-			// create a new array
-			var maxX = direction == Direction.Across ? x + word.Length : x;
-			var maxY = direction == Direction.Across ? y : y + word.Length;
-
+			var rectangle = GetRectangleForWord(workspace, direction, word, x, y);
+			var workspaceRectangle = workspace.GetCurrentRectangle();
+			
 			var newWorkspace = workspace.ExpandSize(
-				x - (direction == Direction.Across ? 1 : 0), 
-				y - (direction == Direction.Down ? 1 : 0), 
-				maxX, 
-				maxY
+				rectangle
 			);
+
 			int advanceIncrement = direction == Direction.Across
 				? 1
 				: newWorkspace.Width;

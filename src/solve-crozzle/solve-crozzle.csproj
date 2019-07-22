@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Rectangle.cs" />
     <Compile Include="Scoring.cs" />
     <Compile Include="Tests\TestWorkspace.cs" />
     <Compile Include="Workspace.cs" />

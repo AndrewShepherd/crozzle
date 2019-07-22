@@ -46,6 +46,7 @@ namespace solve_crozzle
 				wpq.Push(workspace.PlaceWord(Direction.Across, s, 0, 0));
 			}
 			int maxScore = 0;
+			int generatedSolutionsCount = 0;
 			while(!wpq.IsEmpty)
 			{
 				var thisWorkspace = wpq.Pop();
@@ -56,10 +57,11 @@ namespace solve_crozzle
 				}
 				else
 				{
+					++generatedSolutionsCount;
 					if((thisWorkspace.IsValid) && (thisWorkspace.Score > maxScore))
 					{
 						maxScore = thisWorkspace.Score;
-						Console.WriteLine($"*** MaxScore is {maxScore} ***");
+						Console.WriteLine($"*** MaxScore is {maxScore}, {generatedSolutionsCount} solutions generated ***");
 						Console.WriteLine(thisWorkspace.ToString());
 					}
 				}
