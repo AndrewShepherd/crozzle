@@ -35,6 +35,7 @@ namespace solve_crozzle
 
 		static void Main(string[] args)
 		{
+			DateTime timeStart = DateTime.Now;
 			var words = ExtractWords(DefaultFilePath).Result;
 
 			Workspace workspace = Workspace.Generate(words);
@@ -57,12 +58,17 @@ namespace solve_crozzle
 				}
 				else
 				{
-					++generatedSolutionsCount;
-					if((thisWorkspace.IsValid) && (thisWorkspace.Score > maxScore))
+					if(thisWorkspace.IsValid)
 					{
-						maxScore = thisWorkspace.Score;
-						Console.WriteLine($"*** MaxScore is {maxScore}, {generatedSolutionsCount} solutions generated ***");
-						Console.WriteLine(thisWorkspace.ToString());
+						++generatedSolutionsCount;
+						if (thisWorkspace.Score > maxScore)
+						{
+							TimeSpan duration = DateTime.Now - timeStart;
+							maxScore = thisWorkspace.Score;
+							Console.WriteLine($"*** {duration}: MaxScore is {maxScore}, {generatedSolutionsCount} solutions generated ***");
+							Console.WriteLine(thisWorkspace.ToString());
+							Console.WriteLine(thisWorkspace.GenerateScoreBreakdown());
+						}
 					}
 				}
 			}

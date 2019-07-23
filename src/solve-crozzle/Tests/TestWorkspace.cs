@@ -30,6 +30,15 @@ namespace solve_crozzle.Tests
 		}
 
 		[Test]
+		public void TestDetectAdjacencies()
+		{
+			var workspace = Workspace.Generate(new[] { "A", "B" });
+			workspace = workspace.PlaceWord(Direction.Across, "A", 0, 0);
+			workspace = workspace.PlaceWord(Direction.Across, "B", 0, 1);
+			Assert.That(workspace.PartialWords.Count, Is.EqualTo(1));
+		}
+
+		[Test]
 		public void TestExpand()
 		{
 			var workspace = Workspace.Generate(new[] { "Apple" });

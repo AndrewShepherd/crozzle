@@ -24,6 +24,8 @@ namespace solve_crozzle
 			return d;
 		}
 
+		public const int ScorePerWord = 10;
+
 		static IDictionary<char, int> _intersectionScores = GenerateIntersectionScores();
 
 		public static int Score(char c) =>

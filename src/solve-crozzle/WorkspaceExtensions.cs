@@ -20,10 +20,12 @@ namespace solve_crozzle
 				Values = workspace.Values,
 				AvailableWords = workspace.AvailableWords,
 				WordLookup = workspace.WordLookup,
-				WordToFlagMap = workspace.WordToFlagMap,
-				FlagToWordMap = workspace.FlagToWordMap,
+				MaxHeight = workspace.MaxHeight,
+				MaxWidth = workspace.MaxWidth,
 				Slots = workspace.Slots,
-				PartialWords = workspace.PartialWords
+				PartialWords = workspace.PartialWords,
+				IncludedWords = workspace.IncludedWords,
+				Intersections = workspace.Intersections
 			};
 
 		public static Workspace PopSlot(this Workspace workspace, out Slot slot)
@@ -45,31 +47,31 @@ namespace solve_crozzle
 		public static Workspace RemoveWord(this Workspace workspace, string word)
 		{
 			var newWorkspace = WorkspaceExtensions.Clone(workspace);
-			newWorkspace.AvailableWords = workspace.AvailableWords & ~workspace.WordToFlagMap[word];
+			newWorkspace.AvailableWords = workspace.AvailableWords.Remove(word);
 			return newWorkspace;
 		}
 
-		public static (int x, int y) CalculateLocation(int width, int xStart, int yStart, int index) =>
+		public static Location CalculateLocation(int width, int xStart, int yStart, int index) =>
 			width == 0
-			? (0, 0)
-			: (
+			? new Location(0, 0)
+			: new Location(
 				index % width + xStart, 
 				index / width + yStart
 			);
 
-		public static int CalculateIndex(int width, int xStart, int yStart, int x, int y) =>
-			(y - yStart) * width + (x - xStart);
+		public static int CalculateIndex(int width, int xStart, int yStart, Location location) =>
+			(location.y - yStart) * width + (location.x - xStart);
 
-		public static int IndexOf(this Workspace workspace, int x, int y) =>
-			CalculateIndex(workspace.Width, workspace.XStart, workspace.YStart, x, y);
+		public static int IndexOf(this Workspace workspace, Location location) =>
+			CalculateIndex(workspace.Width, workspace.XStart, workspace.YStart, location);
 
-		public static char CharAt(this Workspace workspace, int x, int y)
+		public static char CharAt(this Workspace workspace, Location location)
 		{
-			if ((x < workspace.XStart) || (y < workspace.YStart))
+			if ((location.x < workspace.XStart) || (location.y < workspace.YStart))
 			{
 				return (char)0;
 			}
-			int index = IndexOf(workspace, x, y);
+			int index = IndexOf(workspace, location);
 			return index < workspace.Values.Length ? workspace.Values[index] : (char)0;
 
 		}
@@ -83,8 +85,8 @@ namespace solve_crozzle
 
 			(var startMarker, var endMarker) =
 				direction == Direction.Across
-				? (workspace.CharAt(x - 1, y), workspace.CharAt(x + word.Length, y))
-				: (workspace.CharAt(x, y - 1), workspace.CharAt(x, y + word.Length));
+				? (workspace.CharAt(new Location(x - 1, y)), workspace.CharAt(new Location(x + word.Length, y)))
+				: (workspace.CharAt(new Location(x, y - 1)), workspace.CharAt(new Location(x, y + word.Length)));
 
 			if (!((startMarker == '*') || (startMarker == (char)0)))
 				return false;
@@ -95,8 +97,8 @@ namespace solve_crozzle
 			for (int i = 0; i < word.Length; ++i)
 			{
 				var c = direction == Direction.Down
-					? workspace.CharAt(x, y + i)
-					: workspace.CharAt(x + i, y);
+					? workspace.CharAt(new Location(x, y + i))
+					: workspace.CharAt(new Location(x + i, y));
 				if (c != (char)0)
 				{
 					if (word[i] != c)
@@ -117,7 +119,7 @@ namespace solve_crozzle
 			var newArray = new char[rectangle.Width * rectangle.Height];
 			// Now we have to calculate
 			// The original point
-			(int originalX, int originalY) = CalculateLocation(
+			Location originalLocation = CalculateLocation(
 				workspace.Width,
 				workspace.XStart,
 				workspace.YStart, 
@@ -127,22 +129,34 @@ namespace solve_crozzle
 				rectangle.Width,
 				rectangle.MinX,
 				rectangle.MinY,
-				originalX, 
-				originalY);
-			for(
-				int sourceIndex = 0;
-				sourceIndex < workspace.Values.Length;
-				sourceIndex += workspace.Width, destIndex += rectangle.Width
-			)
+				originalLocation
+			);
+			if(currentRectangle.Equals(rectangle))
 			{
 				Array.Copy(
-					workspace.Values, 
-					sourceIndex,
-					newArray, 
-					destIndex, 
-					workspace.Width
+					workspace.Values,
+					newArray,
+					newArray.Length
 				);
 			}
+			else
+			{
+				for (
+					int sourceIndex = 0;
+					sourceIndex < workspace.Values.Length;
+					sourceIndex += workspace.Width, destIndex += rectangle.Width
+				)
+				{
+					Array.Copy(
+						workspace.Values,
+						sourceIndex,
+						newArray,
+						destIndex,
+						workspace.Width
+					);
+				}
+			}
+
 
 			var newWorkspace = workspace.Clone();
 			newWorkspace.XStart = rectangle.MinX;
@@ -172,7 +186,7 @@ namespace solve_crozzle
 				MaxX = workspace.XStart + workspace.Width -1,
 				MaxY = workspace.Width == 0 
 					? workspace.YStart
-					: workspace.YStart + (workspace.Values.Length / workspace.Width)
+					: workspace.YStart + (workspace.Values.Length / workspace.Width) - 1
 			};
 
 		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
@@ -183,6 +197,9 @@ namespace solve_crozzle
 			var newWorkspace = workspace.ExpandSize(
 				rectangle
 			);
+			newWorkspace.AvailableWords = newWorkspace.AvailableWords.Remove(word);
+			newWorkspace.IncludedWords = newWorkspace.IncludedWords.Add(word);
+			newWorkspace.Score = workspace.Score + Scoring.ScorePerWord;
 
 			int advanceIncrement = direction == Direction.Across
 				? 1
@@ -190,37 +207,98 @@ namespace solve_crozzle
 
 			(var startMarkerPoint, var endMarkerPoint) =
 				direction == Direction.Across
-				? (newWorkspace.IndexOf(x - 1, y), newWorkspace.IndexOf(x + word.Length, y))
-				: (newWorkspace.IndexOf(x, y - 1), newWorkspace.IndexOf(x, y + word.Length));
+				? (
+					newWorkspace.IndexOf(
+					new Location(x - 1, y)
+					), 
+					newWorkspace.IndexOf(
+						new Location(x + word.Length, y)
+					)
+				)
+				: (
+					newWorkspace.IndexOf(
+						new Location(x, y - 1)
+					), 
+					newWorkspace.IndexOf(
+						new Location(x, y + word.Length)
+					)
+				);
 			newWorkspace.Values[startMarkerPoint] = '*';
 			newWorkspace.Values[endMarkerPoint] = '*';
 
-			for (int i = newWorkspace.IndexOf(x, y), sIndex = 0; sIndex < word.Length; ++sIndex, i+= advanceIncrement)
+			for (
+				int i = newWorkspace.IndexOf(
+					new Location(x, y)
+				), 
+				sIndex = 0; 
+				sIndex < word.Length; 
+				++sIndex,
+				i+= advanceIncrement
+			)
 			{
 				if(newWorkspace.Values[i] == word[sIndex])
 				{
 					newWorkspace.Score += Scoring.Score(word[sIndex]);
+					newWorkspace.Intersections = newWorkspace.Intersections.Add(
+						new Intersection
+						{
+							Word = word,
+							Index = sIndex
+						}
+					);
 				}
 				else
 				{
 					var thisLocation = CalculateLocation(newWorkspace.Width, newWorkspace.XStart, newWorkspace.YStart, i);
-					newWorkspace.Slots = newWorkspace.Slots.Add(
-						new Slot
+
+					Location[] adjacencies = direction == Direction.Across
+						? new[]
 						{
-							Direction = direction == Direction.Down ? Direction.Across : Direction.Down,
-							Letter = word[sIndex],
-							X = thisLocation.x,
-							Y = thisLocation.y
+							new Location(thisLocation.x, thisLocation.y-1),
+							new Location(thisLocation.x, thisLocation.y+1)
 						}
-					);
+						: new[]
+						{
+							new Location(thisLocation.x-1, thisLocation.y),
+							new Location(thisLocation.x+1, thisLocation.y)
+						};
+					var adjChars = adjacencies.Select(p => newWorkspace.CharAt(p));
+					if(adjChars.Any(c => !(c == '*' || c == (char)0)))
+					{
+						newWorkspace.PartialWords = newWorkspace.PartialWords.Add(
+							new PartialWord
+							{
+							}
+						);
+					}
+					else
+					{
+						if(
+							newWorkspace.WordLookup.TryGetValue(
+								word.Substring(sIndex, 1), 
+								out var matchingWordList
+							)
+						)
+						{
+							if(matchingWordList.Any(w => newWorkspace.AvailableWords.Contains(w)))
+							{
+								newWorkspace.Slots = newWorkspace.Slots.Add(
+								new Slot
+									{
+										Direction = direction == Direction.Down ? Direction.Across : Direction.Down,
+										Letter = word[sIndex],
+										X = thisLocation.x,
+										Y = thisLocation.y
+									}
+								);
+							}
+						}
+
+					}
+
 				}
-				newWorkspace.Score += newWorkspace.Values[i] == word[sIndex]
-					? Scoring.Score(word[sIndex])
-					: 0;
 				newWorkspace.Values[i] = word[sIndex];
 			}
-			newWorkspace.Score += 1;
-			newWorkspace.AvailableWords = newWorkspace.AvailableWords & ~(newWorkspace.WordToFlagMap[word]);
 			return newWorkspace;
 			
 		}
@@ -239,9 +317,8 @@ namespace solve_crozzle
 				}
 				if(workspace.WordLookup.TryGetValue(new string(new[] { slot.Letter }), out var flagsList))
 				{
-					foreach(var f in flagsList.Where(f2 => (f2&workspace.AvailableWords) != 0)) 
+					foreach(var candidateWord in flagsList.Where(f2 => workspace.AvailableWords.Contains(f2))) 
 					{
-						var candidateWord = workspace.FlagToWordMap[f];
 						for(int sIndex = 0; sIndex < candidateWord.Length; ++sIndex)
 						{
 							if(candidateWord[sIndex] == slot.Letter)
