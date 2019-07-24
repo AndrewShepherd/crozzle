@@ -8,12 +8,12 @@ namespace solve_crozzle
 {
 	public class Location
 	{
-		public readonly int x;
-		public readonly int y;
+		public readonly int X;
+		public readonly int Y;
 		public Location(int x, int y)
 		{
-			this.x = x;
-			this.y = y;
+			this.X = x;
+			this.Y = y;
 		}
 	}
 }

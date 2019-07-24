@@ -26,16 +26,23 @@ namespace solve_crozzle.Tests
 			Assert.That(workspace.YStart, Is.EqualTo(0));
 			Assert.That(workspace.Width, Is.EqualTo(7));
 			Assert.That(workspace.Values.Length, Is.EqualTo("*Apple*".Length));
-			Assert.That(workspace.ToString(), Is.EqualTo("*Apple*\r\n"));
+			Assert.That(workspace.ToString(), Is.EqualTo("_Apple_\r\n"));
 		}
 
 		[Test]
 		public void TestDetectAdjacencies()
 		{
-			var workspace = Workspace.Generate(new[] { "A", "B" });
-			workspace = workspace.PlaceWord(Direction.Across, "A", 0, 0);
-			workspace = workspace.PlaceWord(Direction.Across, "B", 0, 1);
+			var workspace = Workspace.Generate(new[] { "A", "B", "CAB" });
+			workspace = workspace.PlaceWord(Direction.Across, "A", 3, 3);
+			workspace = workspace.PlaceWord(Direction.Across, "B", 3, 4);
 			Assert.That(workspace.PartialWords.Count, Is.EqualTo(1));
+			var partialWord = workspace.PartialWords.First();
+			Assert.That(partialWord.Value, Is.EqualTo("AB"));
+			Assert.That(partialWord.Direction, Is.EqualTo(Direction.Down));
+			Assert.That(partialWord.Location.X, Is.EqualTo(3));
+			Assert.That(partialWord.Location.Y, Is.EqualTo(3));
+			var nextSteps = workspace.GenerateNextSteps().ToList();
+			Assert.That(nextSteps, Has.Count.EqualTo(1));
 		}
 
 		[Test]
@@ -44,31 +51,31 @@ namespace solve_crozzle.Tests
 			var workspace = Workspace.Generate(new[] { "Apple" });
 			var rectangles = new[]
 			{
-				new Rectangle
-				{
-					MinX = -1,
-					MaxX = 5,
-					MinY = 0,
-					MaxY = 0
-				},
-				new Rectangle
-				{
-					MinX = -1,
-					MaxX = 4,
-					MinY = -4,
-					MaxY = 1
-				},
-				new Rectangle
-				{
-					MinX = -3,
-					MinY = -4,
-					MaxX = 4,
-					MaxY = 1
-				}
+				new Rectangle(
+					new Location(-1, 0),
+					7,
+					1
+				),
+				new Rectangle(
+					new Location(-1, -4),
+					6,
+					6
+				),
+				new Rectangle(
+					new Location(-3, -4),
+					8,
+					5
+				)
 			};
-			workspace = workspace.ExpandSize(rectangles[0]);
-			workspace = workspace.ExpandSize(rectangles[1]);
 			var currentRectangle = workspace.GetCurrentRectangle();
+			Assert.That(currentRectangle.Height, Is.EqualTo(0));
+			workspace = workspace.ExpandSize(rectangles[0]);
+			currentRectangle = workspace.GetCurrentRectangle();
+			Assert.That(currentRectangle.Height, Is.EqualTo(1));
+			Assert.That(workspace.Values.Length, Is.EqualTo(currentRectangle.Area));
+			workspace = workspace.ExpandSize(rectangles[1]);
+			currentRectangle = workspace.GetCurrentRectangle();
+			Assert.That(workspace.Values.Length, Is.EqualTo(currentRectangle.Area));
 			workspace = workspace.ExpandSize(rectangles[2]);
 		}
 	}

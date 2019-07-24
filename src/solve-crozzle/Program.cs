@@ -45,6 +45,7 @@ namespace solve_crozzle
 			foreach(var s in words)
 			{
 				wpq.Push(workspace.PlaceWord(Direction.Across, s, 0, 0));
+				wpq.Push(workspace.PlaceWord(Direction.Down, s, 0, 0));
 			}
 			int maxScore = 0;
 			int generatedSolutionsCount = 0;

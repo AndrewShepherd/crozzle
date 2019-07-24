@@ -13,16 +13,14 @@ namespace solve_crozzle
 	{
 		public Direction Direction;
 		public char Letter;
-		public int X;
-		public int Y;
+		public Location Location;
 	}
 
 	public class PartialWord
 	{
 		public Direction Direction;
 		public string Value;
-		public int X;
-		public int Y;
+		public Location Location;
 	}
 
 	public class Intersection
