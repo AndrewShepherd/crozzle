@@ -26,7 +26,7 @@ namespace solve_crozzle.Tests
 			Assert.That(workspace.Board.Rectangle.TopLeft.Y, Is.EqualTo(0));
 			Assert.That(workspace.Board.Rectangle.Width, Is.EqualTo(7));
 			Assert.That(workspace.Board.Values.Length, Is.EqualTo("*Apple*".Length));
-			Assert.That(workspace.ToString(), Is.EqualTo("_Apple_\r\n"));
+			Assert.That(workspace.Board.ToString(), Is.EqualTo("_Apple_\r\n"));
 		}
 
 		[Test]

@@ -84,22 +84,7 @@ namespace solve_crozzle
 
 		public bool IsValid => PartialWords.IsEmpty;
 
-		public string BoardRepresentation
-		{
-			get
-			{
-				StringBuilder sb = new StringBuilder();
-				for (int i = 0; i < Board.Values.Length; ++i)
-				{
-					sb.Append((Board.Values[i] == (char)0) || (Board.Values[i] == '*') ? '_' : Board.Values[i]);
-					if (i % Board.Rectangle.Width == Board.Rectangle.Width - 1)
-					{
-						sb.AppendLine();
-					}
-				}
-				return sb.ToString();
-			}
-		}
+		public string BoardRepresentation => Board.ToString();
 
 		public override string ToString()
 		{

@@ -63,24 +63,9 @@ namespace solve_crozzle
 			return newWorkspace;
 		}
 
-		public static Location CalculateLocation(int width, int xStart, int yStart, int index) =>
-			width == 0
-			? new Location(0, 0)
-			: new Location(
-				index % width + xStart, 
-				index / width + yStart
-			);
-
-		public static int CalculateIndex(int width, int xStart, int yStart, Location location) =>
-			(location.Y - yStart) * width + (location.X - xStart);
-
 		public static int IndexOf(this Workspace workspace, Location location) =>
-			CalculateIndex(
-				workspace.Board.Rectangle.Width, 
-				workspace.Board.Rectangle.TopLeft.X, 
-				workspace.Board.Rectangle.TopLeft.Y, 
-				location
-			);
+			workspace.Board.IndexOf(location);
+
 
 		public static char CharAt(this Workspace workspace, Location location)
 		{
@@ -134,61 +119,10 @@ namespace solve_crozzle
 
 		public static Workspace ExpandSize(this Workspace workspace, Rectangle newRectangle)
 		{
-			var currentRectangle = workspace.GetCurrentRectangle();
-			var rectangle = workspace.GetCurrentRectangle().Union(newRectangle);
-
-			var newArray = new char[rectangle.Width * rectangle.Height];
-			// Now we have to calculate
-			// The original point
-			Location originalLocation = CalculateLocation(
-				workspace.Board.Rectangle.Width,
-				workspace.Board.Rectangle.TopLeft.X,
-				workspace.Board.Rectangle.TopLeft.Y, 
-				0
-			);
-			var destIndex = CalculateIndex(
-				rectangle.Width,
-				rectangle.TopLeft.X,
-				rectangle.TopLeft.Y,
-				originalLocation
-			);
-			if(currentRectangle.Equals(rectangle))
-			{
-				Array.Copy(
-					workspace.Board.Values,
-					newArray,
-					newArray.Length
-				);
-			}
-			else
-			{
-				for (
-					int sourceIndex = 0;
-					sourceIndex < workspace.Board.Values.Length;
-					sourceIndex += workspace.Board.Rectangle.Width, destIndex += rectangle.Width
-				)
-				{
-					Array.Copy(
-						workspace.Board.Values,
-						sourceIndex,
-						newArray,
-						destIndex,
-						workspace.Board.Rectangle.Width
-					);
-				}
-			}
-
-
 			var newWorkspace = workspace.Clone();
-			newWorkspace.Board = new Board
-			{
-				Rectangle = rectangle,
-				Values = newArray
-			};
+			newWorkspace.Board = workspace.Board.ExpandSize(newRectangle);
 			return newWorkspace;
 		}
-
-
 
 		public static Rectangle GetRectangleForWord(this Workspace workspace, Direction direction, string word, int x, int y) =>
 			new Rectangle(
@@ -262,10 +196,8 @@ namespace solve_crozzle
 				}
 				else
 				{
-					var thisLocation = CalculateLocation(
-						newWorkspace.Board.Rectangle.Width,
-						newWorkspace.Board.Rectangle.TopLeft.X, 
-						newWorkspace.Board.Rectangle.TopLeft.Y, 
+					var thisLocation = BoardExtensions.CalculateLocation(
+						newWorkspace.Board.Rectangle,
 						i
 					);
 

@@ -73,5 +73,24 @@ namespace solve_crozzle
 	{
 		public static Rectangle Union(this Rectangle r1, Rectangle r2) =>
 			Rectangle.Union(r1, r2);
+
+		public static Location CalculateLocation(this Rectangle rectangle, int index) =>
+			rectangle.Width == 0
+			? new Location(0, 0)
+			: new Location(
+				index % rectangle.Width + rectangle.TopLeft.X,
+				index / rectangle.Width + rectangle.TopLeft.Y
+			);
+
+		public static int CalculateIndex(int width, int xStart, int yStart, Location location) =>
+			(location.Y - yStart) * width + (location.X - xStart);
+
+		public static int IndexOf(this Rectangle rectangle, Location location) =>
+			CalculateIndex(
+				rectangle.Width,
+				rectangle.TopLeft.X,
+				rectangle.TopLeft.Y,
+				location
+			);
 	}
 }
