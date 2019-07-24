@@ -13,10 +13,7 @@ namespace solve_crozzle
 			new Workspace
 			{
 				Score = workspace.Score,
-				Width = workspace.Width,
-				Height = workspace.Height,
-				XStart = workspace.XStart,
-				YStart = workspace.YStart,
+				Rectangle = workspace.Rectangle,
 				Values = workspace.Values,
 				AvailableWords = workspace.AvailableWords,
 				WordLookup = workspace.WordLookup,
@@ -79,11 +76,16 @@ namespace solve_crozzle
 			(location.Y - yStart) * width + (location.X - xStart);
 
 		public static int IndexOf(this Workspace workspace, Location location) =>
-			CalculateIndex(workspace.Width, workspace.XStart, workspace.YStart, location);
+			CalculateIndex(
+				workspace.Rectangle.Width, 
+				workspace.Rectangle.TopLeft.X, 
+				workspace.Rectangle.TopLeft.Y, 
+				location
+			);
 
 		public static char CharAt(this Workspace workspace, Location location)
 		{
-			if ((location.X < workspace.XStart) || (location.Y < workspace.YStart))
+			if ((location.X < workspace.Rectangle.TopLeft.X) || (location.Y < workspace.Rectangle.TopLeft.Y))
 			{
 				return (char)0;
 			}
@@ -136,9 +138,9 @@ namespace solve_crozzle
 			// Now we have to calculate
 			// The original point
 			Location originalLocation = CalculateLocation(
-				workspace.Width,
-				workspace.XStart,
-				workspace.YStart, 
+				workspace.Rectangle.Width,
+				workspace.Rectangle.TopLeft.X,
+				workspace.Rectangle.TopLeft.Y, 
 				0
 			);
 			var destIndex = CalculateIndex(
@@ -160,7 +162,7 @@ namespace solve_crozzle
 				for (
 					int sourceIndex = 0;
 					sourceIndex < workspace.Values.Length;
-					sourceIndex += workspace.Width, destIndex += rectangle.Width
+					sourceIndex += workspace.Rectangle.Width, destIndex += rectangle.Width
 				)
 				{
 					Array.Copy(
@@ -168,17 +170,14 @@ namespace solve_crozzle
 						sourceIndex,
 						newArray,
 						destIndex,
-						workspace.Width
+						workspace.Rectangle.Width
 					);
 				}
 			}
 
 
 			var newWorkspace = workspace.Clone();
-			newWorkspace.XStart = rectangle.TopLeft.X;
-			newWorkspace.YStart = rectangle.TopLeft.Y;
-			newWorkspace.Width = rectangle.Width;
-			newWorkspace.Height = rectangle.Height;
+			newWorkspace.Rectangle = rectangle;
 			newWorkspace.Values = newArray;
 			return newWorkspace;
 		}
@@ -195,17 +194,7 @@ namespace solve_crozzle
 				direction == Direction.Down ? word.Length + 2 : 1
 			);
 
-		public static Rectangle GetCurrentRectangle(this Workspace workspace) =>
-			new Rectangle(
-				new Location(
-					workspace.XStart,
-					workspace.YStart
-				),
-				workspace.Width,
-				workspace.Width == 0
-					? 0
-					: (workspace.Values.Length / workspace.Width)
-			);
+		public static Rectangle GetCurrentRectangle(this Workspace workspace) => workspace.Rectangle;
 
 		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
 		{
@@ -221,7 +210,7 @@ namespace solve_crozzle
 
 			int advanceIncrement = direction == Direction.Across
 				? 1
-				: newWorkspace.Width;
+				: newWorkspace.Rectangle.Width;
 
 			(var startMarkerPoint, var endMarkerPoint) =
 				direction == Direction.Across
@@ -267,7 +256,12 @@ namespace solve_crozzle
 				}
 				else
 				{
-					var thisLocation = CalculateLocation(newWorkspace.Width, newWorkspace.XStart, newWorkspace.YStart, i);
+					var thisLocation = CalculateLocation(
+						newWorkspace.Rectangle.Width,
+						newWorkspace.Rectangle.TopLeft.X, 
+						newWorkspace.Rectangle.TopLeft.Y, 
+						i
+					);
 
 					Location[] adjacencies = direction == Direction.Across
 						? new[]

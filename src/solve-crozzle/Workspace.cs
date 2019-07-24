@@ -32,10 +32,7 @@ namespace solve_crozzle
 	public class Workspace
 	{
 		public int Score = 0;
-		public int Width = 0;
-		public int Height = 0;
-		public int XStart = 0;
-		public int YStart = 0;
+		public Rectangle Rectangle;
 		public char[] Values = new char[0];
 		public ImmutableHashSet<string> AvailableWords;
 		public ImmutableList<string> IncludedWords;
@@ -54,7 +51,8 @@ namespace solve_crozzle
 				AvailableWords = ImmutableHashSet<string>.Empty,
 				WordLookup = new Dictionary<string, List<String>>(),
 				IncludedWords = ImmutableList<string>.Empty,
-				Intersections = ImmutableList<Intersection>.Empty
+				Intersections = ImmutableList<Intersection>.Empty,
+				Rectangle = new Rectangle(new Location(0, 0), 0, 0)
 			};
 			foreach (var word in words)
 			{
@@ -89,7 +87,7 @@ namespace solve_crozzle
 			for (int i = 0; i < Values.Length; ++i)
 			{
 				sb.Append((Values[i] == (char)0) || (Values[i] == '*') ? '_' : Values[i]);
-				if (i % Width == Width - 1)
+				if (i % Rectangle.Width == Rectangle.Width - 1)
 				{
 					sb.AppendLine();
 				}

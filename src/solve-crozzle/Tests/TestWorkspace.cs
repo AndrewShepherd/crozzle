@@ -22,9 +22,9 @@ namespace solve_crozzle.Tests
 		{
 			var workspace = Workspace.Generate(new[] { "Apple" });
 			workspace = workspace.PlaceWord(Direction.Across, "Apple", 0, 0);
-			Assert.That(workspace.XStart, Is.EqualTo(-1));
-			Assert.That(workspace.YStart, Is.EqualTo(0));
-			Assert.That(workspace.Width, Is.EqualTo(7));
+			Assert.That(workspace.Rectangle.TopLeft.X, Is.EqualTo(-1));
+			Assert.That(workspace.Rectangle.TopLeft.Y, Is.EqualTo(0));
+			Assert.That(workspace.Rectangle.Width, Is.EqualTo(7));
 			Assert.That(workspace.Values.Length, Is.EqualTo("*Apple*".Length));
 			Assert.That(workspace.ToString(), Is.EqualTo("_Apple_\r\n"));
 		}
