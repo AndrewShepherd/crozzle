@@ -13,8 +13,7 @@ namespace solve_crozzle
 			new Workspace
 			{
 				Score = workspace.Score,
-				Rectangle = workspace.Rectangle,
-				Values = workspace.Values,
+				Board = workspace.Board,
 				AvailableWords = workspace.AvailableWords,
 				WordLookup = workspace.WordLookup,
 				MaxHeight = workspace.MaxHeight,
@@ -35,8 +34,8 @@ namespace solve_crozzle
 			else
 			{
 				var clone = workspace.Clone();
-				slot = workspace.Slots[0];
-				clone.Slots = clone.Slots.RemoveAt(0);
+				slot = workspace.Slots.OrderByDescending(s => Scoring.Score(s.Letter)).First();
+				clone.Slots = clone.Slots.Remove(slot);
 				return clone;
 			}
 		}
@@ -77,21 +76,20 @@ namespace solve_crozzle
 
 		public static int IndexOf(this Workspace workspace, Location location) =>
 			CalculateIndex(
-				workspace.Rectangle.Width, 
-				workspace.Rectangle.TopLeft.X, 
-				workspace.Rectangle.TopLeft.Y, 
+				workspace.Board.Rectangle.Width, 
+				workspace.Board.Rectangle.TopLeft.X, 
+				workspace.Board.Rectangle.TopLeft.Y, 
 				location
 			);
 
 		public static char CharAt(this Workspace workspace, Location location)
 		{
-			if ((location.X < workspace.Rectangle.TopLeft.X) || (location.Y < workspace.Rectangle.TopLeft.Y))
+			if(!(workspace.Board.Rectangle.Contains(location)))
 			{
 				return (char)0;
 			}
 			int index = IndexOf(workspace, location);
-			return index < workspace.Values.Length ? workspace.Values[index] : (char)0;
-
+			return index < workspace.Board.Values.Length ? workspace.Board.Values[index] : (char)0;
 		}
 
 		public static bool CanPlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
@@ -101,10 +99,15 @@ namespace solve_crozzle
 			if ((r.Width > workspace.MaxWidth) || (r.Height > workspace.MaxHeight))
 				return false;
 
-			(var startMarker, var endMarker) =
-				direction == Direction.Across
-				? (workspace.CharAt(new Location(x - 1, y)), workspace.CharAt(new Location(x + word.Length, y)))
-				: (workspace.CharAt(new Location(x, y - 1)), workspace.CharAt(new Location(x, y + word.Length)));
+			(
+				var startMarkerLocation,
+				var endMarkerLocation
+			) = direction == Direction.Across
+			? (new Location(x - 1, y), new Location(x + word.Length, y))
+			: (new Location(x, y - 1), new Location(x, y + word.Length));
+
+			var startMarker = workspace.CharAt(startMarkerLocation);
+			var endMarker = workspace.CharAt(endMarkerLocation);
 
 			if (!((startMarker == '*') || (startMarker == (char)0)))
 				return false;
@@ -138,9 +141,9 @@ namespace solve_crozzle
 			// Now we have to calculate
 			// The original point
 			Location originalLocation = CalculateLocation(
-				workspace.Rectangle.Width,
-				workspace.Rectangle.TopLeft.X,
-				workspace.Rectangle.TopLeft.Y, 
+				workspace.Board.Rectangle.Width,
+				workspace.Board.Rectangle.TopLeft.X,
+				workspace.Board.Rectangle.TopLeft.Y, 
 				0
 			);
 			var destIndex = CalculateIndex(
@@ -152,7 +155,7 @@ namespace solve_crozzle
 			if(currentRectangle.Equals(rectangle))
 			{
 				Array.Copy(
-					workspace.Values,
+					workspace.Board.Values,
 					newArray,
 					newArray.Length
 				);
@@ -161,24 +164,27 @@ namespace solve_crozzle
 			{
 				for (
 					int sourceIndex = 0;
-					sourceIndex < workspace.Values.Length;
-					sourceIndex += workspace.Rectangle.Width, destIndex += rectangle.Width
+					sourceIndex < workspace.Board.Values.Length;
+					sourceIndex += workspace.Board.Rectangle.Width, destIndex += rectangle.Width
 				)
 				{
 					Array.Copy(
-						workspace.Values,
+						workspace.Board.Values,
 						sourceIndex,
 						newArray,
 						destIndex,
-						workspace.Rectangle.Width
+						workspace.Board.Rectangle.Width
 					);
 				}
 			}
 
 
 			var newWorkspace = workspace.Clone();
-			newWorkspace.Rectangle = rectangle;
-			newWorkspace.Values = newArray;
+			newWorkspace.Board = new Board
+			{
+				Rectangle = rectangle,
+				Values = newArray
+			};
 			return newWorkspace;
 		}
 
@@ -194,7 +200,7 @@ namespace solve_crozzle
 				direction == Direction.Down ? word.Length + 2 : 1
 			);
 
-		public static Rectangle GetCurrentRectangle(this Workspace workspace) => workspace.Rectangle;
+		public static Rectangle GetCurrentRectangle(this Workspace workspace) => workspace.Board.Rectangle;
 
 		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
 		{
@@ -210,7 +216,7 @@ namespace solve_crozzle
 
 			int advanceIncrement = direction == Direction.Across
 				? 1
-				: newWorkspace.Rectangle.Width;
+				: newWorkspace.Board.Rectangle.Width;
 
 			(var startMarkerPoint, var endMarkerPoint) =
 				direction == Direction.Across
@@ -230,8 +236,8 @@ namespace solve_crozzle
 						new Location(x, y + word.Length)
 					)
 				);
-			newWorkspace.Values[startMarkerPoint] = '*';
-			newWorkspace.Values[endMarkerPoint] = '*';
+			newWorkspace.Board.Values[startMarkerPoint] = '*';
+			newWorkspace.Board.Values[endMarkerPoint] = '*';
 
 			for (
 				int i = newWorkspace.IndexOf(
@@ -243,7 +249,7 @@ namespace solve_crozzle
 				i+= advanceIncrement
 			)
 			{
-				if(newWorkspace.Values[i] == word[sIndex])
+				if(newWorkspace.Board.Values[i] == word[sIndex])
 				{
 					newWorkspace.Score += Scoring.Score(word[sIndex]);
 					newWorkspace.Intersections = newWorkspace.Intersections.Add(
@@ -257,9 +263,9 @@ namespace solve_crozzle
 				else
 				{
 					var thisLocation = CalculateLocation(
-						newWorkspace.Rectangle.Width,
-						newWorkspace.Rectangle.TopLeft.X, 
-						newWorkspace.Rectangle.TopLeft.Y, 
+						newWorkspace.Board.Rectangle.Width,
+						newWorkspace.Board.Rectangle.TopLeft.X, 
+						newWorkspace.Board.Rectangle.TopLeft.Y, 
 						i
 					);
 
@@ -318,7 +324,7 @@ namespace solve_crozzle
 					}
 
 				}
-				newWorkspace.Values[i] = word[sIndex];
+				newWorkspace.Board.Values[i] = word[sIndex];
 			}
 			return newWorkspace;
 			
@@ -364,6 +370,7 @@ namespace solve_crozzle
 		{
 			if (workspace.PartialWords.Any())
 			{
+				yield break;
 				workspace = workspace.PopPartialWord(out var partialSlot);
 				bool successfullyPlaced = false;
 				foreach(

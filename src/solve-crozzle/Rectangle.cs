@@ -19,6 +19,19 @@ namespace solve_crozzle
 			Height = height;
 		}
 
+		public bool Contains(Location location)
+		{
+			if (location.X < this.TopLeft.X)
+				return false;
+			if (location.Y < this.TopLeft.Y)
+				return false;
+			if (location.X > this.TopLeft.X + this.Width - 1)
+				return false;
+			if (location.Y > this.TopLeft.Y + this.Height - 1)
+				return false;
+			return true;
+		}
+
 		public static Rectangle Union(Rectangle r1, Rectangle r2)
 		{
 			var topLeft = new Location(

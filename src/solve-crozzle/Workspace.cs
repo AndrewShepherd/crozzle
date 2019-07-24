@@ -32,8 +32,7 @@ namespace solve_crozzle
 	public class Workspace
 	{
 		public int Score = 0;
-		public Rectangle Rectangle;
-		public char[] Values = new char[0];
+		public Board Board;
 		public ImmutableHashSet<string> AvailableWords;
 		public ImmutableList<string> IncludedWords;
 		public ImmutableList<Intersection> Intersections;
@@ -52,7 +51,11 @@ namespace solve_crozzle
 				WordLookup = new Dictionary<string, List<String>>(),
 				IncludedWords = ImmutableList<string>.Empty,
 				Intersections = ImmutableList<Intersection>.Empty,
-				Rectangle = new Rectangle(new Location(0, 0), 0, 0)
+				Board = new Board
+				{
+					Rectangle = new Rectangle(new Location(0, 0), 0, 0),
+					Values = new char[0]
+				}
 			};
 			foreach (var word in words)
 			{
@@ -81,18 +84,27 @@ namespace solve_crozzle
 
 		public bool IsValid => PartialWords.IsEmpty;
 
+		public string BoardRepresentation
+		{
+			get
+			{
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < Board.Values.Length; ++i)
+				{
+					sb.Append((Board.Values[i] == (char)0) || (Board.Values[i] == '*') ? '_' : Board.Values[i]);
+					if (i % Board.Rectangle.Width == Board.Rectangle.Width - 1)
+					{
+						sb.AppendLine();
+					}
+				}
+				return sb.ToString();
+			}
+		}
+
 		public override string ToString()
 		{
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < Values.Length; ++i)
-			{
-				sb.Append((Values[i] == (char)0) || (Values[i] == '*') ? '_' : Values[i]);
-				if (i % Rectangle.Width == Rectangle.Width - 1)
-				{
-					sb.AppendLine();
-				}
-			}
-			return sb.ToString();
+			return $"PotentialScore: ${this.PotentialScore}";
+
 		}
 
 		public string GenerateScoreBreakdown()
@@ -128,7 +140,9 @@ namespace solve_crozzle
 			{
 				if(!_potentialScore.HasValue)
 				{
-					_potentialScore = this.Score + this.Slots.Select(c => Scoring.Score(c.Letter)).Sum();
+					_potentialScore = this.Score
+						+ this.Slots.Select(c => Scoring.Score(c.Letter)).Sum()
+						+ this.PartialWords.Count * 1000;
 				}
 				return _potentialScore.Value;
 			}

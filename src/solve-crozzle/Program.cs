@@ -67,7 +67,7 @@ namespace solve_crozzle
 							TimeSpan duration = DateTime.Now - timeStart;
 							maxScore = thisWorkspace.Score;
 							Console.WriteLine($"*** {duration}: MaxScore is {maxScore}, {generatedSolutionsCount} solutions generated ***");
-							Console.WriteLine(thisWorkspace.ToString());
+							Console.WriteLine(thisWorkspace.BoardRepresentation);
 							Console.WriteLine(thisWorkspace.GenerateScoreBreakdown());
 						}
 					}

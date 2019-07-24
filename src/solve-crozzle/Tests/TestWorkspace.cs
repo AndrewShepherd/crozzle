@@ -22,10 +22,10 @@ namespace solve_crozzle.Tests
 		{
 			var workspace = Workspace.Generate(new[] { "Apple" });
 			workspace = workspace.PlaceWord(Direction.Across, "Apple", 0, 0);
-			Assert.That(workspace.Rectangle.TopLeft.X, Is.EqualTo(-1));
-			Assert.That(workspace.Rectangle.TopLeft.Y, Is.EqualTo(0));
-			Assert.That(workspace.Rectangle.Width, Is.EqualTo(7));
-			Assert.That(workspace.Values.Length, Is.EqualTo("*Apple*".Length));
+			Assert.That(workspace.Board.Rectangle.TopLeft.X, Is.EqualTo(-1));
+			Assert.That(workspace.Board.Rectangle.TopLeft.Y, Is.EqualTo(0));
+			Assert.That(workspace.Board.Rectangle.Width, Is.EqualTo(7));
+			Assert.That(workspace.Board.Values.Length, Is.EqualTo("*Apple*".Length));
 			Assert.That(workspace.ToString(), Is.EqualTo("_Apple_\r\n"));
 		}
 
@@ -72,10 +72,10 @@ namespace solve_crozzle.Tests
 			workspace = workspace.ExpandSize(rectangles[0]);
 			currentRectangle = workspace.GetCurrentRectangle();
 			Assert.That(currentRectangle.Height, Is.EqualTo(1));
-			Assert.That(workspace.Values.Length, Is.EqualTo(currentRectangle.Area));
+			Assert.That(workspace.Board.Values.Length, Is.EqualTo(currentRectangle.Area));
 			workspace = workspace.ExpandSize(rectangles[1]);
 			currentRectangle = workspace.GetCurrentRectangle();
-			Assert.That(workspace.Values.Length, Is.EqualTo(currentRectangle.Area));
+			Assert.That(workspace.Board.Values.Length, Is.EqualTo(currentRectangle.Area));
 			workspace = workspace.ExpandSize(rectangles[2]);
 		}
 	}

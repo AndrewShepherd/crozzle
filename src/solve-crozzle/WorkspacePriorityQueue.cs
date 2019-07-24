@@ -8,7 +8,7 @@ namespace solve_crozzle
 {
 	class WorkspacePriorityQueue
 	{
-		Workspace[] _workspaces = new Workspace[1000000];
+		Workspace[] _workspaces = new Workspace[10000000];
 		int _length = 0;
 		public Workspace Pop()
 		{
@@ -40,7 +40,7 @@ namespace solve_crozzle
 			while(i != 0)
 			{
 				var j = (i - 1) / 2;
-				if (_workspaces[i].PotentialScore > thisPotentialScore)
+				if (_workspaces[j].PotentialScore > thisPotentialScore)
 				{
 					return;
 				}
