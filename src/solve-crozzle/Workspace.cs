@@ -20,7 +20,7 @@ namespace solve_crozzle
 	{
 		public Direction Direction;
 		public string Value;
-		public Location Location;
+		public Rectangle Rectangle;
 	}
 
 	public class Intersection
@@ -36,15 +36,13 @@ namespace solve_crozzle
 		public ImmutableHashSet<string> AvailableWords;
 		public ImmutableList<string> IncludedWords;
 		public ImmutableList<Intersection> Intersections;
-		public int MaxWidth = 17;
-		public int MaxHeight = 12;
+
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
 		public ImmutableList<PartialWord> PartialWords = ImmutableList<PartialWord>.Empty;
 
 		internal static Workspace Generate(IEnumerable<string> words)
 		{
-			ulong wordFlag = 0x1;
 			var workspace = new Workspace()
 			{
 				AvailableWords = ImmutableHashSet<string>.Empty,
@@ -74,7 +72,10 @@ namespace solve_crozzle
 							workspace.WordLookup[word.Substring(i, j)] = new List<string> { word };
 					}
 				}
-				wordFlag = wordFlag << 1;
+			}
+			foreach(var key in workspace.WordLookup.Keys.ToList())
+			{
+				workspace.WordLookup[key] = workspace.WordLookup[key].OrderByDescending(w => Scoring.Score(w)).ToList();
 			}
 			return workspace;
 		}

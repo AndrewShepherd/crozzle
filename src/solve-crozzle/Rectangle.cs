@@ -19,6 +19,13 @@ namespace solve_crozzle
 			Height = height;
 		}
 
+		public Rectangle(Location topLeft, Location bottomRight)
+		{
+			TopLeft = topLeft;
+			Width = bottomRight.X - topLeft.X + 1;
+			Height = bottomRight.Y - topLeft.Y + 1;
+		}
+
 		public bool Contains(Location location)
 		{
 			if (location.X < this.TopLeft.X)

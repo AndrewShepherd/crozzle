@@ -31,25 +31,14 @@ namespace solve_crozzle
 			return listString;
 		}
 
-		
-
-		static void Main(string[] args)
+		static IEnumerable<Workspace> SolveUsingQueue(IEnumerable<Workspace> startWorkspaces, int queueLength)
 		{
-			DateTime timeStart = DateTime.Now;
-			var words = ExtractWords(DefaultFilePath).Result;
-
-			Workspace workspace = Workspace.Generate(words);
-			
-
-			WorkspacePriorityQueue wpq = new WorkspacePriorityQueue();
-			foreach(var s in words)
+			WorkspacePriorityQueue wpq = new WorkspacePriorityQueue(queueLength);
+			foreach (var workspace in startWorkspaces)
 			{
-				wpq.Push(workspace.PlaceWord(Direction.Across, s, 0, 0));
-				wpq.Push(workspace.PlaceWord(Direction.Down, s, 0, 0));
+				wpq.Push(workspace);
 			}
-			int maxScore = 0;
-			int generatedSolutionsCount = 0;
-			while(!wpq.IsEmpty)
+			while (!wpq.IsEmpty)
 			{
 				var thisWorkspace = wpq.Pop();
 				var nextSteps = thisWorkspace.GenerateNextSteps().ToList();
@@ -59,18 +48,41 @@ namespace solve_crozzle
 				}
 				else
 				{
-					if(thisWorkspace.IsValid)
+					if (thisWorkspace.IsValid)
 					{
-						++generatedSolutionsCount;
-						if (thisWorkspace.Score > maxScore)
-						{
-							TimeSpan duration = DateTime.Now - timeStart;
-							maxScore = thisWorkspace.Score;
-							Console.WriteLine($"*** {duration}: MaxScore is {maxScore}, {generatedSolutionsCount} solutions generated ***");
-							Console.WriteLine(thisWorkspace.BoardRepresentation);
-							Console.WriteLine(thisWorkspace.GenerateScoreBreakdown());
-						}
+						yield return thisWorkspace;
 					}
+				}
+			}
+		}
+
+
+		static void Main(string[] args)
+		{
+			DateTime timeStart = DateTime.Now;
+			var words = ExtractWords(DefaultFilePath).Result;
+			Workspace workspace = Workspace.Generate(words);
+			var workspaces = words
+				.Select(
+					w =>
+						new[]
+						{
+							workspace.PlaceWord(Direction.Across, w, 0, 0),
+							workspace.PlaceWord(Direction.Down, w, 0, 0),
+						}
+				).SelectMany(_ => _);
+			int maxScore = 0;
+			int generatedSolutionsCount = 0;
+			foreach(var thisWorkspace in SolveUsingQueue(workspaces, 10000000))
+			{
+				++generatedSolutionsCount;
+				if (thisWorkspace.Score > maxScore)
+				{
+					TimeSpan duration = DateTime.Now - timeStart;
+					maxScore = thisWorkspace.Score;
+					Console.WriteLine($"*** {duration}: MaxScore is {maxScore}, {generatedSolutionsCount} solutions generated ***");
+					Console.WriteLine(thisWorkspace.BoardRepresentation);
+					Console.WriteLine(thisWorkspace.GenerateScoreBreakdown());
 				}
 			}
 		}

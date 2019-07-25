@@ -8,8 +8,13 @@ namespace solve_crozzle
 {
 	class WorkspacePriorityQueue
 	{
-		Workspace[] _workspaces = new Workspace[10000000];
+		readonly Workspace[] _workspaces; 
 		int _length = 0;
+		public WorkspacePriorityQueue(int queueLength)
+		{
+			_workspaces = new Workspace[queueLength];
+		}
+
 		public Workspace Pop()
 		{
 			var result = _workspaces[0];

@@ -16,8 +16,6 @@ namespace solve_crozzle
 				Board = workspace.Board,
 				AvailableWords = workspace.AvailableWords,
 				WordLookup = workspace.WordLookup,
-				MaxHeight = workspace.MaxHeight,
-				MaxWidth = workspace.MaxWidth,
 				Slots = workspace.Slots,
 				PartialWords = workspace.PartialWords,
 				IncludedWords = workspace.IncludedWords,
@@ -51,8 +49,8 @@ namespace solve_crozzle
 			{
 				var clone = workspace.Clone();
 				partialWord = workspace.PartialWords[0];
-				workspace.PartialWords = workspace.PartialWords.RemoveAt(0);
-				return workspace;
+				clone.PartialWords = workspace.PartialWords.RemoveAt(0);
+				return clone;
 			}
 		}
 
@@ -66,56 +64,11 @@ namespace solve_crozzle
 		public static int IndexOf(this Workspace workspace, Location location) =>
 			workspace.Board.IndexOf(location);
 
-
-		public static char CharAt(this Workspace workspace, Location location)
-		{
-			if(!(workspace.Board.Rectangle.Contains(location)))
-			{
-				return (char)0;
-			}
-			int index = IndexOf(workspace, location);
-			return index < workspace.Board.Values.Length ? workspace.Board.Values[index] : (char)0;
-		}
+		public static char CharAt(this Workspace workspace, Location location) =>
+			workspace.Board.CharAt(location);
 
 		public static bool CanPlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
-		{
-			var r = workspace.GetRectangleForWord(direction, word, x, y)
-				.Union(workspace.GetCurrentRectangle());
-			if ((r.Width > workspace.MaxWidth) || (r.Height > workspace.MaxHeight))
-				return false;
-
-			(
-				var startMarkerLocation,
-				var endMarkerLocation
-			) = direction == Direction.Across
-			? (new Location(x - 1, y), new Location(x + word.Length, y))
-			: (new Location(x, y - 1), new Location(x, y + word.Length));
-
-			var startMarker = workspace.CharAt(startMarkerLocation);
-			var endMarker = workspace.CharAt(endMarkerLocation);
-
-			if (!((startMarker == '*') || (startMarker == (char)0)))
-				return false;
-			if (!((endMarker == '*') || (endMarker == (char)0)))
-				return false;
-
-			// TODO: Ask if it will make the height or width too large
-			for (int i = 0; i < word.Length; ++i)
-			{
-				var c = direction == Direction.Down
-					? workspace.CharAt(new Location(x, y + i))
-					: workspace.CharAt(new Location(x + i, y));
-				if (c != (char)0)
-				{
-					if (word[i] != c)
-					{
-						return false;
-					}
-
-				}
-			}
-			return true;
-		}
+			=> workspace.Board.CanPlaceWord(direction, word, new Location(x, y));
 
 		public static Workspace ExpandSize(this Workspace workspace, Rectangle newRectangle)
 		{
@@ -124,23 +77,12 @@ namespace solve_crozzle
 			return newWorkspace;
 		}
 
-		public static Rectangle GetRectangleForWord(this Workspace workspace, Direction direction, string word, int x, int y) =>
-			new Rectangle(
-				new Location(
-					x - (direction == Direction.Across ? 1 : 0),
-					y - (direction == Direction.Down ? 1 : 0)
-				),
-				direction == Direction.Across ? word.Length + 2 : 1,
-				direction == Direction.Down ? word.Length + 2 : 1
-			);
 
 		public static Rectangle GetCurrentRectangle(this Workspace workspace) => workspace.Board.Rectangle;
 
 		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
 		{
-			var rectangle = GetRectangleForWord(workspace, direction, word, x, y);
-			var workspaceRectangle = workspace.GetCurrentRectangle();
-			
+			var rectangle = BoardExtensions.GetRectangleForWord(direction, word, x, y);			
 			var newWorkspace = workspace.ExpandSize(
 				rectangle
 			);
@@ -155,18 +97,18 @@ namespace solve_crozzle
 			(var startMarkerPoint, var endMarkerPoint) =
 				direction == Direction.Across
 				? (
-					newWorkspace.IndexOf(
+					newWorkspace.Board.IndexOf(
 					new Location(x - 1, y)
 					), 
-					newWorkspace.IndexOf(
+					newWorkspace.Board.IndexOf(
 						new Location(x + word.Length, y)
 					)
 				)
 				: (
-					newWorkspace.IndexOf(
+					newWorkspace.Board.IndexOf(
 						new Location(x, y - 1)
 					), 
-					newWorkspace.IndexOf(
+					newWorkspace.Board.IndexOf(
 						new Location(x, y + word.Length)
 					)
 				);
@@ -174,7 +116,7 @@ namespace solve_crozzle
 			newWorkspace.Board.Values[endMarkerPoint] = '*';
 
 			for (
-				int i = newWorkspace.IndexOf(
+				int i = newWorkspace.Board.IndexOf(
 					new Location(x, y)
 				), 
 				sIndex = 0; 
@@ -196,39 +138,18 @@ namespace solve_crozzle
 				}
 				else
 				{
-					var thisLocation = BoardExtensions.CalculateLocation(
-						newWorkspace.Board.Rectangle,
-						i
-					);
+					newWorkspace.Board.Values[i] = word[sIndex];
 
-					Location[] adjacencies = direction == Direction.Across
-						? new[]
-						{
-							new Location(thisLocation.X, thisLocation.Y-1),
-							new Location(thisLocation.X, thisLocation.Y+1)
-						}
-						: new[]
-						{
-							new Location(thisLocation.X-1, thisLocation.Y),
-							new Location(thisLocation.X+1, thisLocation.Y)
-						};
-					var adjChars = adjacencies.Select(p => newWorkspace.CharAt(p)).ToList();
-					var partialWordCharArray = new[]
-					{
-						adjChars[0],
-						word[sIndex],
-						adjChars[1]
-					}.Where(c => !(c == '*' || c == (char)0))
-					.ToArray();
-					if (partialWordCharArray.Length > 1)
+					var thisLocation = newWorkspace.Board.Rectangle.CalculateLocation(i);
+					
+					PartialWord partialWord = newWorkspace.Board.GetWordAt(
+						direction == Direction.Across ? Direction.Down : Direction.Across,
+						thisLocation
+					);
+					if (partialWord.Value.Length > 1)
 					{
 						newWorkspace.PartialWords = newWorkspace.PartialWords.Add(
-							new PartialWord
-							{
-								Direction = direction == Direction.Across ? Direction.Down : Direction.Across,
-								Value = new string(partialWordCharArray),
-								Location = new Location(0, 0)
-							}
+							partialWord
 						);
 					}
 					else
@@ -256,7 +177,6 @@ namespace solve_crozzle
 					}
 
 				}
-				newWorkspace.Board.Values[i] = word[sIndex];
 			}
 			return newWorkspace;
 			
@@ -302,25 +222,19 @@ namespace solve_crozzle
 		{
 			if (workspace.PartialWords.Any())
 			{
-				yield break;
 				workspace = workspace.PopPartialWord(out var partialSlot);
-				bool successfullyPlaced = false;
 				foreach(
 					var solution in CoverFragment(
 						workspace,
 						partialSlot.Value,
-						partialSlot.Location,
+						partialSlot.Rectangle.TopLeft,
 						partialSlot.Direction
 					)
 				)
 				{
-					successfullyPlaced = true;
 					yield return solution;
 				}
-				if (!successfullyPlaced)
-				{
-					yield break;
-				}
+				yield break;
 			}
 			else
 			{
