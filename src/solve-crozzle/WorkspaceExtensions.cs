@@ -148,6 +148,16 @@ namespace solve_crozzle
 					);
 					if (partialWord.Value.Length > 1)
 					{
+						foreach(var pw2 in newWorkspace.PartialWords)
+						{
+							if(pw2.Direction == partialWord.Direction)
+							{
+								if(pw2.Rectangle.IntersectsWith(partialWord.Rectangle))
+								{
+									newWorkspace.PartialWords = newWorkspace.PartialWords.Remove(pw2);
+								}
+							}
+						}
 						newWorkspace.PartialWords = newWorkspace.PartialWords.Add(
 							partialWord
 						);

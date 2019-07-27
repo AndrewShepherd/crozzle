@@ -15,6 +15,8 @@ namespace solve_crozzle
 			_workspaces = new Workspace[queueLength];
 		}
 
+		public int Count => _length;
+
 		public Workspace Pop()
 		{
 			var result = _workspaces[0];

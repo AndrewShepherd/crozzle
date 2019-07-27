@@ -58,6 +58,9 @@ namespace solve_crozzle
 
 		public int Area => Width * Height;
 
+		public override string ToString() =>
+			$"({TopLeft}), {Width}x{Height}";
+
 		public override bool Equals(object obj)
 		{
 			if (object.ReferenceEquals(this, obj))
@@ -99,5 +102,18 @@ namespace solve_crozzle
 				rectangle.TopLeft.Y,
 				location
 			);
+
+		public static bool IntersectsWith(this Rectangle r1, Rectangle r2)
+		{
+			if (r1.TopLeft.X > (r2.TopLeft.X + r2.Width - 1))
+				return false;
+			if (r2.TopLeft.X > (r1.TopLeft.X + r1.Width - 1))
+				return false;
+			if (r1.TopLeft.Y > (r2.TopLeft.Y + r2.Height - 1))
+				return false;
+			if (r2.TopLeft.Y > (r1.TopLeft.Y + r1.Height - 1))
+				return false;
+			return true;
+		}
 	}
 }

@@ -89,7 +89,7 @@ namespace solve_crozzle
 
 		public override string ToString()
 		{
-			return $"PotentialScore: ${this.PotentialScore}";
+			return $"WordCount: {this.IncludedWords.Count} PotentialScore: {this.PotentialScore}";
 
 		}
 
