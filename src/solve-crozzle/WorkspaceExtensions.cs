@@ -48,8 +48,8 @@ namespace solve_crozzle
 			else
 			{
 				var clone = workspace.Clone();
-				partialWord = workspace.PartialWords[0];
-				clone.PartialWords = workspace.PartialWords.RemoveAt(0);
+				partialWord = workspace.PartialWords.OrderByDescending(pw => pw.Value.Length).First();
+				clone.PartialWords = workspace.PartialWords.Remove(partialWord);
 				return clone;
 			}
 		}

@@ -19,6 +19,7 @@ namespace solve_crozzle
 		static string HeavyOverlapFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\heavyoverlap.TXT";
 		static string MountainsFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\9312.TXT";
 		static string ChristmasFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\8912.TXT";
+		static string TownsFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\9003.TXT";
 
 		static async Task<List<string>> ExtractWords(string filePath)
 		{
@@ -70,21 +71,22 @@ namespace solve_crozzle
 			return true;
 		}
 
-		static IEnumerable<Workspace> SolveUsingQueue(IEnumerable<Workspace> startWorkspaces, int queueLength)
+		static IEnumerable<Workspace> SolveUsingQueue(IEnumerable<Workspace> startWorkspaces, int queueLength, int batchSize)
 		{
 			WorkspacePriorityQueue wpq = new WorkspacePriorityQueue(queueLength);
 			foreach (var workspace in startWorkspaces)
 			{
 				wpq.Push(workspace);
 			}
+
 			while (!wpq.IsEmpty)
 			{
-				var wList = new[]
+				List<Workspace> wList = new List<Workspace>();
+				for (int i = 0; i < batchSize && !wpq.IsEmpty; ++i)
 				{
-					wpq.Pop(),
-					wpq.Pop()
-				};
-				foreach(var thisWorkspace in wList)
+					wList.Add(wpq.Pop());
+				}
+				foreach (var thisWorkspace in wList)
 				{
 					var nextSteps = thisWorkspace.GenerateNextSteps().ToList();
 					if (nextSteps.Any())
@@ -145,8 +147,12 @@ namespace solve_crozzle
 		public static IEnumerable<Workspace> GetClusters(IEnumerable<String> words)
 		{
 			var sourceWorkspace = Workspace.Generate(words);
-			foreach(var pair in GetPairs(words))
+			var pairs = GetPairs(words).ToArray();
+			Console.WriteLine($"There are {pairs.Length} pairs to test");
+			for(int ip = 0; ip < pairs.Length; ++ip)
 			{
+				//Console.WriteLine($"Testing pair {ip} of {pairs.Length}");
+				var pair = pairs[ip];
 				for(
 					int i = 0 - pair.Item2.Length+2;
 					i < pair.Item1.Length-1;
@@ -181,9 +187,8 @@ namespace solve_crozzle
 
 		static void Main(string[] args)
 		{
-			DateTime timeStart = DateTime.Now;
 			//var words = ExtractWords(HeavyOverlapFilePath).Result;
-			var words = ExtractWords(ChristmasFilePath).Result;
+			var words = ExtractWords(TownsFilePath).Result;
 			Workspace workspace = Workspace.Generate(words);
 
 			List<Workspace> workspaces = new List<Workspace>();
@@ -208,7 +213,8 @@ namespace solve_crozzle
 
 			ulong generatedSolutionsCount = 0;
 			var maxScore = 0;
-			foreach(var thisWorkspace in SolveUsingQueue(workspaces, 1000))
+			DateTime timeStart = DateTime.Now;
+			foreach (var thisWorkspace in SolveUsingQueue(workspaces, 2000000, 8))
 			//foreach (var thisWorkspace in SolveRecursively(workspaces))
 			{
 				++generatedSolutionsCount;
