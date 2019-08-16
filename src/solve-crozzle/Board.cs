@@ -35,6 +35,22 @@ namespace solve_crozzle
 				&& b.Rectangle.Equals(this.Rectangle)
 				&& Enumerable.SequenceEqual(b.Values, this.Values);
 		}
+
+		public override int GetHashCode()
+		{
+			var hash = Rectangle.GetHashCode();
+			for (
+				int i = 0,
+				shift = 0;
+				i < Values.Length;
+				++i,
+				shift = (shift+8)%32
+			)
+			{
+				hash ^= (Values[i] << shift);
+			}
+			return hash;
+		}
 	}
 
 	public static class BoardExtensions

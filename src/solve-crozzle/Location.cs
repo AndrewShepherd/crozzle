@@ -27,5 +27,10 @@ namespace solve_crozzle
 			}
 			return (obj is Location l) && (l.X == X) && (l.Y == Y);
 		}
+
+		public override int GetHashCode()
+		{
+			return (X << 16) ^ Y;
+		}
 	}
 }
