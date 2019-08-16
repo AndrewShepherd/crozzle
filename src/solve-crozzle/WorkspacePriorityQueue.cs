@@ -41,16 +41,26 @@ namespace solve_crozzle
 
 		public void Push(Workspace workspace)
 		{
-			int i = _length++;
+			int i;
+			if(_length < _workspaces.Length)
+			{
+				i = _length++;
+			}
+			else
+			{
+				i = _workspaces.Length - 1;
+				if (_workspaces[i].PotentialScore > workspace.PotentialScore)
+					return;
+			}
 			_workspaces[i] = workspace;
 			var thisPotentialScore = workspace.PotentialScore;
 			while(i != 0)
 			{
 				var j = (i - 1) / 2;
-				if (_workspaces[j].PotentialScore > thisPotentialScore)
-				{
+				if (j >= _workspaces.Length)
 					return;
-				}
+				if (_workspaces[j].PotentialScore > thisPotentialScore)
+					return;
 				(_workspaces[i], _workspaces[j], i) = (_workspaces[j], _workspaces[i], j);
 			}			
 		}

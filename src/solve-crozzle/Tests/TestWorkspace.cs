@@ -14,7 +14,14 @@ namespace solve_crozzle.Tests
 		public void TestCanAdd()
 		{
 			var workspace = Workspace.Generate(new[] { "Apple" });
-			Assert.That(workspace.CanPlaceWord(Direction.Across, "Apple", 0, 0), Is.True);
+			Assert.That(
+				workspace.CanPlaceWord(
+					Direction.Across, 
+					"Apple",
+					new Location(0, 0)
+				), 
+				Is.True
+			);
 		}
 
 		[Test]
@@ -27,6 +34,21 @@ namespace solve_crozzle.Tests
 			Assert.That(workspace.Board.Rectangle.Width, Is.EqualTo(7));
 			Assert.That(workspace.Board.Values.Length, Is.EqualTo("*Apple*".Length));
 			Assert.That(workspace.Board.ToString(), Is.EqualTo("_Apple_\r\n"));
+		}
+
+		[Test]
+		public void GenerateStripBasic()
+		{
+			var workspace = Workspace.Generate(new[] { "APPLE", "BANANA" });
+			workspace = workspace.PlaceWord(Direction.Across, "APPLE", 0, 0);
+			Slot slot;
+			workspace = workspace.PopSlot(out slot);
+			Assert.That(slot, Is.Not.Null);
+			var strip = workspace.GenerateStrip(slot);
+			Assert.That(strip.Characters.Length, Is.EqualTo(21));
+			Assert.That(strip.StartAt, Is.EqualTo(-10));
+			Assert.That(strip.Characters[10], Is.EqualTo(slot.Letter));
+
 		}
 
 		[Test]

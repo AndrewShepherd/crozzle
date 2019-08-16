@@ -14,6 +14,14 @@ namespace solve_crozzle
 		public Direction Direction;
 		public char Letter;
 		public Location Location;
+		public override bool Equals(object obj)
+		{
+			if(!(obj is Slot s))
+			{
+				return false;
+			}
+			return Direction.Equals(s.Direction) && Letter.Equals(s.Letter) && Location.Equals(s.Location);
+		}
 	}
 
 	public class PartialWord
@@ -21,6 +29,16 @@ namespace solve_crozzle
 		public Direction Direction;
 		public string Value;
 		public Rectangle Rectangle;
+		public override bool Equals(object obj)
+		{
+			if(!(obj is PartialWord pw))
+			{
+				return false;
+			}
+			return this.Direction.Equals(pw.Direction)
+				&& this.Value.Equals(pw.Value)
+				&& this.Rectangle.Equals(pw.Rectangle);
+		}
 	}
 
 	public class Intersection
@@ -40,6 +58,40 @@ namespace solve_crozzle
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
 		public ImmutableList<PartialWord> PartialWords = ImmutableList<PartialWord>.Empty;
+
+		public override bool Equals(object obj)
+		{
+			if(object.ReferenceEquals(this, obj))
+			{
+				return true;
+			}
+			if(!(obj is Workspace w))
+			{
+				return false;
+			}
+			if(this.Score != w.Score)
+			{
+				return false;
+			}
+			if(!(this.Board.Equals(w.Board)))
+			{
+				return false;
+			}
+			if(!Enumerable.SequenceEqual(this.AvailableWords, w.AvailableWords))
+			{
+				return false;
+			}
+			if(!Enumerable.SequenceEqual(this.PartialWords, w.PartialWords))
+			{
+				return false;
+			}
+			if(!Enumerable.SequenceEqual(this.Slots, w.Slots))
+			{
+				return false;
+			}
+			return true;
+		}
+
 
 		internal static Workspace Generate(IEnumerable<string> words)
 		{
@@ -128,7 +180,7 @@ namespace solve_crozzle
 				{
 					_potentialScore = this.Score
 						+ this.Slots.Select(c => Scoring.Score(c.Letter)).Sum()
-						+ this.PartialWords.Count * 1000;
+						 + this.PartialWords.Count * 1000;
 				}
 				return _potentialScore.Value;
 			}

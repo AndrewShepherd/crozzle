@@ -20,6 +20,7 @@ namespace solve_crozzle
 		static string MountainsFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\9312.TXT";
 		static string ChristmasFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\8912.TXT";
 		static string TownsFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\9003.TXT";
+		static string AugustFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\20190814.TXT";
 
 		static async Task<List<string>> ExtractWords(string filePath)
 		{
@@ -59,6 +60,8 @@ namespace solve_crozzle
 			}
 		}
 
+
+
 		public static bool IsMatch<T>(T[] left, T[] right)
 		{
 			if (left.Length != right.Length)
@@ -71,7 +74,8 @@ namespace solve_crozzle
 			return true;
 		}
 
-		static IEnumerable<Workspace> SolveUsingQueue(IEnumerable<Workspace> startWorkspaces, int queueLength, int batchSize)
+		public enum OverflowPolicy {  SolveRecursively, Discard };
+		static IEnumerable<Workspace> SolveUsingQueue(IEnumerable<Workspace> startWorkspaces, int queueLength, int batchSize, OverflowPolicy overflowPolicy)
 		{
 			WorkspacePriorityQueue wpq = new WorkspacePriorityQueue(queueLength);
 			foreach (var workspace in startWorkspaces)
@@ -82,30 +86,36 @@ namespace solve_crozzle
 			while (!wpq.IsEmpty)
 			{
 				List<Workspace> wList = new List<Workspace>();
-				for (int i = 0; i < batchSize && !wpq.IsEmpty; ++i)
+				wList.Add(wpq.Pop());
+				while (wList.Count < batchSize && !wpq.IsEmpty)
 				{
-					wList.Add(wpq.Pop());
+					var poppedValue = wpq.Pop();
+					if (wList[wList.Count - 1].Equals(poppedValue))
+					{
+						int dummy = 3;
+					}
+					else
+					{
+						wList.Add(poppedValue);
+					}
 				}
 				foreach (var thisWorkspace in wList)
 				{
 					var nextSteps = thisWorkspace.GenerateNextSteps().ToList();
 					if (nextSteps.Any())
 					{
-						if(nextSteps.Count + wpq.Count < queueLength)
+						foreach (var ns in nextSteps)
 						{
-							wpq.AddRange(nextSteps);
-						}
-						else
-						{
-							foreach(
-								var solution in SolveRecursively(
-									nextSteps.OrderByDescending(
-										ns => ns.PotentialScore
-									)
-								)
-							)
+							if (ns.IsValid)
 							{
-								yield return solution;
+								wpq.Push(ns);
+							}
+							else
+							{
+								foreach (var nsChild in GetValidChildren(ns))
+								{
+									wpq.Push(nsChild);
+								}
 							}
 						}
 					}
@@ -185,20 +195,16 @@ namespace solve_crozzle
 			}
 		}
 
-		static void Main(string[] args)
+		static List<Workspace> GetClusteredWorkspaces(IEnumerable<string> words)
 		{
-			//var words = ExtractWords(HeavyOverlapFilePath).Result;
-			var words = ExtractWords(TownsFilePath).Result;
-			Workspace workspace = Workspace.Generate(words);
-
 			List<Workspace> workspaces = new List<Workspace>();
 			int c = 0;
 			var clustered = GetClusters(words).ToList();
 			var distinctClusters = new List<Workspace>();
 
-			foreach(var clusteredWorkspace in GetClusters(words))
+			foreach (var clusteredWorkspace in GetClusters(words))
 			{
-				if(!distinctClusters.Any(
+				if (!distinctClusters.Any(
 					dc => IsMatch(dc.Board.Values, clusteredWorkspace.Board.Values))
 				)
 				{
@@ -209,13 +215,27 @@ namespace solve_crozzle
 				}
 			}
 			Console.WriteLine($"Found {c} clusters");
+			return workspaces;
+		}
+
+
+		static void Main(string[] args)
+		{
+			//var words = ExtractWords(HeavyOverlapFilePath).Result;
+			var words = ExtractWords(AugustFilePath).Result;
+			Workspace workspace = Workspace.Generate(words);
+			var workspaces = new[]
+			{
+				workspace.PlaceWord(Direction.Down,"QUIZ", 0, 0),
+				workspace.PlaceWord(Direction.Across,"QUIZ", 0, 0),
+			};
+
 
 
 			ulong generatedSolutionsCount = 0;
 			var maxScore = 0;
 			DateTime timeStart = DateTime.Now;
-			foreach (var thisWorkspace in SolveUsingQueue(workspaces, 2000000, 8))
-			//foreach (var thisWorkspace in SolveRecursively(workspaces))
+			foreach (var thisWorkspace in SolveUsingQueue(workspaces, 2000000, 32, OverflowPolicy.Discard))
 			{
 				++generatedSolutionsCount;
 				if (thisWorkspace.Score > maxScore)

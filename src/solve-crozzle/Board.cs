@@ -13,7 +13,7 @@ namespace solve_crozzle
 
 
 		public Rectangle Rectangle;
-		public char[] Values;
+		public char[] Values = new char[0];
 
 		public override string ToString()
 		{
@@ -27,6 +27,13 @@ namespace solve_crozzle
 				}
 			}
 			return sb.ToString();
+		}
+
+		public override bool Equals(object obj)
+		{
+			return (obj is Board b)
+				&& b.Rectangle.Equals(this.Rectangle)
+				&& Enumerable.SequenceEqual(b.Values, this.Values);
 		}
 	}
 
@@ -127,9 +134,11 @@ namespace solve_crozzle
 
 			for (int i = 0; i < word.Length; ++i)
 			{
-				var c = direction == Direction.Down
-					? board.CharAt(new Location(location.X, location.Y + i))
-					: board.CharAt(new Location(location.X + i, location.Y));
+				
+				var l = direction == Direction.Down
+					? new Location(location.X, location.Y + i)
+					: new Location(location.X + i, location.Y);
+				var c = board.CharAt(l);
 				if (c != (char)0)
 				{
 					if (word[i] != c)
@@ -137,12 +146,11 @@ namespace solve_crozzle
 						return false;
 					}
 
+
 				}
 			}
 			return true;
 		}
-
-
 
 		public static Board ExpandSize(this Board board, Rectangle newRectangle)
 		{

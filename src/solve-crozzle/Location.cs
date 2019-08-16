@@ -18,5 +18,14 @@ namespace solve_crozzle
 
 		public override string ToString() =>
 			$"({X}, {Y})";
+
+		public override bool Equals(object obj)
+		{
+			if(object.ReferenceEquals(this, obj))
+			{
+				return true;
+			}
+			return (obj is Location l) && (l.X == X) && (l.Y == Y);
+		}
 	}
 }

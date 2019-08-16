@@ -67,8 +67,8 @@ namespace solve_crozzle
 		public static char CharAt(this Workspace workspace, Location location) =>
 			workspace.Board.CharAt(location);
 
-		public static bool CanPlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
-			=> workspace.Board.CanPlaceWord(direction, word, new Location(x, y));
+		public static bool CanPlaceWord(this Workspace workspace, Direction direction, string word, Location location)
+			=> workspace.Board.CanPlaceWord(direction, word, location);
 
 		public static Workspace ExpandSize(this Workspace workspace, Rectangle newRectangle)
 		{
@@ -135,6 +135,16 @@ namespace solve_crozzle
 							Index = sIndex
 						}
 					);
+					var location = newWorkspace.Board.Rectangle.CalculateLocation(i);
+					var matchingSlot = newWorkspace
+						.Slots
+						.FirstOrDefault(
+							s => s.Location.Equals(location)
+						);
+					if(matchingSlot != null)
+					{
+						newWorkspace.Slots = newWorkspace.Slots.Remove(matchingSlot);
+					}
 				}
 				else
 				{
@@ -218,7 +228,7 @@ namespace solve_crozzle
 					{
 						startLocation = new Location(location.X - index, location.Y);
 					}
-					if (workspace.CanPlaceWord(direction, candidateWord, startLocation.X, startLocation.Y))
+					if (workspace.CanPlaceWord(direction, candidateWord, startLocation))
 					{
 						yield return workspace.PlaceWord(direction, candidateWord, startLocation.X, startLocation.Y);
 					}
@@ -228,7 +238,143 @@ namespace solve_crozzle
 			}
 		}
 
-			public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
+		public class Strip
+		{
+			public char[] Characters;
+			public int StartAt;
+
+			public int SlotIndex { get; internal set; }
+		}
+
+		public static Strip GenerateStrip(this Workspace workspace, Slot slot)
+		{
+			var rectangle = workspace.Board.Rectangle;
+			long amountToBeAdded = slot.Direction == Direction.Across
+				? workspace.Board.MaxWidth - rectangle.Width
+				: workspace.Board.MaxHeight - rectangle.Height;
+			if (slot.Direction == Direction.Across)
+			{
+				int indexFirst = workspace.Board.Rectangle.Right - workspace.Board.MaxWidth + 1;
+				int indexLast = workspace.Board.Rectangle.Left + workspace.Board.MaxWidth - 1;
+				var length = indexLast - indexFirst + 1;
+				var characters = new char[length];
+				var slotIndex = slot.Location.X - indexFirst;
+				characters[0] = '*';
+				characters[characters.Length - 1] = '*';
+				characters[slotIndex] = slot.Letter;
+
+				for (int i = 1; i < (characters.Length - 1); ++i)
+				{
+					if (i == slotIndex)
+						continue;
+					var l = new Location(i + indexFirst, slot.Location.Y);
+					var c = workspace.Board.CharAt(l);
+					switch (c)
+					{
+						case '*':
+							characters[i] = c;
+							break;
+						case (char)0:
+							characters[i] = c;
+							break;
+						default:
+							if (
+								workspace
+									.Slots
+									.Where(s => s.Direction == slot.Direction)
+									.Where(s => s.Location.Equals(l))
+									.Any()
+							)
+							{
+								characters[i] = c;
+							}
+							else
+							{
+								characters[i] = '$';
+							}
+							break;
+					}
+				}
+				return new Strip
+				{
+					Characters = characters,
+					StartAt = indexFirst,
+					SlotIndex = slotIndex
+				};
+			}
+			else
+			{
+				int indexFirst = workspace.Board.Rectangle.Bottom - workspace.Board.MaxHeight + 1;
+				int indexLast = workspace.Board.Rectangle.Top + workspace.Board.MaxHeight - 1;
+				var length = indexLast - indexFirst + 1;
+				var characters = new char[length];
+				var slotIndex = slot.Location.Y - indexFirst;
+				characters[0] = '*';
+				characters[characters.Length-1] = '*';
+				characters[slotIndex] = slot.Letter;
+				for(int i = 1; i < (characters.Length-1); ++i)
+				{
+					if (i == slotIndex)
+						continue;
+					var l = new Location(slot.Location.X, indexFirst + i);
+					var c = workspace.Board.CharAt(l);
+					switch(c)
+					{
+						case '*':
+							characters[i] = c;
+							break;
+						case (char)0:
+							characters[i] = c;
+							break;
+						default:
+							if (
+								workspace
+									.Slots
+									.Where(s => s.Direction == slot.Direction)
+									.Where(s => s.Location.Equals(l))
+									.Any()
+							)
+							{
+								characters[i] = c;
+							}
+							else
+							{
+								characters[i] = '$';
+								++i;
+							}
+							break;
+					}
+				}
+				var strip = new Strip
+				{
+					Characters = characters,
+					StartAt = indexFirst,
+					SlotIndex = slotIndex
+				};
+
+
+				// Find the last dollar sign before the slotIndex
+				int indexOfFirstDollarBeforeSlotIndex = slotIndex - 1;
+				for (;
+					indexOfFirstDollarBeforeSlotIndex >= 0
+					&&
+					characters[indexOfFirstDollarBeforeSlotIndex] != '$';
+					--indexOfFirstDollarBeforeSlotIndex
+				);
+				if(indexOfFirstDollarBeforeSlotIndex != -1)
+				{
+					strip = new Strip
+					{
+						Characters = strip.Characters.Skip(indexOfFirstDollarBeforeSlotIndex + 1).ToArray(),
+						SlotIndex = strip.SlotIndex - (indexOfFirstDollarBeforeSlotIndex + 1),
+						StartAt = strip.StartAt + indexOfFirstDollarBeforeSlotIndex + 1
+					};
+				}
+				return strip;
+			}
+		}
+
+		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
 		{
 			if (workspace.PartialWords.Any())
 			{
@@ -251,16 +397,77 @@ namespace solve_crozzle
 				while (!workspace.Slots.IsEmpty)
 				{
 					workspace = workspace.PopSlot(out var slot);
-					foreach (
-						var solution in CoverFragment(
-							workspace,
-							new string(new[] { slot.Letter }),
-							slot.Location,
-							slot.Direction
-						)
-					)
+					var strip = workspace.GenerateStrip(slot);
+					var availableWords = workspace.ListAvailableMatchingWords($"{slot.Letter}");
+					foreach(var candidateWord in availableWords)
 					{
-						yield return solution;
+						var maxLength = (
+							slot.Direction == Direction.Across
+							? workspace.Board.MaxWidth 
+							: workspace.Board.MaxHeight
+						) - 2;
+						if (candidateWord.Length > maxLength)
+							continue;
+						for (
+							int index = candidateWord.IndexOf(slot.Letter, 0);
+							index != -1;
+							index = candidateWord.IndexOf(slot.Letter, index + 1)
+						)
+						{
+							var start = strip.SlotIndex - index;
+							if (start < 1)
+								continue;
+							var charBefore = strip.Characters[start - 1];
+							if (!((charBefore == 0) || (charBefore == '*')))
+								continue;
+							if (start + candidateWord.Length > (strip.Characters.Length-1))
+								continue;
+							var charAfter = strip.Characters[start + candidateWord.Length];
+							if (!((charAfter == 0) || (charAfter == '*')))
+								continue;
+							bool success = true;
+							for(
+								int cIndex = 0, sIndex=start;
+								cIndex < candidateWord.Length && success;
+								++cIndex, ++sIndex
+							)
+							{
+								if(strip.Characters[sIndex] == 0)
+								{
+									continue;
+								}
+								if(strip.Characters[sIndex] != candidateWord[cIndex])
+								{
+									success = false;
+								}
+							}
+							if(success)
+							{
+
+								Location l = slot.Direction == Direction.Across
+									? new Location(strip.StartAt + start, slot.Location.Y)
+									: new Location(slot.Location.X, strip.StartAt + start);
+								//bool canPlaceWord = workspace.CanPlaceWord(
+								//	slot.Direction,
+								//	candidateWord,
+								//	l
+								//);
+								//if(!canPlaceWord)
+								//{
+								//	int dummy = 3;
+								//}
+
+								
+								var child = workspace.PlaceWord(
+									slot.Direction,
+									candidateWord, 
+									l.X, 
+									l.Y
+								);
+								yield return child;
+
+							}
+						}
 					}
 				}
 			}

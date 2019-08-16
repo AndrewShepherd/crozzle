@@ -12,6 +12,11 @@ namespace solve_crozzle
 		public readonly int Width;
 		public readonly int Height;
 
+		public int Left => TopLeft.X;
+		public int Top => TopLeft.Y;
+		public int Right => TopLeft.X + Width - 1;
+		public int Bottom => TopLeft.Y + Height - 1;
+
 		public Rectangle(Location topLeft, int width, int height)
 		{
 			TopLeft = topLeft;
