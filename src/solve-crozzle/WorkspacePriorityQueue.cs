@@ -30,33 +30,96 @@ namespace solve_crozzle
 			return w1.GetHashCode().CompareTo(w2.GetHashCode());
 		}
 
-		public Workspace Pop()
+		private void SwapUp(int i)
 		{
-			var result = _workspaces[0];
+			if (i == 0)
+				return;
+			var j = (i - 1) / 2;
+			switch(Compare(_workspaces[j], _workspaces[i]))
+			{
+				case 1:
+					(_workspaces[i], _workspaces[j]) = (_workspaces[j], _workspaces[i]);
+					SwapUp(j);
+					break;
+				case -1:
+					break;
+				default:
+					if(_workspaces[i].Equals(_workspaces[j]))
+					{
+						RemoveElementAt(i);
+					}
+					break;
+			}
+		}
+
+		private void SwapDown(int i)
+		{
+			if((i*2+1) >= _length)
+			{
+				return;
+			}
+			(int j, int k) = ((i * 2) + 1, (i * 2) + 2);
+			int l;
+			switch (Compare(_workspaces[j], _workspaces[k]))
+			{
+				case -1:
+					l = j;
+					break;
+				case 1:
+					l = k;
+					break;
+				default:
+					if(_workspaces[j].Equals(_workspaces[k]))
+					{
+						RemoveElementAt(k);
+						SwapDown(i);
+						return;
+					}
+					else
+					{
+						l = k;
+					}
+					break;
+			}
+			switch (Compare(_workspaces[l], _workspaces[i]))
+			{
+				case -1:
+					(_workspaces[i], _workspaces[l], i) = (_workspaces[l], _workspaces[i], l);
+					SwapDown(l);
+					break;
+				case 0:
+					bool areEqual = (_workspaces[i].Equals(_workspaces[l]));
+					if (areEqual)
+					{
+						// They are equal! what do we do?
+						RemoveElementAt(l);
+						return;
+					}
+					break;
+				default:
+					return;
+			}
+
+		}
+
+		private void RemoveElementAt(int index)
+		{
 			(
-				_workspaces[0],
+				_workspaces[index],
 				_workspaces[_length - 1],
 				_length
 			) = (
 				_workspaces[_length - 1],
 				null,
-				--_length
+				_length - 1
 			);
-	
-			int i = 0;
-			while ((i*2+1) < _length)
-			{
-				(int j, int k) = ((i * 2) + 1, (i * 2) + 2);
-				int l = Compare(_workspaces[j], _workspaces[k]) < 0 ? j : k;
-				if (Compare(_workspaces[l], _workspaces[i]) >= 0)
-				{
-					break;
-				}
-				else
-				{
-					(_workspaces[i], _workspaces[l], i) = (_workspaces[l], _workspaces[i], l);
-				}
-			}
+			SwapDown(index);
+		}
+
+		public Workspace Pop()
+		{
+			var result = _workspaces[0];
+			RemoveElementAt(0);
 			return result;
 		}
 
@@ -70,19 +133,14 @@ namespace solve_crozzle
 			else
 			{
 				i = _workspaces.Length - 1;
-				if(Compare(_workspaces[i], workspace) < 0)
+				if (Compare(_workspaces[i], workspace) < 0)
+				{
+					// Going off the edge here
 					return;
+				}
 			}
 			_workspaces[i] = workspace;
-			while(i != 0)
-			{
-				var j = (i - 1) / 2;
-				if (j >= _workspaces.Length)
-					return;
-				if(Compare(_workspaces[j], workspace) < 0)
-					return;
-				(_workspaces[i], _workspaces[j], i) = (_workspaces[j], _workspaces[i], j);
-			}			
+			SwapUp(i);		
 		}
 
 		public void AddRange(IEnumerable<Workspace> values)

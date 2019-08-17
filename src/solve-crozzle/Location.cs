@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace solve_crozzle
 {
-	public class Location
+	public class Location : IComparable<Location>
 	{
 		public readonly int X;
 		public readonly int Y;
@@ -28,6 +28,11 @@ namespace solve_crozzle
 
 		public override int GetHashCode() =>
 			(X << 16) ^ Y;
+
+		public int CompareTo(Location other) =>
+			X == other.X
+			? Y.CompareTo(other.Y)
+			: X.CompareTo(other.X);
 
 		public static Vector operator -(Location l, Location r) =>
 			new Vector

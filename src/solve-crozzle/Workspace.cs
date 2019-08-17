@@ -9,7 +9,7 @@ namespace solve_crozzle
 {
 	public enum Direction {  Across, Down };
 
-	public class Slot
+	public class Slot : IComparable<Slot>
 	{
 		private readonly Direction _direction;
 		private readonly char _letter;
@@ -36,7 +36,7 @@ namespace solve_crozzle
 
 		public override int GetHashCode() =>
 			Direction.GetHashCode()
-				^ Letter.GetHashCode()
+				^ ((int)Letter << 4)
 				^ Location.GetHashCode();
 
 		public Slot Move(Vector v) =>
@@ -46,6 +46,21 @@ namespace solve_crozzle
 				this.Letter,
 				this.Location + v
 			);
+
+		public int CompareTo(Slot other)
+		{
+			int locationComparison = this.Location.CompareTo(other.Location);
+			if(locationComparison != 0)
+			{
+				return locationComparison;
+			}
+			var directionComparison = this.Direction.CompareTo(other.Direction);
+			if(directionComparison != 0)
+			{
+				return directionComparison;
+			}
+			return this.Letter.CompareTo(other.Letter);
+		}
 	}
 
 	public class PartialWord
@@ -114,10 +129,6 @@ namespace solve_crozzle
 			{
 				return false;
 			}
-			if(!(this.Board.Equals(w.Board)))
-			{
-				return false;
-			}
 			if(!Enumerable.SequenceEqual(this.AvailableWords, w.AvailableWords))
 			{
 				return false;
@@ -126,7 +137,14 @@ namespace solve_crozzle
 			{
 				return false;
 			}
-			if(!Enumerable.SequenceEqual(this.Slots, w.Slots))
+			if(!Enumerable.SequenceEqual(
+				this.Slots.OrderBy(_ => _), 
+				w.Slots.OrderBy(_ => _)
+			))
+			{
+				return false;
+			}
+			if (!(this.Board.Equals(w.Board)))
 			{
 				return false;
 			}
@@ -143,7 +161,8 @@ namespace solve_crozzle
 			Score.GetHashCode()
 				^ Board.GetHashCode()
 				^ GenerateHash(AvailableWords)
-				^ GenerateHash(PartialWords);
+				^ GenerateHash(PartialWords)
+				^ GenerateHash(Slots);
 
 		private readonly Lazy<int> _lazyHashCode;
 		public override int GetHashCode() => _lazyHashCode.Value;

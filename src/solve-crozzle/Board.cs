@@ -29,11 +29,29 @@ namespace solve_crozzle
 			return sb.ToString();
 		}
 
+
+
+		private static bool AreEqual(char[] v1, char[] v2)
+		{
+			if(v1.Length != v2.Length)
+			{
+				return false;
+			}
+			for(int i = 0; i < v1.Length; ++i)
+			{				
+				if(v1[i] != v2[i])
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
 		public override bool Equals(object obj)
 		{
 			return (obj is Board b)
 				&& b.Rectangle.Equals(this.Rectangle)
-				&& Enumerable.SequenceEqual(b.Values, this.Values);
+				&& AreEqual(b.Values, this.Values);
 		}
 
 		public override int GetHashCode()

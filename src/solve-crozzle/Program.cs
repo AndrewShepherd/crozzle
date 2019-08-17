@@ -224,13 +224,9 @@ namespace solve_crozzle
 			//var words = ExtractWords(HeavyOverlapFilePath).Result;
 			var words = ExtractWords(AugustFilePath).Result;
 			Workspace workspace = Workspace.Generate(words);
-			var workspaces = new[]
-			{
-				workspace.PlaceWord(Direction.Down,"QUIZ", 0, 0),
-				workspace.PlaceWord(Direction.Across,"QUIZ", 0, 0),
-			};
-
-
+			var workspaces = words
+				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
+				.ToArray();
 
 			ulong generatedSolutionsCount = 0;
 			var maxScore = 0;
