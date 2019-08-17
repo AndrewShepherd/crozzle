@@ -22,6 +22,11 @@ namespace solve_crozzle
 			}
 			return Direction.Equals(s.Direction) && Letter.Equals(s.Letter) && Location.Equals(s.Location);
 		}
+
+		public override int GetHashCode() =>
+			Direction.GetHashCode()
+				^ Letter.GetHashCode()
+				^ Location.GetHashCode();
 	}
 
 	public class PartialWord
@@ -39,6 +44,10 @@ namespace solve_crozzle
 				&& this.Value.Equals(pw.Value)
 				&& this.Rectangle.Equals(pw.Rectangle);
 		}
+		public override int GetHashCode() =>
+			Direction.GetHashCode()
+			^ Value?.GetHashCode() ?? 0
+			^ Rectangle?.GetHashCode() ?? 0;
 	}
 
 	public class Intersection
@@ -58,6 +67,11 @@ namespace solve_crozzle
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
 		public ImmutableList<PartialWord> PartialWords = ImmutableList<PartialWord>.Empty;
+
+		public Workspace()
+		{
+			_lazyHashCode = new Lazy<int>(() => this.GenerateHashCode());
+		}
 
 		public override bool Equals(object obj)
 		{
@@ -91,6 +105,21 @@ namespace solve_crozzle
 			}
 			return true;
 		}
+
+		static int GenerateHash<T>(IEnumerable<T> t) =>
+			t.Aggregate(
+				0,
+				(h, item) => h ^ item.GetHashCode()
+			);
+
+		private int GenerateHashCode() =>
+			Score.GetHashCode()
+				^ Board.GetHashCode()
+				^ GenerateHash(AvailableWords)
+				^ GenerateHash(PartialWords);
+
+		private readonly Lazy<int> _lazyHashCode;
+		public override int GetHashCode() => _lazyHashCode.Value;
 
 
 		internal static Workspace Generate(IEnumerable<string> words)
