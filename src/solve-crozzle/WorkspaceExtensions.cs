@@ -185,11 +185,11 @@ namespace solve_crozzle
 							{
 								newWorkspace.Slots = newWorkspace.Slots.Add(
 								new Slot
-									{
-										Direction = direction == Direction.Down ? Direction.Across : Direction.Down,
-										Letter = word[sIndex],
-										Location = thisLocation
-									}
+									(
+										direction == Direction.Down ? Direction.Across : Direction.Down,
+										word[sIndex],
+										thisLocation
+									)
 								);
 							}
 						}
@@ -388,7 +388,7 @@ namespace solve_crozzle
 					)
 				)
 				{
-					yield return solution;
+					yield return solution.Normalise();
 				}
 				yield break;
 			}
@@ -464,7 +464,7 @@ namespace solve_crozzle
 									l.X, 
 									l.Y
 								);
-								yield return child;
+								yield return child.Normalise();
 
 							}
 						}

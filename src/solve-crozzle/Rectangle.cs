@@ -120,5 +120,13 @@ namespace solve_crozzle
 				return false;
 			return true;
 		}
+
+		public static Rectangle Move(this Rectangle r, Vector v) =>
+			new Rectangle
+			(
+				r.TopLeft + v,
+				r.Width,
+				r.Height
+			);
 	}
 }

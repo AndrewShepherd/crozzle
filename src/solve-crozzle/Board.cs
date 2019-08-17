@@ -51,6 +51,15 @@ namespace solve_crozzle
 			}
 			return hash;
 		}
+
+		public Board Move(Vector v) =>
+			new Board
+			{
+				Rectangle = this.Rectangle.Move(v),
+				Values = this.Values,
+				MaxWidth = this.MaxWidth,
+				MaxHeight = this.MaxHeight
+			};
 	}
 
 	public static class BoardExtensions

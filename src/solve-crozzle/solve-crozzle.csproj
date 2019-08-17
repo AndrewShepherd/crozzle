@@ -61,6 +61,7 @@
     <Compile Include="Rectangle.cs" />
     <Compile Include="Scoring.cs" />
     <Compile Include="Tests\TestWorkspace.cs" />
+    <Compile Include="Vector.cs" />
     <Compile Include="Workspace.cs" />
     <Compile Include="WorkspaceExtensions.cs" />
     <Compile Include="WorkspacePriorityQueue.cs" />

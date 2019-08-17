@@ -19,18 +19,28 @@ namespace solve_crozzle
 		public override string ToString() =>
 			$"({X}, {Y})";
 
-		public override bool Equals(object obj)
-		{
-			if(object.ReferenceEquals(this, obj))
-			{
-				return true;
-			}
-			return (obj is Location l) && (l.X == X) && (l.Y == Y);
-		}
+		public override bool Equals(object obj) =>
+			object.ReferenceEquals(this, obj)
+			||
+			(
+				(obj is Location l) && (l.X == X) && (l.Y == Y)
+			);
 
-		public override int GetHashCode()
-		{
-			return (X << 16) ^ Y;
-		}
+		public override int GetHashCode() =>
+			(X << 16) ^ Y;
+
+		public static Vector operator -(Location l, Location r) =>
+			new Vector
+			(
+				l.X - r.X,
+				l.Y - r.Y
+			);
+
+		public static Location operator +(Location l, Vector v) =>
+			new Location
+			(
+				l.X + v.Dx,
+				l.Y + v.Dy
+			);
 	}
 }

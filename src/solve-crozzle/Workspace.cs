@@ -11,9 +11,20 @@ namespace solve_crozzle
 
 	public class Slot
 	{
-		public Direction Direction;
-		public char Letter;
-		public Location Location;
+		private readonly Direction _direction;
+		private readonly char _letter;
+		private readonly Location _location;
+		public Direction Direction => _direction;
+		public char Letter => _letter;
+		public Location Location => _location;
+
+		public Slot(Direction direction, char letter, Location location)
+		{
+			_direction = direction;
+			_letter = letter;
+			_location = location;
+		}
+
 		public override bool Equals(object obj)
 		{
 			if(!(obj is Slot s))
@@ -27,6 +38,14 @@ namespace solve_crozzle
 			Direction.GetHashCode()
 				^ Letter.GetHashCode()
 				^ Location.GetHashCode();
+
+		public Slot Move(Vector v) =>
+			new Slot
+			(
+				this.Direction,
+				this.Letter,
+				this.Location + v
+			);
 	}
 
 	public class PartialWord
@@ -36,7 +55,7 @@ namespace solve_crozzle
 		public Rectangle Rectangle;
 		public override bool Equals(object obj)
 		{
-			if(!(obj is PartialWord pw))
+			if (!(obj is PartialWord pw))
 			{
 				return false;
 			}
@@ -48,6 +67,14 @@ namespace solve_crozzle
 			Direction.GetHashCode()
 			^ Value?.GetHashCode() ?? 0
 			^ Rectangle?.GetHashCode() ?? 0;
+
+		public PartialWord Move(Vector v) =>
+			new PartialWord
+			{
+				Direction = this.Direction,
+				Rectangle = this.Rectangle.Move(v),
+				Value = this.Value
+			};
 	}
 
 	public class Intersection
@@ -213,6 +240,35 @@ namespace solve_crozzle
 				}
 				return _potentialScore.Value;
 			}
+		}
+
+		private static Location Zero = new Location(0, 0);
+
+		public Workspace Normalise()
+		{
+			var topLeft = this.Board.Rectangle.TopLeft;
+			if(topLeft.Equals(Zero))
+			{
+				return this;
+			}
+			var diff = Zero - topLeft;
+			return new Workspace
+			{
+				AvailableWords = this.AvailableWords,
+				Board = this.Board.Move(diff),
+				IncludedWords = this.IncludedWords,
+				Intersections = this.Intersections,
+				PartialWords = ImmutableList<PartialWord>
+					.Empty
+					.AddRange(this.PartialWords.Select(pw => pw.Move(diff))),
+				Score = this.Score,
+				Slots = ImmutableList<Slot>
+					.Empty
+					.AddRange(this.Slots.Select(slot => slot.Move(diff))),
+				WordLookup = this.WordLookup,
+				_potentialScore = this._potentialScore
+			};
+
 		}
 			
 	}
