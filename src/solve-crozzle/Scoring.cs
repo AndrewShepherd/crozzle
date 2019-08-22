@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace solve_crozzle
+﻿namespace solve_crozzle
 {
+	using System.Collections.Generic;
+	using System.Linq;
+
 	static class Scoring
 	{
 		private static IDictionary<char, int> GenerateIntersectionScores()

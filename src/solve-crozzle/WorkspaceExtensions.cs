@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace solve_crozzle
+﻿namespace solve_crozzle
 {
+	using System.Collections.Generic;
+	using System.Linq;
+
 	public static class WorkspaceExtensions
 	{
 		public static Workspace Clone(this Workspace workspace) =>
@@ -89,7 +85,6 @@ namespace solve_crozzle
 			newWorkspace.AvailableWords = newWorkspace.AvailableWords.Remove(word);
 			newWorkspace.IncludedWords = newWorkspace.IncludedWords.Add(word);
 			newWorkspace.Score = workspace.Score + Scoring.ScorePerWord;
-
 			int advanceIncrement = direction == Direction.Across
 				? 1
 				: newWorkspace.Board.Rectangle.Width;
@@ -152,7 +147,7 @@ namespace solve_crozzle
 
 					var thisLocation = newWorkspace.Board.Rectangle.CalculateLocation(i);
 					
-					PartialWord partialWord = newWorkspace.Board.GetWordAt(
+					PartialWord partialWord = newWorkspace.Board.GetContiguousTextAt(
 						direction == Direction.Across ? Direction.Down : Direction.Across,
 						thisLocation
 					);
@@ -171,6 +166,14 @@ namespace solve_crozzle
 						newWorkspace.PartialWords = newWorkspace.PartialWords.Add(
 							partialWord
 						);
+						newWorkspace.Slots = newWorkspace.Slots.Add(
+							new Slot
+								(
+									word[sIndex],
+								direction == Direction.Down ? Direction.Across : Direction.Down,
+								thisLocation
+								)
+							);
 					}
 					else
 					{
@@ -186,9 +189,9 @@ namespace solve_crozzle
 								newWorkspace.Slots = newWorkspace.Slots.Add(
 								new Slot
 									(
-										direction == Direction.Down ? Direction.Across : Direction.Down,
 										word[sIndex],
-										thisLocation
+									direction == Direction.Down ? Direction.Across : Direction.Down,
+									thisLocation
 									)
 								);
 							}
@@ -198,8 +201,12 @@ namespace solve_crozzle
 
 				}
 			}
-			return newWorkspace;
-			
+			newWorkspace.Board = newWorkspace.Board.PlaceWord(
+				direction,
+				new Location(x, y),
+				word
+			);
+			return newWorkspace;			
 		}
 
 		public static IEnumerable<string> ListAvailableMatchingWords(this Workspace workspace, string word)
@@ -230,7 +237,26 @@ namespace solve_crozzle
 					}
 					if (workspace.CanPlaceWord(direction, candidateWord, startLocation))
 					{
-						yield return workspace.PlaceWord(direction, candidateWord, startLocation.X, startLocation.Y);
+						var newWorkspace = workspace.PlaceWord(direction, candidateWord, startLocation.X, startLocation.Y);
+						// Quick check of the partial words
+						if(newWorkspace
+							.PartialWords
+							.All(
+								pw => 
+									newWorkspace.WordLookup.TryGetValue(pw.Value, out var matchingWords)
+									&& matchingWords.All(
+										matchingWord => 
+											newWorkspace.AvailableWords.Contains(matchingWord)
+									)
+							)
+						)
+						{
+							yield return newWorkspace;
+						}
+						else
+						{
+							int dummy = 3;
+						}
 					}
 					index = candidateWord.IndexOf(fragment, index + 1);
 				}
@@ -397,9 +423,14 @@ namespace solve_crozzle
 				while (!workspace.Slots.IsEmpty)
 				{
 					workspace = workspace.PopSlot(out var slot);
-					var strip = workspace.GenerateStrip(slot);
 					var availableWords = workspace.ListAvailableMatchingWords($"{slot.Letter}");
-					foreach(var candidateWord in availableWords)
+					if (!(availableWords.Any()))
+					{
+						continue;
+					}
+					var strip = workspace.GenerateStrip(slot);
+
+					foreach (var candidateWord in availableWords)
 					{
 						var maxLength = (
 							slot.Direction == Direction.Across

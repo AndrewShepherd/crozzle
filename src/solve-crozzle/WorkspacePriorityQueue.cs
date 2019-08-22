@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace solve_crozzle
+﻿namespace solve_crozzle
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+
 	class WorkspacePriorityQueue
 	{
 		readonly Workspace[] _workspaces; 
@@ -14,6 +12,9 @@ namespace solve_crozzle
 		{
 			_workspaces = new Workspace[queueLength];
 		}
+
+		public override string ToString() =>
+			$"{_length} elements. TopElement:{_workspaces[0]?.ToString() ?? "None"}";
 
 		public int Count => _length;
 
@@ -26,6 +27,14 @@ namespace solve_crozzle
 			if((w2?.PotentialScore ?? 0) > (w1?.PotentialScore ?? 0))
 			{
 				return 1;
+			}
+			if((w1?.IncludedWords?.Count() ?? 0) > (w2?.IncludedWords?.Count() ?? 0))
+			{
+				return -1;
+			}
+			if ((w2?.IncludedWords?.Count() ?? 0) > (w1?.IncludedWords?.Count() ?? 0))
+			{
+				return -1;
 			}
 			return w1.GetHashCode().CompareTo(w2.GetHashCode());
 		}
@@ -123,8 +132,31 @@ namespace solve_crozzle
 			return result;
 		}
 
+		private void PurgeDuplicates()
+		{
+			Array.Sort(_workspaces, new Comparison<Workspace>(Compare));
+			int i = 0;
+			for(int j=1; j < _workspaces.Length; ++j)
+			{
+				if(!(_workspaces[j].Equals(_workspaces[i])))
+				{
+					++i;
+					_workspaces[i] = _workspaces[j];
+				}
+				else
+				{
+					int dummy = 3;
+				}
+			}
+			this._length = i+1;
+		}
+
 		public void Push(Workspace workspace)
 		{
+			if (_length == _workspaces.Length)
+			{
+				PurgeDuplicates();
+			}
 			int i;
 			if(_length < _workspaces.Length)
 			{

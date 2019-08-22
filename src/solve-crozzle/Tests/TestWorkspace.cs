@@ -37,6 +37,18 @@ namespace solve_crozzle.Tests
 		}
 
 		[Test]
+		public void TestOneWordEqual()
+		{
+			var workspace = Workspace.Generate(new[] { "Apple" });
+			var w1 = workspace.PlaceWord(Direction.Across, "Apple", 0, 0);
+			var w2 = workspace.PlaceWord(Direction.Across, "Apple", 0, 0);
+			Assert.That(w1.GetHashCode(), Is.EqualTo(w2.GetHashCode()));
+			Assert.That(w1, Is.EqualTo(w2));
+
+
+		}
+
+		[Test]
 		public void GenerateStripBasic()
 		{
 			var workspace = Workspace.Generate(new[] { "APPLE", "BANANA" });
@@ -55,16 +67,43 @@ namespace solve_crozzle.Tests
 		public void TestDetectAdjacencies()
 		{
 			var workspace = Workspace.Generate(new[] { "A", "B", "CAB" });
-			workspace = workspace.PlaceWord(Direction.Across, "A", 3, 3);
-			workspace = workspace.PlaceWord(Direction.Across, "B", 3, 4);
-			Assert.That(workspace.PartialWords.Count, Is.EqualTo(1));
-			var partialWord = workspace.PartialWords.First();
+			var workspaceOne = workspace.PlaceWord(Direction.Across, "A", 3, 3);
+			var workspaceTwo = workspaceOne.PlaceWord(Direction.Across, "B", 3, 4);
+			Assert.That(workspaceTwo.PartialWords.Count, Is.EqualTo(1));
+			var partialWord = workspaceTwo.PartialWords.First();
 			Assert.That(partialWord.Value, Is.EqualTo("AB"));
 			Assert.That(partialWord.Direction, Is.EqualTo(Direction.Down));
 			Assert.That(partialWord.Rectangle.TopLeft.X, Is.EqualTo(3));
 			Assert.That(partialWord.Rectangle.TopLeft.Y, Is.EqualTo(3));
-			var nextSteps = workspace.GenerateNextSteps().ToList();
+			var nextSteps = workspaceTwo.GenerateNextSteps().ToList();
 			Assert.That(nextSteps, Has.Count.EqualTo(1));
+		}
+
+		[Test]
+		public void TwoWordEquals()
+		{
+			var workspace = Workspace.Generate(new[] { "A", "B", "CAB" });
+			var w1 = workspace.PlaceWord(Direction.Across, "A", 3, 3)
+				.PlaceWord(Direction.Across, "B", 3, 4)
+				.Normalise();
+			var w2 = workspace
+				.PlaceWord(Direction.Across, "B", 3, 4)
+				.PlaceWord(Direction.Across, "A", 3, 3)
+				.Normalise();
+			Assert.That(
+				Workspace.GenerateHash(w1.AvailableWords),
+				Is.EqualTo(Workspace.GenerateHash(w2.AvailableWords))
+			);
+			Assert.That(
+				Workspace.GenerateHash(w1.PartialWords),
+				Is.EqualTo(Workspace.GenerateHash(w2.PartialWords))
+			);
+			Assert.That(
+				Workspace.GenerateHash(w1.Slots),
+				Is.EqualTo(Workspace.GenerateHash(w2.Slots))
+			);
+			Assert.That(w1.GetHashCode(), Is.EqualTo(w2.GetHashCode()));
+			Assert.That(w1, Is.EqualTo(w2));
 		}
 
 		[Test]

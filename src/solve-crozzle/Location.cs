@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace solve_crozzle
+﻿namespace solve_crozzle
 {
+	using System;
+
 	public class Location : IComparable<Location>
 	{
 		public readonly int X;
@@ -27,7 +23,7 @@ namespace solve_crozzle
 			);
 
 		public override int GetHashCode() =>
-			(X << 16) ^ Y;
+			(X * 23 + Y) | (X * 27 + Y) << 17;
 
 		public int CompareTo(Location other) =>
 			X == other.X

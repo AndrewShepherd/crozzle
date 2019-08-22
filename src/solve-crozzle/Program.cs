@@ -9,11 +9,6 @@ namespace solve_crozzle
 {
 	class Program
 	{
-
-
-
-
-
 		static string DefaultFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\8803.txt";
 		static string WinterFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\8908.txt";
 		static string HeavyOverlapFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\heavyoverlap.TXT";
@@ -90,15 +85,21 @@ namespace solve_crozzle
 				while (wList.Count < batchSize && !wpq.IsEmpty)
 				{
 					var poppedValue = wpq.Pop();
-					if (wList[wList.Count - 1].Equals(poppedValue))
+					var lastValue = wList[wList.Count - 1];
+					if(lastValue.GetHashCode() == poppedValue.GetHashCode())
 					{
-						int dummy = 3;
+						if(lastValue.Equals(poppedValue))
+						{
+							continue;
+						}
+						else
+						{
+							int dummy = 3;
+						}
 					}
-					else
-					{
-						wList.Add(poppedValue);
-					}
+					wList.Add(poppedValue);
 				}
+				List<Workspace> childWorkspaces = new List<Workspace>();
 				foreach (var thisWorkspace in wList)
 				{
 					var nextSteps = thisWorkspace.GenerateNextSteps().ToList();
@@ -106,15 +107,17 @@ namespace solve_crozzle
 					{
 						foreach (var ns in nextSteps)
 						{
+							//childWorkspaces.Add(ns);
+							
 							if (ns.IsValid)
 							{
-								wpq.Push(ns);
+								childWorkspaces.Add(ns);
 							}
 							else
 							{
 								foreach (var nsChild in GetValidChildren(ns))
 								{
-									wpq.Push(nsChild);
+									childWorkspaces.Add(nsChild);
 								}
 							}
 						}
@@ -127,6 +130,7 @@ namespace solve_crozzle
 						}
 					}
 				}
+				wpq.AddRange(childWorkspaces.Distinct());
 			}
 		}
 
@@ -231,7 +235,12 @@ namespace solve_crozzle
 			ulong generatedSolutionsCount = 0;
 			var maxScore = 0;
 			DateTime timeStart = DateTime.Now;
-			foreach (var thisWorkspace in SolveUsingQueue(workspaces, 2000000, 32, OverflowPolicy.Discard))
+			foreach (var thisWorkspace in SolveUsingQueue(
+				workspaces,
+				10000000, 
+				128, 
+				OverflowPolicy.Discard
+			))
 			{
 				++generatedSolutionsCount;
 				if (thisWorkspace.Score > maxScore)

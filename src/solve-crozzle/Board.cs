@@ -1,19 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace solve_crozzle
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Collections.Immutable;
+	using System.Linq;
+	using System.Text;
+
 	public class Board
 	{
 		public int MaxWidth = 17;
 		public int MaxHeight = 12;
-
-
 		public Rectangle Rectangle;
-		public char[] Values = new char[0];
+		public ImmutableHashSet<WordPlacement> WordPlacements = ImmutableHashSet<WordPlacement>.Empty;
+
+		public Board()
+		{
+			 this._values = new Lazy<char[]>(GenerateValues);
+		}
+
+		private char[] GenerateValues()
+		{
+			char[] values = new char[this.Rectangle.Area];
+			Func<int, int> moveUp = n => n - +this.Rectangle.Width,
+				moveDown = n => n + this.Rectangle.Width,
+				moveLeft = n => n - 1,
+				moveRight = n => n + 1;
+			foreach(var wordplacement in this.WordPlacements)
+			{
+				(Func<int, int> forward, Func<int, int> back) =
+					wordplacement.Direction == Direction.Across
+					? (moveRight, moveLeft)
+					: (moveDown, moveUp);
+				int gridLocation = this.Rectangle.IndexOf(wordplacement.Location);
+				values[back(gridLocation)] = '*';
+				for(
+					int i = 0; i < wordplacement.Word.Length; 
+					++i,
+					gridLocation = forward(gridLocation)
+				)
+				{
+					values[gridLocation] = wordplacement.Word[i];
+				}
+				values[gridLocation] = '*';
+			}
+			return values;
+		}
+
+		private readonly Lazy<char[]> _values;
+
+		public char[] Values => _values.Value;
 
 		public override string ToString()
 		{
@@ -28,8 +64,6 @@ namespace solve_crozzle
 			}
 			return sb.ToString();
 		}
-
-
 
 		private static bool AreEqual(char[] v1, char[] v2)
 		{
@@ -51,21 +85,16 @@ namespace solve_crozzle
 		{
 			return (obj is Board b)
 				&& b.Rectangle.Equals(this.Rectangle)
-				&& AreEqual(b.Values, this.Values);
+				&& b.WordPlacements.SetEquals(this.WordPlacements);
 		}
 
 		public override int GetHashCode()
 		{
 			var hash = Rectangle.GetHashCode();
-			for (
-				int i = 0,
-				shift = 0;
-				i < Values.Length;
-				++i,
-				shift = (shift+8)%32
-			)
+			int i = 0;
+			foreach(var wp in this.WordPlacements.OrderBy(wp => wp.Location))
 			{
-				hash ^= (Values[i] << shift);
+				hash ^= wp.GetHashCode().RotateLeft((++i)%32);
 			}
 			return hash;
 		}
@@ -74,7 +103,12 @@ namespace solve_crozzle
 			new Board
 			{
 				Rectangle = this.Rectangle.Move(v),
-				Values = this.Values,
+				WordPlacements = ImmutableHashSet<WordPlacement>.Empty
+					.Union(
+						WordPlacements.Select(
+							wp => wp.Move(v)
+						)
+					),
 				MaxWidth = this.MaxWidth,
 				MaxHeight = this.MaxHeight
 			};
@@ -124,9 +158,7 @@ namespace solve_crozzle
 		public static Func<Location, Location> MoveDown =>
 			Move(0, 1);
 
-
-
-		public static PartialWord GetWordAt(this Board board, Direction direction, Location location)
+		public static PartialWord GetContiguousTextAt(this Board board, Direction direction, Location location)
 		{
 			(var back, var forward) = direction == Direction.Across
 				? (MoveLeft, MoveRight)
@@ -152,6 +184,21 @@ namespace solve_crozzle
 				Rectangle = new Rectangle(start, end)
 			};
 		}
+
+		public static Board PlaceWord(this Board board, Direction direction, Location location, string word) =>
+			new Board
+			{
+				MaxHeight = board.MaxHeight,
+				MaxWidth = board.MaxWidth,
+				Rectangle = board.Rectangle,
+				WordPlacements = board.WordPlacements.Add(
+					new WordPlacement(
+						direction,
+						location,
+						word
+					)
+				)
+			};
 
 		public static bool CanPlaceWord(this Board board, Direction direction, string word, Location location)
 		{
@@ -195,44 +242,13 @@ namespace solve_crozzle
 			return true;
 		}
 
-		public static Board ExpandSize(this Board board, Rectangle newRectangle)
-		{
-			var currentRectangle = board.Rectangle;
-			var rectangle = currentRectangle.Union(newRectangle);
-			var newArray = new char[rectangle.Width * rectangle.Height];
-			if (currentRectangle.Equals(rectangle))
+		public static Board ExpandSize(this Board board, Rectangle newRectangle) =>
+			new Board
 			{
-				Array.Copy(
-					board.Values,
-					newArray,
-					newArray.Length
-				);
-			}
-			else
-			{
-				var originalLocation = currentRectangle.CalculateLocation(0);
-				var destIndex = rectangle.IndexOf(originalLocation);
-				for (
-					int sourceIndex = 0;
-					sourceIndex < board.Values.Length;
-					sourceIndex += currentRectangle.Width, destIndex += rectangle.Width
-				)
-				{
-					Array.Copy(
-						board.Values,
-						sourceIndex,
-						newArray,
-						destIndex,
-						currentRectangle.Width
-					);
-				}
-			}
-			return new Board
-			{
-				Rectangle = rectangle,
-				Values = newArray
+				MaxHeight = board.MaxHeight,
+				MaxWidth = board.MaxWidth,
+				WordPlacements = board.WordPlacements,
+				Rectangle = board.Rectangle.Union(newRectangle)
 			};
-
-		}
 	}
 }

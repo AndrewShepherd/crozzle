@@ -1,97 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace solve_crozzle
+﻿namespace solve_crozzle
 {
-	public enum Direction {  Across, Down };
-
-	public class Slot : IComparable<Slot>
-	{
-		private readonly Direction _direction;
-		private readonly char _letter;
-		private readonly Location _location;
-		public Direction Direction => _direction;
-		public char Letter => _letter;
-		public Location Location => _location;
-
-		public Slot(Direction direction, char letter, Location location)
-		{
-			_direction = direction;
-			_letter = letter;
-			_location = location;
-		}
-
-		public override bool Equals(object obj)
-		{
-			if(!(obj is Slot s))
-			{
-				return false;
-			}
-			return Direction.Equals(s.Direction) && Letter.Equals(s.Letter) && Location.Equals(s.Location);
-		}
-
-		public override int GetHashCode() =>
-			Direction.GetHashCode()
-				^ ((int)Letter << 4)
-				^ Location.GetHashCode();
-
-		public Slot Move(Vector v) =>
-			new Slot
-			(
-				this.Direction,
-				this.Letter,
-				this.Location + v
-			);
-
-		public int CompareTo(Slot other)
-		{
-			int locationComparison = this.Location.CompareTo(other.Location);
-			if(locationComparison != 0)
-			{
-				return locationComparison;
-			}
-			var directionComparison = this.Direction.CompareTo(other.Direction);
-			if(directionComparison != 0)
-			{
-				return directionComparison;
-			}
-			return this.Letter.CompareTo(other.Letter);
-		}
-	}
-
-	public class PartialWord
-	{
-		public Direction Direction;
-		public string Value;
-		public Rectangle Rectangle;
-		public override bool Equals(object obj)
-		{
-			if (!(obj is PartialWord pw))
-			{
-				return false;
-			}
-			return this.Direction.Equals(pw.Direction)
-				&& this.Value.Equals(pw.Value)
-				&& this.Rectangle.Equals(pw.Rectangle);
-		}
-		public override int GetHashCode() =>
-			Direction.GetHashCode()
-			^ Value?.GetHashCode() ?? 0
-			^ Rectangle?.GetHashCode() ?? 0;
-
-		public PartialWord Move(Vector v) =>
-			new PartialWord
-			{
-				Direction = this.Direction,
-				Rectangle = this.Rectangle.Move(v),
-				Value = this.Value
-			};
-	}
-
+	using System;
+	using System.Collections.Generic;
+	using System.Collections.Immutable;
+	using System.Linq;
+	using System.Text;
 	public class Intersection
 	{
 		public string Word;
@@ -129,7 +42,7 @@ namespace solve_crozzle
 			{
 				return false;
 			}
-			if(!Enumerable.SequenceEqual(this.AvailableWords, w.AvailableWords))
+			if(!(this.AvailableWords.SetEquals(w.AvailableWords)))
 			{
 				return false;
 			}
@@ -151,7 +64,7 @@ namespace solve_crozzle
 			return true;
 		}
 
-		static int GenerateHash<T>(IEnumerable<T> t) =>
+		public static int GenerateHash<T>(IEnumerable<T> t) =>
 			t.Aggregate(
 				0,
 				(h, item) => h ^ item.GetHashCode()
@@ -159,9 +72,7 @@ namespace solve_crozzle
 
 		private int GenerateHashCode() =>
 			Score.GetHashCode()
-				^ Board.GetHashCode()
-				^ GenerateHash(AvailableWords)
-				^ GenerateHash(PartialWords)
+				^ Board.GetHashCode().RotateLeft(1)
 				^ GenerateHash(Slots);
 
 		private readonly Lazy<int> _lazyHashCode;
@@ -178,8 +89,7 @@ namespace solve_crozzle
 				Intersections = ImmutableList<Intersection>.Empty,
 				Board = new Board
 				{
-					Rectangle = new Rectangle(new Location(0, 0), 0, 0),
-					Values = new char[0]
+					Rectangle = new Rectangle(new Location(0, 0), 0, 0)
 				}
 			};
 			foreach (var word in words)
@@ -206,7 +116,6 @@ namespace solve_crozzle
 			}
 			return workspace;
 		}
-
 
 		public Dictionary<string, List<String>> WordLookup = null;
 
@@ -254,8 +163,11 @@ namespace solve_crozzle
 				if(!_potentialScore.HasValue)
 				{
 					_potentialScore = this.Score
-						+ this.Slots.Select(c => Scoring.Score(c.Letter)).Sum()
-						 + this.PartialWords.Count * 1000;
+						+ Math.Min(
+							this.Slots.Select(c => Scoring.Score(c.Letter)).Sum()
+								+ (this.Intersections.Count())
+								- (this.IncludedWords.Select(w => w.Length).Sum()),
+							0);
 				}
 				return _potentialScore.Value;
 			}
