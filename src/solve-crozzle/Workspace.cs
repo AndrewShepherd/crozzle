@@ -15,13 +15,13 @@
 	{
 		public int Score = 0;
 		public Board Board;
-		public ImmutableHashSet<string> AvailableWords;
 		public ImmutableList<string> IncludedWords;
 		public ImmutableList<Intersection> Intersections;
 
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
 		public ImmutableList<PartialWord> PartialWords = ImmutableList<PartialWord>.Empty;
+		public WordDatabase WordDatabase = new WordDatabase();
 
 		public Workspace()
 		{
@@ -42,7 +42,7 @@
 			{
 				return false;
 			}
-			if(!(this.AvailableWords.SetEquals(w.AvailableWords)))
+			if(!(this.WordDatabase.AvailableWords.SetEquals(w.WordDatabase.AvailableWords)))
 			{
 				return false;
 			}
@@ -64,16 +64,10 @@
 			return true;
 		}
 
-		public static int GenerateHash<T>(IEnumerable<T> t) =>
-			t.Aggregate(
-				0,
-				(h, item) => h ^ item.GetHashCode()
-			);
-
 		private int GenerateHashCode() =>
 			Score.GetHashCode()
 				^ Board.GetHashCode().RotateLeft(1)
-				^ GenerateHash(Slots);
+				^ HashUtils.GenerateHash(Slots);
 
 		private readonly Lazy<int> _lazyHashCode;
 		public override int GetHashCode() => _lazyHashCode.Value;
@@ -83,8 +77,7 @@
 		{
 			var workspace = new Workspace()
 			{
-				AvailableWords = ImmutableHashSet<string>.Empty,
-				WordLookup = new Dictionary<string, ImmutableHashSet<String>>(),
+				WordDatabase = new WordDatabase(),
 				IncludedWords = ImmutableList<string>.Empty,
 				Intersections = ImmutableList<Intersection>.Empty,
 				Board = new Board
@@ -94,29 +87,28 @@
 			};
 			foreach (var word in words)
 			{
-				workspace.AvailableWords = workspace.AvailableWords.Add(word);
+				workspace.WordDatabase.AvailableWords = workspace.WordDatabase.AvailableWords.Add(word);
 				for (int i = 0; i < word.Length; ++i)
 				{
 					for (int j = 1; j + i <= word.Length; ++j)
 					{
 						var substring = word.Substring(i, j);
-						if (workspace.WordLookup.TryGetValue(substring, out var existingList))
+						if (workspace.WordDatabase.WordLookup.TryGetValue(substring, out var existingList))
 						{
 							if (!existingList.Contains(word))
 							{
-								workspace.WordLookup[substring] = existingList.Add(word);
+								workspace.WordDatabase.WordLookup[substring] = existingList.Add(word);
 							}
 								
 						}
 						else
-							workspace.WordLookup[word.Substring(i, j)] = ImmutableHashSet<string>.Empty.Add(word);
+							workspace.WordDatabase.WordLookup[word.Substring(i, j)] = ImmutableHashSet<string>.Empty.Add(word);
 					}
 				}
 			}
 			return workspace;
 		}
 
-		public Dictionary<string, ImmutableHashSet<String>> WordLookup = null;
 
 		public bool IsValid => PartialWords.IsEmpty;
 
@@ -184,7 +176,7 @@
 			var diff = Zero - topLeft;
 			return new Workspace
 			{
-				AvailableWords = this.AvailableWords,
+				WordDatabase = this.WordDatabase,
 				Board = this.Board.Move(diff),
 				IncludedWords = this.IncludedWords,
 				Intersections = this.Intersections,
@@ -195,7 +187,6 @@
 				Slots = ImmutableList<Slot>
 					.Empty
 					.AddRange(this.Slots.Select(slot => slot.Move(diff))),
-				WordLookup = this.WordLookup,
 				_potentialScore = this._potentialScore
 			};
 

@@ -91,16 +91,16 @@ namespace solve_crozzle.Tests
 				.PlaceWord(Direction.Across, "A", 3, 3)
 				.Normalise();
 			Assert.That(
-				Workspace.GenerateHash(w1.AvailableWords),
-				Is.EqualTo(Workspace.GenerateHash(w2.AvailableWords))
+				HashUtils.GenerateHash(w1.WordDatabase.AvailableWords),
+				Is.EqualTo(HashUtils.GenerateHash(w2.WordDatabase.AvailableWords))
 			);
 			Assert.That(
-				Workspace.GenerateHash(w1.PartialWords),
-				Is.EqualTo(Workspace.GenerateHash(w2.PartialWords))
+				HashUtils.GenerateHash(w1.PartialWords),
+				Is.EqualTo(HashUtils.GenerateHash(w2.PartialWords))
 			);
 			Assert.That(
-				Workspace.GenerateHash(w1.Slots),
-				Is.EqualTo(Workspace.GenerateHash(w2.Slots))
+				HashUtils.GenerateHash(w1.Slots),
+				Is.EqualTo(HashUtils.GenerateHash(w2.Slots))
 			);
 			Assert.That(w1.GetHashCode(), Is.EqualTo(w2.GetHashCode()));
 			Assert.That(w1, Is.EqualTo(w2));

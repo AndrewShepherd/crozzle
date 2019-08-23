@@ -10,8 +10,7 @@
 			{
 				Score = workspace.Score,
 				Board = workspace.Board,
-				AvailableWords = workspace.AvailableWords,
-				WordLookup = workspace.WordLookup,
+				WordDatabase = workspace.WordDatabase,
 				Slots = workspace.Slots,
 				PartialWords = workspace.PartialWords,
 				IncludedWords = workspace.IncludedWords,
@@ -53,7 +52,7 @@
 		public static Workspace RemoveWord(this Workspace workspace, string word)
 		{
 			var newWorkspace = WorkspaceExtensions.Clone(workspace);
-			newWorkspace.AvailableWords = workspace.AvailableWords.Remove(word);
+			newWorkspace.WordDatabase = workspace.WordDatabase.Remove(word); 
 			return newWorkspace;
 		}
 
@@ -82,7 +81,7 @@
 			var newWorkspace = workspace.ExpandSize(
 				rectangle
 			);
-			newWorkspace.AvailableWords = newWorkspace.AvailableWords.Remove(word);
+			newWorkspace.WordDatabase = newWorkspace.WordDatabase.Remove(word);
 			newWorkspace.IncludedWords = newWorkspace.IncludedWords.Add(word);
 			newWorkspace.Score = workspace.Score + Scoring.ScorePerWord;
 			int advanceIncrement = direction == Direction.Across
@@ -178,13 +177,13 @@
 					else
 					{
 						if(
-							newWorkspace.WordLookup.TryGetValue(
+							newWorkspace.WordDatabase.WordLookup.TryGetValue(
 								word.Substring(sIndex, 1), 
 								out var matchingWordList
 							)
 						)
 						{
-							if(matchingWordList.Any(w => newWorkspace.AvailableWords.Contains(w)))
+							if(matchingWordList.Any(w => newWorkspace.WordDatabase.AvailableWords.Contains(w)))
 							{
 								newWorkspace.Slots = newWorkspace.Slots.Add(
 								new Slot
@@ -211,8 +210,8 @@
 
 		public static IEnumerable<string> ListAvailableMatchingWords(this Workspace workspace, string word)
 		{
-			if (workspace.WordLookup.TryGetValue(word, out var wordList))
-				return wordList.Intersect(workspace.AvailableWords);
+			if (workspace.WordDatabase.WordLookup.TryGetValue(word, out var wordList))
+				return wordList.Intersect(workspace.WordDatabase.AvailableWords);
 			else
 				return Enumerable.Empty<string>();
 		}
@@ -242,10 +241,10 @@
 							.PartialWords
 							.All(
 								pw => 
-									newWorkspace.WordLookup.TryGetValue(pw.Value, out var matchingWords)
+									newWorkspace.WordDatabase.WordLookup.TryGetValue(pw.Value, out var matchingWords)
 									&& matchingWords.All(
 										matchingWord => 
-											newWorkspace.AvailableWords.Contains(matchingWord)
+											newWorkspace.WordDatabase.AvailableWords.Contains(matchingWord)
 									)
 							)
 						)
