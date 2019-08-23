@@ -91,8 +91,8 @@ namespace solve_crozzle.Tests
 				.PlaceWord(Direction.Across, "A", 3, 3)
 				.Normalise();
 			Assert.That(
-				HashUtils.GenerateHash(w1.WordDatabase.AvailableWords),
-				Is.EqualTo(HashUtils.GenerateHash(w2.WordDatabase.AvailableWords))
+				w1.WordDatabase.GetHashCode(),
+				Is.EqualTo(w2.WordDatabase.GetHashCode())
 			);
 			Assert.That(
 				HashUtils.GenerateHash(w1.PartialWords),

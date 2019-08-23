@@ -21,7 +21,7 @@
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
 		public ImmutableList<PartialWord> PartialWords = ImmutableList<PartialWord>.Empty;
-		public WordDatabase WordDatabase = new WordDatabase();
+		public WordDatabase WordDatabase = WordDatabase.Generate(Enumerable.Empty<string>());
 
 		public Workspace()
 		{
@@ -42,7 +42,7 @@
 			{
 				return false;
 			}
-			if(!(this.WordDatabase.AvailableWords.SetEquals(w.WordDatabase.AvailableWords)))
+			if(!(this.WordDatabase.Equals(w.WordDatabase)))
 			{
 				return false;
 			}
@@ -77,35 +77,14 @@
 		{
 			var workspace = new Workspace()
 			{
-				WordDatabase = new WordDatabase(),
+				WordDatabase = WordDatabase.Generate(words),
 				IncludedWords = ImmutableList<string>.Empty,
 				Intersections = ImmutableList<Intersection>.Empty,
 				Board = new Board
 				{
 					Rectangle = new Rectangle(new Location(0, 0), 0, 0)
-				}
+				},
 			};
-			foreach (var word in words)
-			{
-				workspace.WordDatabase.AvailableWords = workspace.WordDatabase.AvailableWords.Add(word);
-				for (int i = 0; i < word.Length; ++i)
-				{
-					for (int j = 1; j + i <= word.Length; ++j)
-					{
-						var substring = word.Substring(i, j);
-						if (workspace.WordDatabase.WordLookup.TryGetValue(substring, out var existingList))
-						{
-							if (!existingList.Contains(word))
-							{
-								workspace.WordDatabase.WordLookup[substring] = existingList.Add(word);
-							}
-								
-						}
-						else
-							workspace.WordDatabase.WordLookup[word.Substring(i, j)] = ImmutableHashSet<string>.Empty.Add(word);
-					}
-				}
-			}
 			return workspace;
 		}
 

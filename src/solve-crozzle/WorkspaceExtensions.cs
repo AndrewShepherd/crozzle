@@ -169,33 +169,24 @@
 							new Slot
 								(
 									word[sIndex],
-								direction == Direction.Down ? Direction.Across : Direction.Down,
-								thisLocation
+									direction == Direction.Down ? Direction.Across : Direction.Down,
+									thisLocation
 								)
 							);
 					}
 					else
 					{
-						if(
-							newWorkspace.WordDatabase.WordLookup.TryGetValue(
-								word.Substring(sIndex, 1), 
-								out var matchingWordList
-							)
-						)
+						if(newWorkspace.WordDatabase.CanMatchWord(word.Substring(sIndex, 1)))
 						{
-							if(matchingWordList.Any(w => newWorkspace.WordDatabase.AvailableWords.Contains(w)))
-							{
-								newWorkspace.Slots = newWorkspace.Slots.Add(
+							newWorkspace.Slots = newWorkspace.Slots.Add(
 								new Slot
 									(
 										word[sIndex],
-									direction == Direction.Down ? Direction.Across : Direction.Down,
-									thisLocation
+										direction == Direction.Down ? Direction.Across : Direction.Down,
+										thisLocation
 									)
-								);
-							}
+							);
 						}
-
 					}
 
 				}
@@ -208,17 +199,10 @@
 			return newWorkspace;			
 		}
 
-		public static IEnumerable<string> ListAvailableMatchingWords(this Workspace workspace, string word)
-		{
-			if (workspace.WordDatabase.WordLookup.TryGetValue(word, out var wordList))
-				return wordList.Intersect(workspace.WordDatabase.AvailableWords);
-			else
-				return Enumerable.Empty<string>();
-		}
 
 		public static IEnumerable<Workspace> CoverFragment(this Workspace workspace, string fragment, Location location, Direction direction)
 		{
-			var availableWords = workspace.ListAvailableMatchingWords(fragment);
+			var availableWords = workspace.WordDatabase.ListAvailableMatchingWords(fragment);
 			foreach (var candidateWord in availableWords)
 			{
 				var index = candidateWord.IndexOf(fragment, 0);
@@ -240,12 +224,7 @@
 						if(newWorkspace
 							.PartialWords
 							.All(
-								pw => 
-									newWorkspace.WordDatabase.WordLookup.TryGetValue(pw.Value, out var matchingWords)
-									&& matchingWords.All(
-										matchingWord => 
-											newWorkspace.WordDatabase.AvailableWords.Contains(matchingWord)
-									)
+								pw => newWorkspace.WordDatabase.CanMatchWord(pw.Value)
 							)
 						)
 						{
@@ -421,7 +400,7 @@
 				while (!workspace.Slots.IsEmpty)
 				{
 					workspace = workspace.PopSlot(out var slot);
-					var availableWords = workspace.ListAvailableMatchingWords($"{slot.Letter}");
+					var availableWords = workspace.WordDatabase.ListAvailableMatchingWords($"{slot.Letter}");
 					if (!(availableWords.Any()))
 					{
 						continue;
