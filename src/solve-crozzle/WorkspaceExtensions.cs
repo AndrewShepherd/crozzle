@@ -212,8 +212,7 @@
 		public static IEnumerable<string> ListAvailableMatchingWords(this Workspace workspace, string word)
 		{
 			if (workspace.WordLookup.TryGetValue(word, out var wordList))
-				return wordList.Where(w => workspace.AvailableWords.Contains(w))
-					.ToList();
+				return wordList.Intersect(workspace.AvailableWords);
 			else
 				return Enumerable.Empty<string>();
 		}

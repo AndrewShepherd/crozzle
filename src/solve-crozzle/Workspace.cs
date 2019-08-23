@@ -84,7 +84,7 @@
 			var workspace = new Workspace()
 			{
 				AvailableWords = ImmutableHashSet<string>.Empty,
-				WordLookup = new Dictionary<string, List<String>>(),
+				WordLookup = new Dictionary<string, ImmutableHashSet<String>>(),
 				IncludedWords = ImmutableList<string>.Empty,
 				Intersections = ImmutableList<Intersection>.Empty,
 				Board = new Board
@@ -103,21 +103,20 @@
 						if (workspace.WordLookup.TryGetValue(substring, out var existingList))
 						{
 							if (!existingList.Contains(word))
-								existingList.Add(word);
+							{
+								workspace.WordLookup[substring] = existingList.Add(word);
+							}
+								
 						}
 						else
-							workspace.WordLookup[word.Substring(i, j)] = new List<string> { word };
+							workspace.WordLookup[word.Substring(i, j)] = ImmutableHashSet<string>.Empty.Add(word);
 					}
 				}
-			}
-			foreach(var key in workspace.WordLookup.Keys.ToList())
-			{
-				workspace.WordLookup[key] = workspace.WordLookup[key].OrderByDescending(w => Scoring.Score(w)).ToList();
 			}
 			return workspace;
 		}
 
-		public Dictionary<string, List<String>> WordLookup = null;
+		public Dictionary<string, ImmutableHashSet<String>> WordLookup = null;
 
 		public bool IsValid => PartialWords.IsEmpty;
 
