@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace solve_crozzle
 	{
 		private string[] _wordArray;
 		private Dictionary<string, int> _wordArrayIndex;
-		private bool[] _wordAvailability;
+		private BitArray _wordAvailability;
 		private Dictionary<string, List<int>> WordLookup = new Dictionary<string, List<int>>();
 
 		private WordDatabase()
@@ -19,9 +20,8 @@ namespace solve_crozzle
 
 		internal WordDatabase Remove(string word)
 		{
-			var wordAvailability = new bool[_wordAvailability.Length];
-			_wordAvailability.CopyTo(wordAvailability, 0);
-			wordAvailability[_wordArrayIndex[word]] = false;
+			var wordAvailability = (BitArray)_wordAvailability.Clone();
+			wordAvailability.Set(_wordArrayIndex[word], false);
 			return new WordDatabase
 			{
 				_wordArray = this._wordArray,
@@ -41,12 +41,25 @@ namespace solve_crozzle
 			return hash;
 		}
 
-		public override bool Equals(object obj) =>
-			object.ReferenceEquals(this, obj)
-			|| (
-				(obj is WordDatabase wd)
-				&& Enumerable.SequenceEqual(this._wordAvailability, wd._wordAvailability)
-			);
+		public override bool Equals(object obj)
+		{
+			if(object.ReferenceEquals(this, obj))
+			{
+				return true;
+			}
+			if(!(obj is WordDatabase wd))
+			{
+				return false;
+			}
+			for(int i = 0; i < _wordAvailability.Length; ++i)
+			{
+				if(this._wordAvailability[i] != wd._wordAvailability[i])
+				{
+					return false;
+				}
+			}
+			return true;
+		}
 
 		public static WordDatabase Generate(IEnumerable<string> words)
 		{
@@ -54,12 +67,12 @@ namespace solve_crozzle
 			var wordDatabase = new WordDatabase();
 			wordDatabase._wordArray = words.ToArray();
 			wordDatabase._wordArrayIndex = new Dictionary<string, int>();
-			wordDatabase._wordAvailability = new bool[wordDatabase._wordArray.Length];
+			wordDatabase._wordAvailability = new BitArray(wordDatabase._wordArray.Length);
+			wordDatabase._wordAvailability.SetAll(true);
 			for(int arrayIndex = 0; arrayIndex < wordDatabase._wordArray.Length; ++arrayIndex)	
 			{
 				string word = wordDatabase._wordArray[arrayIndex];
 				wordDatabase._wordArrayIndex[word] = arrayIndex;
-				wordDatabase._wordAvailability[arrayIndex] = true;
 				for (int i = 0; i < word.Length; ++i)
 				{
 					for (int j = 1; j + i <= word.Length; ++j)

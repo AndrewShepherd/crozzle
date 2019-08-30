@@ -1,6 +1,10 @@
-﻿namespace solve_crozzle
+﻿using System;
+
+namespace solve_crozzle
 {
-	public class WordPlacement
+	using crozzle;
+
+	public class WordPlacement : IComparable<WordPlacement>
 	{
 		public Location Location { get; private set; }
 		public string Word { get; private set; }
@@ -38,6 +42,34 @@
 						);
 				}
 			}
+
+		public int CompareTo(WordPlacement other)
+		{
+			if(object.ReferenceEquals(this, other))
+			{
+				return 0;
+			}
+			int c = this.Location.CompareTo(other.Location);
+			if(c != 0)
+			{
+				return c;
+			}
+			c = this.Direction.CompareTo(other.Direction);
+			if(c != 0)
+			{
+				return c;
+			}
+			if(object.ReferenceEquals(this.Word, other.Word))
+			{
+				return 0;
+			}
+			c = this.Word.Length.CompareTo(other.Word.Length);
+			if( c != 0)
+			{
+				return c;
+			}
+			return string.CompareOrdinal(this.Word, other.Word);
+		}
 	}
 
 	public static class WordPlacementExtensions

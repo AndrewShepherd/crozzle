@@ -1,6 +1,7 @@
 ﻿namespace solve_crozzle
 {
 	using System;
+	using crozzle;
 
 	public class Rectangle
 	{

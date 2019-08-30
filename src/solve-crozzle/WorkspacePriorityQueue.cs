@@ -18,25 +18,37 @@
 
 		public int Count => _length;
 
+		private static Func<Workspace, Workspace, int> CompareProperties<T>(Func<Workspace, T> f) where T : IComparable<T> =>
+			(w1, w2) => f(w1).CompareTo(f(w2));
+
+		private static Func<Workspace, Workspace, int>[] ComparisonFunctions = new[]
+		{
+			(w1, w2) => w2.PotentialScore.CompareTo(w1.PotentialScore), // Deliberately reversing them
+			CompareProperties(_ => _.IncludedWords.Count()),
+			CompareProperties(_ => _.Slots.Count()),
+			CompareProperties(_ => _.Board),
+			CompareProperties(_ => _.GetHashCode())
+		};
+
 		public static int Compare(Workspace w1, Workspace w2)
 		{
-			if((w1?.PotentialScore ?? 0) > (w2?.PotentialScore ?? 0))
+			if((w1 != null) && (w2 == null))
 			{
 				return -1;
 			}
-			if((w2?.PotentialScore ?? 0) > (w1?.PotentialScore ?? 0))
+			if((w2 != null) && (w1 == null))
 			{
 				return 1;
 			}
-			if((w1?.IncludedWords?.Count() ?? 0) > (w2?.IncludedWords?.Count() ?? 0))
+			foreach(var f in ComparisonFunctions)
 			{
-				return -1;
+				var c = f(w1, w2);
+				if(c != 0)
+				{
+					return c;
+				}
 			}
-			if ((w2?.IncludedWords?.Count() ?? 0) > (w1?.IncludedWords?.Count() ?? 0))
-			{
-				return -1;
-			}
-			return w1.GetHashCode().CompareTo(w2.GetHashCode());
+			return 0;
 		}
 
 		private void SwapUp(int i)

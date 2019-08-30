@@ -1,10 +1,10 @@
-﻿namespace solve_crozzle
+﻿namespace crozzle
 {
 	public class Vector
 	{
 		public readonly int Dx;
 		public readonly int Dy;
-		
+
 		public Vector(int dx, int dy)
 		{
 			Dx = dx;

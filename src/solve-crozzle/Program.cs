@@ -80,22 +80,19 @@ namespace solve_crozzle
 
 			while (!wpq.IsEmpty)
 			{
-				List<Workspace> wList = new List<Workspace>();
+				List<Workspace> wList = new List<Workspace>(batchSize);
 				wList.Add(wpq.Pop());
 				while (wList.Count < batchSize && !wpq.IsEmpty)
 				{
 					var poppedValue = wpq.Pop();
 					var lastValue = wList[wList.Count - 1];
-					if(lastValue.GetHashCode() == poppedValue.GetHashCode())
+					if(lastValue.Equals(poppedValue))
 					{
-						if(lastValue.Equals(poppedValue))
-						{
-							continue;
-						}
-						else
-						{
-							int dummy = 3;
-						}
+						continue;
+					}
+					else
+					{
+						int dummy = 3;
 					}
 					wList.Add(poppedValue);
 				}
@@ -108,7 +105,7 @@ namespace solve_crozzle
 						foreach (var ns in nextSteps)
 						{
 							//childWorkspaces.Add(ns);
-							
+
 							if (ns.IsValid)
 							{
 								childWorkspaces.Add(ns);
@@ -223,34 +220,43 @@ namespace solve_crozzle
 		}
 
 
-		static void Main(string[] args)
+		static int Main(string[] args)
 		{
-			//var words = ExtractWords(HeavyOverlapFilePath).Result;
-			var words = ExtractWords(AugustFilePath).Result;
-			Workspace workspace = Workspace.Generate(words);
-			var workspaces = words
-				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
-				.ToArray();
-
-			ulong generatedSolutionsCount = 0;
-			var maxScore = 0;
-			DateTime timeStart = DateTime.Now;
-			foreach (var thisWorkspace in SolveUsingQueue(
-				workspaces,
-				10000000, 
-				128, 
-				OverflowPolicy.Discard
-			))
+			try
 			{
-				++generatedSolutionsCount;
-				if (thisWorkspace.Score > maxScore)
+				var parameters = Parameters.Parse(args);
+				var words = ExtractWords(parameters.FilePath).Result;
+				Workspace workspace = Workspace.Generate(words);
+				var workspaces = words
+					.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
+					.ToArray();
+
+				ulong generatedSolutionsCount = 0;
+				var maxScore = 0;
+				DateTime timeStart = DateTime.Now;
+				foreach (var thisWorkspace in SolveUsingQueue(
+					workspaces,
+					10000000,
+					parameters.BeamSize,
+					OverflowPolicy.Discard
+				))
 				{
-					TimeSpan duration = DateTime.Now - timeStart;
-					maxScore = thisWorkspace.Score;
-					Console.WriteLine(thisWorkspace.BoardRepresentation);
-					Console.WriteLine(thisWorkspace.GenerateScoreBreakdown());
-					Console.WriteLine($"*** {duration}:  {generatedSolutionsCount:n0} solutions generated. ({generatedSolutionsCount/duration.TotalSeconds:n0} per second) ***");
+					++generatedSolutionsCount;
+					if (thisWorkspace.Score > maxScore)
+					{
+						TimeSpan duration = DateTime.Now - timeStart;
+						maxScore = thisWorkspace.Score;
+						Console.WriteLine(thisWorkspace.BoardRepresentation);
+						Console.WriteLine(thisWorkspace.GenerateScoreBreakdown());
+						Console.WriteLine($"*** {duration}:  {generatedSolutionsCount:n0} solutions generated. ({generatedSolutionsCount / duration.TotalSeconds:n0} per second) ***");
+					}
 				}
+				return 0;
+			}
+			catch(Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+				return -1;
 			}
 		}
 	}

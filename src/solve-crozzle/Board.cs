@@ -6,13 +6,14 @@ namespace solve_crozzle
 	using System.Collections.Immutable;
 	using System.Linq;
 	using System.Text;
+	using crozzle;
 
-	public class Board
+	public class Board : IComparable<Board>
 	{
 		public int MaxWidth = 17;
 		public int MaxHeight = 12;
 		public Rectangle Rectangle;
-		public ImmutableHashSet<WordPlacement> WordPlacements = ImmutableHashSet<WordPlacement>.Empty;
+		public ImmutableSortedSet<WordPlacement> WordPlacements = ImmutableSortedSet<WordPlacement>.Empty;
 
 		public Board()
 		{
@@ -92,9 +93,9 @@ namespace solve_crozzle
 		{
 			var hash = Rectangle.GetHashCode();
 			int i = 0;
-			foreach(var wp in this.WordPlacements.OrderBy(wp => wp.Location))
+			foreach (var wp in this.WordPlacements)
 			{
-				hash ^= wp.GetHashCode().RotateLeft((++i)%32);
+				hash ^= wp.GetHashCode().RotateLeft((++i) % 32);
 			}
 			return hash;
 		}
@@ -103,15 +104,36 @@ namespace solve_crozzle
 			new Board
 			{
 				Rectangle = this.Rectangle.Move(v),
-				WordPlacements = ImmutableHashSet<WordPlacement>.Empty
-					.Union(
-						WordPlacements.Select(
-							wp => wp.Move(v)
-						)
-					),
+				WordPlacements = ImmutableSortedSet.CreateRange<WordPlacement>(
+					this.WordPlacements.Select(
+						wp => wp.Move(v)
+					)
+				),
 				MaxWidth = this.MaxWidth,
 				MaxHeight = this.MaxHeight
 			};
+
+		public int CompareTo(Board other)
+		{
+			var c1 = this.WordPlacements.Count().CompareTo(other.WordPlacements.Count());
+			if (c1 != 0)
+			{
+				return c1;
+			}
+			foreach(
+				var t in this.WordPlacements.Zip(
+					other.WordPlacements, 
+					(_1, _2) => _1.CompareTo(_2)
+				)
+			)
+			{
+				if(t != 0)
+				{
+					return t;
+				}
+			}
+			return 0;
+		}
 	}
 
 	public static class BoardExtensions
