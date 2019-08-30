@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-
-namespace solve_crozzle
+﻿namespace solve_crozzle
 {
-    public class WordDatabase
+	using System.Collections;
+	using System.Collections.Generic;
+	using System.Linq;
+	using crozzle;
+	public class WordDatabase
 	{
 		private string[] _wordArray;
 		private Dictionary<string, int> _wordArrayIndex;

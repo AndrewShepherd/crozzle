@@ -1,10 +1,12 @@
 ﻿namespace solve_crozzle
 {
-	using System;
+    using System;
 	using System.Collections.Generic;
 	using System.Collections.Immutable;
 	using System.Linq;
 	using System.Text;
+	using crozzle;
+
 	public class Intersection
 	{
 		public string Word;
