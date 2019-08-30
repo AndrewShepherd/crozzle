@@ -63,9 +63,6 @@
 		public static char CharAt(this Workspace workspace, Location location) =>
 			workspace.Board.CharAt(location);
 
-		public static bool CanPlaceWord(this Workspace workspace, Direction direction, string word, Location location)
-			=> workspace.Board.CanPlaceWord(direction, word, location);
-
 		public static Workspace ExpandSize(this Workspace workspace, Rectangle newRectangle)
 		{
 			var newWorkspace = workspace.Clone();
@@ -76,32 +73,39 @@
 
 		public static Rectangle GetCurrentRectangle(this Workspace workspace) => workspace.Board.Rectangle;
 
-		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
-		{
-			var wordPlacement = new WordPlacement(
-				direction,
-				new Location(x, y),
-				word
+		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y) =>
+			PlaceWord(
+				workspace,
+				workspace.GenerateGrid(),
+				new WordPlacement(
+					direction,
+					new Location(x, y),
+					word
+				)
 			);
+
+		internal static Workspace PlaceWord(this Workspace workspace, Grid grid, WordPlacement wordPlacement)
+		{
 			var rectangle = wordPlacement.GetRectangle();		
 			var newWorkspace = workspace.ExpandSize(
 				rectangle
 			);
-			newWorkspace.WordDatabase = newWorkspace.WordDatabase.Remove(word);
-			newWorkspace.IncludedWords = newWorkspace.IncludedWords.Add(word);
+			newWorkspace.WordDatabase = newWorkspace.WordDatabase.Remove(wordPlacement.Word);
+			newWorkspace.IncludedWords = newWorkspace.IncludedWords.Add(wordPlacement.Word);
 			newWorkspace.Score = workspace.Score + Scoring.ScorePerWord;
-			int advanceIncrement = direction == Direction.Across
+			int advanceIncrement = wordPlacement.Direction == Direction.Across
 				? 1
 				: newWorkspace.Board.Rectangle.Width;
-
+			int x = wordPlacement.Location.X;
+			int y = wordPlacement.Location.Y;
 			(var startMarkerPoint, var endMarkerPoint) =
-				direction == Direction.Across
+				wordPlacement.Direction == Direction.Across
 				? (
 					newWorkspace.Board.IndexOf(
-					new Location(x - 1, y)
+					new Location(wordPlacement.Location.X - 1, wordPlacement.Location.Y)
 					), 
 					newWorkspace.Board.IndexOf(
-						new Location(x + word.Length, y)
+						new Location(wordPlacement.Location.X + wordPlacement.Word.Length, wordPlacement.Location.Y)
 					)
 				)
 				: (
@@ -109,7 +113,7 @@
 						new Location(x, y - 1)
 					), 
 					newWorkspace.Board.IndexOf(
-						new Location(x, y + word.Length)
+						new Location(x, y + wordPlacement.Word.Length)
 					)
 				);
 			newWorkspace.Board.Values[startMarkerPoint] = '*';
@@ -120,18 +124,18 @@
 					new Location(x, y)
 				), 
 				sIndex = 0; 
-				sIndex < word.Length; 
+				sIndex < wordPlacement.Word.Length; 
 				++sIndex,
 				i+= advanceIncrement
 			)
 			{
-				if(newWorkspace.Board.Values[i] == word[sIndex])
+				if(newWorkspace.Board.Values[i] == wordPlacement.Word[sIndex])
 				{
-					newWorkspace.Score += Scoring.Score(word[sIndex]);
+					newWorkspace.Score += Scoring.Score(wordPlacement.Word[sIndex]);
 					newWorkspace.Intersections = newWorkspace.Intersections.Add(
 						new Intersection
 						{
-							Word = word,
+							Word = wordPlacement.Word,
 							Index = sIndex
 						}
 					);
@@ -148,12 +152,12 @@
 				}
 				else
 				{
-					newWorkspace.Board.Values[i] = word[sIndex];
+					newWorkspace.Board.Values[i] = wordPlacement.Word[sIndex];
 
 					var thisLocation = newWorkspace.Board.Rectangle.CalculateLocation(i);
 					
 					PartialWord partialWord = newWorkspace.Board.GetContiguousTextAt(
-						direction == Direction.Across ? Direction.Down : Direction.Across,
+						wordPlacement.Direction == Direction.Across ? Direction.Down : Direction.Across,
 						thisLocation
 					);
 					if (partialWord.Value.Length > 1)
@@ -174,21 +178,21 @@
 						newWorkspace.Slots = newWorkspace.Slots.Add(
 							new Slot
 								(
-									word[sIndex],
-									direction == Direction.Down ? Direction.Across : Direction.Down,
+									wordPlacement.Word[sIndex],
+									wordPlacement.Direction == Direction.Down ? Direction.Across : Direction.Down,
 									thisLocation
 								)
 							);
 					}
 					else
 					{
-						if(newWorkspace.WordDatabase.CanMatchWord(word.Substring(sIndex, 1)))
+						if(newWorkspace.WordDatabase.CanMatchWord(wordPlacement.Word.Substring(sIndex, 1)))
 						{
 							newWorkspace.Slots = newWorkspace.Slots.Add(
 								new Slot
 									(
-										word[sIndex],
-										direction == Direction.Down ? Direction.Across : Direction.Down,
+										wordPlacement.Word[sIndex],
+										wordPlacement.Direction == Direction.Down ? Direction.Across : Direction.Down,
 										thisLocation
 									)
 							);
@@ -198,9 +202,9 @@
 				}
 			}
 			newWorkspace.Board = newWorkspace.Board.PlaceWord(
-				direction,
+				wordPlacement.Direction,
 				new Location(x, y),
-				word
+				wordPlacement.Word
 			);
 			return newWorkspace;			
 		}
@@ -229,9 +233,17 @@
 					{
 						startLocation = new Location(location.X - index, location.Y);
 					}
-					if (workspace.CanPlaceWord(direction, candidateWord, startLocation))
+					
+					if (grid.CanPlaceWord(direction, candidateWord, startLocation))
 					{
-						var newWorkspace = workspace.PlaceWord(direction, candidateWord, startLocation.X, startLocation.Y);
+						var newWorkspace = workspace.PlaceWord(
+							grid,
+							new WordPlacement(
+								direction,
+								startLocation,
+								candidateWord
+							)
+						);
 						// Quick check of the partial words
 						if(newWorkspace
 							.PartialWords
@@ -253,9 +265,9 @@
 			}
 		}
 
-		public class Strip
+		internal class Strip
 		{
-			public char[] Characters;
+			public GridCell[] GridCells;
 			public int StartAt;
 
 			public int SlotIndex { get; internal set; }
@@ -319,44 +331,23 @@
 				int indexFirst = grid.Rectangle.Right - Board.MaxWidth + 1;
 				int indexLast = grid.Rectangle.Left + Board.MaxWidth - 1;
 				var length = indexLast - indexFirst + 1;
-				var characters = new char[length];
+				var gridCells = new GridCell[length];
 				var slotIndex = slot.Location.X - indexFirst;
-				characters[0] = '*';
-				characters[characters.Length - 1] = '*';
-				characters[slotIndex] = slot.Letter;
+				gridCells[0] = GridCell.EnforcedBlank;
+				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
+				gridCells[slotIndex] = GridCell.FromSlot(slot);
 
-				for (int i = 1; i < (characters.Length - 1); ++i)
+				for (int i = 1; i < (gridCells.Length - 1); ++i)
 				{
 					if (i == slotIndex)
 						continue;
 					var l = new Location(i + indexFirst, slot.Location.Y);
 					var gridCell = grid.CellAt(l);
-					switch (gridCell.CellType)
-					{
-						case GridCellType.EnforcedBlank:
-							characters[i] = '*';
-							break;
-						case GridCellType.Blank:
-							characters[i] = (char)0;
-							break;
-						case GridCellType.Complete:
-							characters[i] = '$';
-							break;
-						default:
-							if(gridCell.Slot.Direction == slot.Direction)
-							{
-								characters[i] = gridCell.Slot.Letter;
-							}
-							else
-							{
-								characters[i] = '$';
-							}
-							break;
-					}
+					gridCells[i] = gridCell;
 				}
 				return new Strip
 				{
-					Characters = characters,
+					GridCells = gridCells,
 					StartAt = indexFirst,
 					SlotIndex = slotIndex
 				};
@@ -366,43 +357,22 @@
 				int indexFirst = grid.Rectangle.Bottom - Board.MaxHeight + 1;
 				int indexLast = grid.Rectangle.Top + Board.MaxHeight - 1;
 				var length = indexLast - indexFirst + 1;
-				var characters = new char[length];
+				var gridCells = new GridCell[length];
 				var slotIndex = slot.Location.Y - indexFirst;
-				characters[0] = '*';
-				characters[characters.Length-1] = '*';
-				characters[slotIndex] = slot.Letter;
-				for(int i = 1; i < (characters.Length-1); ++i)
+				gridCells[0] = GridCell.EnforcedBlank;
+				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
+				gridCells[slotIndex] = GridCell.FromSlot(slot);
+				for (int i = 1; i < (gridCells.Length - 1); ++i)
 				{
 					if (i == slotIndex)
 						continue;
 					var l = new Location(slot.Location.X, indexFirst + i);
 					var gridCell = grid.CellAt(l);
-					switch (gridCell.CellType)
-					{
-						case GridCellType.EnforcedBlank:
-							characters[i] = '*';
-							break;
-						case GridCellType.Blank:
-							characters[i] = (char)0;
-							break;
-						case GridCellType.Complete:
-							characters[i] = '$';
-							break;
-						default:
-							if (gridCell.Slot.Direction == slot.Direction)
-							{
-								characters[i] = gridCell.Slot.Letter;
-							}
-							else
-							{
-								characters[i] = '$';
-							}
-							break;
-					}
+					gridCells[i] = gridCell;
 				}
 				var strip = new Strip
 				{
-					Characters = characters,
+					GridCells = gridCells,
 					StartAt = indexFirst,
 					SlotIndex = slotIndex
 				};
@@ -413,14 +383,14 @@
 				for (;
 					indexOfFirstDollarBeforeSlotIndex >= 0
 					&&
-					characters[indexOfFirstDollarBeforeSlotIndex] != '$';
+					gridCells[indexOfFirstDollarBeforeSlotIndex].CellType != GridCellType.Complete;
 					--indexOfFirstDollarBeforeSlotIndex
 				);
 				if(indexOfFirstDollarBeforeSlotIndex != -1)
 				{
 					strip = new Strip
 					{
-						Characters = strip.Characters.Skip(indexOfFirstDollarBeforeSlotIndex + 1).ToArray(),
+						GridCells = strip.GridCells.Skip(indexOfFirstDollarBeforeSlotIndex + 1).ToArray(),
 						SlotIndex = strip.SlotIndex - (indexOfFirstDollarBeforeSlotIndex + 1),
 						StartAt = strip.StartAt + indexOfFirstDollarBeforeSlotIndex + 1
 					};
@@ -479,13 +449,13 @@
 							var start = strip.SlotIndex - index;
 							if (start < 1)
 								continue;
-							var charBefore = strip.Characters[start - 1];
-							if (!((charBefore == 0) || (charBefore == '*')))
+							var charBefore = strip.GridCells[start - 1];
+							if (!((charBefore.CellType == GridCellType.Blank) || (charBefore.CellType == GridCellType.EnforcedBlank)))
 								continue;
-							if (start + candidateWord.Length > (strip.Characters.Length-1))
+							if (start + candidateWord.Length > (strip.GridCells.Length-1))
 								continue;
-							var charAfter = strip.Characters[start + candidateWord.Length];
-							if (!((charAfter == 0) || (charAfter == '*')))
+							var charAfter = strip.GridCells[start + candidateWord.Length];
+							if (!((charAfter.CellType == GridCellType.Blank) || (charAfter.CellType == GridCellType.EnforcedBlank)))
 								continue;
 							bool success = true;
 							for(
@@ -494,11 +464,11 @@
 								++cIndex, ++sIndex
 							)
 							{
-								if(strip.Characters[sIndex] == 0)
+								if(strip.GridCells[sIndex].CellType == GridCellType.Blank)
 								{
 									continue;
 								}
-								if(strip.Characters[sIndex] != candidateWord[cIndex])
+								if(strip.GridCells[sIndex].Slot?.Letter != candidateWord[cIndex])
 								{
 									success = false;
 								}
@@ -508,18 +478,22 @@
 
 								Location l = slot.Direction == Direction.Across
 									? new Location(strip.StartAt + start, slot.Location.Y)
-									: new Location(slot.Location.X, strip.StartAt + start);								
+									: new Location(slot.Location.X, strip.StartAt + start);
 								var child = workspace.PlaceWord(
-									slot.Direction,
-									candidateWord, 
-									l.X, 
-									l.Y
+									grid,
+									new WordPlacement(
+										slot.Direction,
+										l,
+										candidateWord
+									)
 								);
 								yield return child.Normalise();
-
 							}
 						}
 					}
+
+
+					grid.RemoveSlot(slot);
 				}
 			}
 		}

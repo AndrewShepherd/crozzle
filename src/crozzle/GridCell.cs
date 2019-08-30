@@ -15,5 +15,23 @@ namespace crozzle
 		public GridCellType CellType { get; set; } = GridCellType.Blank;
 		public Slot Slot { get; set; }
 		public char Letter { get; internal set; }
+
+		internal static GridCell EnforcedBlank = new GridCell
+		{ 
+			CellType = GridCellType.EnforcedBlank
+		};
+
+		internal static GridCell FromSlot(Slot slot) =>
+			new GridCell
+			{
+				CellType = GridCellType.AvailableSlot,
+				Slot = slot
+			};
+
+		internal static GridCell Complete = new GridCell
+		{
+			CellType = GridCellType.Complete
+		};
+
 	}
 }

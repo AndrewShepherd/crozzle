@@ -22,7 +22,7 @@
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
 		public ImmutableList<PartialWord> PartialWords = ImmutableList<PartialWord>.Empty;
-		public WordDatabase WordDatabase = WordDatabase.Generate(Enumerable.Empty<string>());
+		public WordDatabase WordDatabase = WordDatabase.Empty;
 
 		public Workspace()
 		{

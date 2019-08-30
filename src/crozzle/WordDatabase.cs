@@ -10,6 +10,8 @@
 		private BitArray _wordAvailability;
 		private Dictionary<string, List<int>> WordLookup = new Dictionary<string, List<int>>();
 
+		internal static WordDatabase Empty = WordDatabase.Generate(Enumerable.Empty<string>());
+
 		private WordDatabase()
 		{
 		}

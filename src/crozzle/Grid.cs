@@ -13,6 +13,12 @@ namespace crozzle
 
 	internal static class GridExtensions
 	{
+		internal static void RemoveSlot(this Grid grid, Slot slot)
+		{
+			var index = grid.Rectangle.IndexOf(slot.Location);
+			grid.Cells[index] = GridCell.Complete;
+		}
+
 		internal static GridCell CellAt(this Grid grid, Location location)
 		{
 			if (!(grid.Rectangle.Contains(location)))

@@ -7,19 +7,6 @@ namespace solve_crozzle.Tests
 	[TestFixture]
 	public class TestWorkspace
 	{
-		[Test]
-		public void TestCanAdd()
-		{
-			var workspace = Workspace.Generate(new[] { "Apple" });
-			Assert.That(
-				workspace.CanPlaceWord(
-					Direction.Across, 
-					"Apple",
-					new Location(0, 0)
-				), 
-				Is.True
-			);
-		}
 
 		[Test]
 		public void TestOneWord()
