@@ -2,21 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using crozzle;
 
 namespace solve_crozzle
 {
 	class Program
 	{
-		static string DefaultFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\8803.txt";
-		static string WinterFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\8908.txt";
-		static string HeavyOverlapFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\heavyoverlap.TXT";
-		static string MountainsFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\9312.TXT";
-		static string ChristmasFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\8912.TXT";
-		static string TownsFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\9003.TXT";
-		static string AugustFilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\20190814.TXT";
-
 		static async Task<List<string>> ExtractWords(string filePath)
 		{
 			List<string> listString = new List<string>();
