@@ -46,21 +46,6 @@ namespace solve_crozzle.Tests
 		}
 
 		[Test]
-		public void GenerateStripBasic()
-		{
-			var workspace = Workspace.Generate(new[] { "APPLE", "BANANA" });
-			workspace = workspace.PlaceWord(Direction.Across, "APPLE", 0, 0);
-			Slot slot;
-			workspace = workspace.PopSlot(out slot);
-			Assert.That(slot, Is.Not.Null);
-			var strip = workspace.GenerateStrip(slot);
-			Assert.That(strip.Characters.Length, Is.EqualTo(21));
-			Assert.That(strip.StartAt, Is.EqualTo(-10));
-			Assert.That(strip.Characters[10], Is.EqualTo(slot.Letter));
-
-		}
-
-		[Test]
 		public void TestDetectAdjacencies()
 		{
 			var workspace = Workspace.Generate(new[] { "A", "B", "CAB" });

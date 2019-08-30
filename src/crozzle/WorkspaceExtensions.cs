@@ -308,16 +308,16 @@
 			};
 		}
 
-		public static Strip GenerateStrip(this Workspace workspace, Slot slot)
+		internal static Strip GenerateStrip(this Workspace workspace, Grid grid, Slot slot)
 		{
-			var rectangle = workspace.Board.Rectangle;
+			var rectangle = grid.Rectangle;
 			long amountToBeAdded = slot.Direction == Direction.Across
 				? Board.MaxWidth - rectangle.Width
 				: Board.MaxHeight - rectangle.Height;
 			if (slot.Direction == Direction.Across)
 			{
-				int indexFirst = workspace.Board.Rectangle.Right - Board.MaxWidth + 1;
-				int indexLast = workspace.Board.Rectangle.Left + Board.MaxWidth - 1;
+				int indexFirst = grid.Rectangle.Right - Board.MaxWidth + 1;
+				int indexLast = grid.Rectangle.Left + Board.MaxWidth - 1;
 				var length = indexLast - indexFirst + 1;
 				var characters = new char[length];
 				var slotIndex = slot.Location.X - indexFirst;
@@ -330,25 +330,22 @@
 					if (i == slotIndex)
 						continue;
 					var l = new Location(i + indexFirst, slot.Location.Y);
-					var c = workspace.Board.CharAt(l);
-					switch (c)
+					var gridCell = grid.CellAt(l);
+					switch (gridCell.CellType)
 					{
-						case '*':
-							characters[i] = c;
+						case GridCellType.EnforcedBlank:
+							characters[i] = '*';
 							break;
-						case (char)0:
-							characters[i] = c;
+						case GridCellType.Blank:
+							characters[i] = (char)0;
+							break;
+						case GridCellType.Complete:
+							characters[i] = '$';
 							break;
 						default:
-							if (
-								workspace
-									.Slots
-									.Where(s => s.Direction == slot.Direction)
-									.Where(s => s.Location.Equals(l))
-									.Any()
-							)
+							if(gridCell.Slot.Direction == slot.Direction)
 							{
-								characters[i] = c;
+								characters[i] = gridCell.Slot.Letter;
 							}
 							else
 							{
@@ -366,8 +363,8 @@
 			}
 			else
 			{
-				int indexFirst = workspace.Board.Rectangle.Bottom - Board.MaxHeight + 1;
-				int indexLast = workspace.Board.Rectangle.Top + Board.MaxHeight - 1;
+				int indexFirst = grid.Rectangle.Bottom - Board.MaxHeight + 1;
+				int indexLast = grid.Rectangle.Top + Board.MaxHeight - 1;
 				var length = indexLast - indexFirst + 1;
 				var characters = new char[length];
 				var slotIndex = slot.Location.Y - indexFirst;
@@ -379,30 +376,26 @@
 					if (i == slotIndex)
 						continue;
 					var l = new Location(slot.Location.X, indexFirst + i);
-					var c = workspace.Board.CharAt(l);
-					switch(c)
+					var gridCell = grid.CellAt(l);
+					switch (gridCell.CellType)
 					{
-						case '*':
-							characters[i] = c;
+						case GridCellType.EnforcedBlank:
+							characters[i] = '*';
 							break;
-						case (char)0:
-							characters[i] = c;
+						case GridCellType.Blank:
+							characters[i] = (char)0;
+							break;
+						case GridCellType.Complete:
+							characters[i] = '$';
 							break;
 						default:
-							if (
-								workspace
-									.Slots
-									.Where(s => s.Direction == slot.Direction)
-									.Where(s => s.Location.Equals(l))
-									.Any()
-							)
+							if (gridCell.Slot.Direction == slot.Direction)
 							{
-								characters[i] = c;
+								characters[i] = gridCell.Slot.Letter;
 							}
 							else
 							{
 								characters[i] = '$';
-								++i;
 							}
 							break;
 					}
@@ -466,7 +459,7 @@
 					{
 						continue;
 					}
-					var strip = workspace.GenerateStrip(slot);
+					var strip = workspace.GenerateStrip(grid, slot);
 
 					foreach (var candidateWord in availableWords)
 					{
@@ -515,18 +508,7 @@
 
 								Location l = slot.Direction == Direction.Across
 									? new Location(strip.StartAt + start, slot.Location.Y)
-									: new Location(slot.Location.X, strip.StartAt + start);
-								//bool canPlaceWord = workspace.CanPlaceWord(
-								//	slot.Direction,
-								//	candidateWord,
-								//	l
-								//);
-								//if(!canPlaceWord)
-								//{
-								//	int dummy = 3;
-								//}
-
-								
+									: new Location(slot.Location.X, strip.StartAt + start);								
 								var child = workspace.PlaceWord(
 									slot.Direction,
 									candidateWord, 
