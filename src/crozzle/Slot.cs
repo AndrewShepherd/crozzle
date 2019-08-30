@@ -1,7 +1,6 @@
-﻿namespace solve_crozzle
+﻿namespace crozzle
 {
 	using System;
-	using crozzle;
 
 	public class Slot : IComparable<Slot>
 	{

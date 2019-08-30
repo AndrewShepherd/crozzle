@@ -1,9 +1,8 @@
-﻿namespace solve_crozzle
+﻿namespace crozzle
 {
 	using System.Collections;
 	using System.Collections.Generic;
 	using System.Linq;
-	using crozzle;
 	public class WordDatabase
 	{
 		private string[] _wordArray;

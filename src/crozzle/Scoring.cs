@@ -1,9 +1,9 @@
-﻿namespace solve_crozzle
+﻿namespace crozzle
 {
 	using System.Collections.Generic;
 	using System.Linq;
 
-	static class Scoring
+	public static class Scoring
 	{
 		private static IDictionary<char, int> GenerateIntersectionScores()
 		{

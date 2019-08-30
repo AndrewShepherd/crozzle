@@ -1,7 +1,5 @@
-﻿namespace solve_crozzle
+﻿namespace crozzle
 {
-	using crozzle;
-
 	public class PartialWord
 	{
 		public Direction Direction;
