@@ -1,10 +1,10 @@
-﻿namespace solve_crozzle
+﻿namespace crozzle
 {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 
-	class WorkspacePriorityQueue
+	public class WorkspacePriorityQueue
 	{
 		readonly Workspace[] _workspaces; 
 		int _length = 0;
@@ -154,10 +154,6 @@
 				{
 					++i;
 					_workspaces[i] = _workspaces[j];
-				}
-				else
-				{
-					int dummy = 3;
 				}
 			}
 			this._length = i+1;

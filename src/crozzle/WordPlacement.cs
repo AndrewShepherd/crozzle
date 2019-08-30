@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace solve_crozzle
+﻿namespace crozzle
 {
-	using crozzle;
+	using System;
 
 	public class WordPlacement : IComparable<WordPlacement>
 	{
@@ -76,5 +74,16 @@ namespace solve_crozzle
 	{
 		public static WordPlacement Move(this WordPlacement wp, Vector v) =>
 			new WordPlacement(wp.Direction, wp.Location + v, wp.Word);
-	}
+
+
+		public static Rectangle GetRectangle(this WordPlacement wp) =>
+			new Rectangle(
+				new Location(
+					wp.Location.X - (wp.Direction == Direction.Across ? 1 : 0),
+					wp.Location.Y - (wp.Direction == Direction.Down ? 1 : 0)
+				),
+				wp.Direction == Direction.Across ? wp.Word.Length + 2 : 1,
+				wp.Direction == Direction.Down ? wp.Word.Length + 2 : 1
+			);
+			}
 }

@@ -1,17 +1,16 @@
 ﻿
-namespace solve_crozzle
+namespace crozzle
 {
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Immutable;
 	using System.Linq;
 	using System.Text;
-	using crozzle;
 
 	public class Board : IComparable<Board>
 	{
-		public int MaxWidth = 17;
-		public int MaxHeight = 12;
+		public static int MaxWidth = 17;
+		public static int MaxHeight = 12;
 		public Rectangle Rectangle;
 		public ImmutableSortedSet<WordPlacement> WordPlacements = ImmutableSortedSet<WordPlacement>.Empty;
 
@@ -108,9 +107,7 @@ namespace solve_crozzle
 					this.WordPlacements.Select(
 						wp => wp.Move(v)
 					)
-				),
-				MaxWidth = this.MaxWidth,
-				MaxHeight = this.MaxHeight
+				)
 			};
 
 		public int CompareTo(Board other)
@@ -154,16 +151,6 @@ namespace solve_crozzle
 			int index = board.Rectangle.IndexOf(location);
 			return index < board.Values.Length ? board.Values[index] : (char)0;
 		}
-
-		public static Rectangle GetRectangleForWord(Direction direction, string word, int x, int y) =>
-			new Rectangle(
-				new Location(
-					x - (direction == Direction.Across ? 1 : 0),
-					y - (direction == Direction.Down ? 1 : 0)
-				),
-				direction == Direction.Across ? word.Length + 2 : 1,
-				direction == Direction.Down ? word.Length + 2 : 1
-			);
 
 		public static Func<Location, Location> Move(int dx, int dy) =>
 			l => new Location(l.X + dx, l.Y + dy);
@@ -210,8 +197,6 @@ namespace solve_crozzle
 		public static Board PlaceWord(this Board board, Direction direction, Location location, string word) =>
 			new Board
 			{
-				MaxHeight = board.MaxHeight,
-				MaxWidth = board.MaxWidth,
 				Rectangle = board.Rectangle,
 				WordPlacements = board.WordPlacements.Add(
 					new WordPlacement(
@@ -224,9 +209,10 @@ namespace solve_crozzle
 
 		public static bool CanPlaceWord(this Board board, Direction direction, string word, Location location)
 		{
-			var r = GetRectangleForWord(direction, word, location.X, location.Y)
+			var wordPlacement = new WordPlacement(direction, location, word);
+			var r = wordPlacement.GetRectangle()
 				.Union(board.Rectangle);
-			if ((r.Width > board.MaxWidth) || (r.Height > board.MaxHeight))
+			if ((r.Width > Board.MaxWidth) || (r.Height > Board.MaxHeight))
 				return false;
 
 			(
@@ -267,8 +253,6 @@ namespace solve_crozzle
 		public static Board ExpandSize(this Board board, Rectangle newRectangle) =>
 			new Board
 			{
-				MaxHeight = board.MaxHeight,
-				MaxWidth = board.MaxWidth,
 				WordPlacements = board.WordPlacements,
 				Rectangle = board.Rectangle.Union(newRectangle)
 			};

@@ -1,8 +1,8 @@
-﻿namespace solve_crozzle
+﻿namespace crozzle
 {
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using crozzle;
 
 	public static class WorkspaceExtensions
 	{
@@ -78,7 +78,12 @@
 
 		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y)
 		{
-			var rectangle = BoardExtensions.GetRectangleForWord(direction, word, x, y);			
+			var wordPlacement = new WordPlacement(
+				direction,
+				new Location(x, y),
+				word
+			);
+			var rectangle = wordPlacement.GetRectangle();		
 			var newWorkspace = workspace.ExpandSize(
 				rectangle
 			);
@@ -201,7 +206,13 @@
 		}
 
 
-		public static IEnumerable<Workspace> CoverFragment(this Workspace workspace, string fragment, Location location, Direction direction)
+		internal static IEnumerable<Workspace> CoverFragment(
+			this Workspace workspace,
+			Grid grid,
+			string fragment,
+			Location location,
+			Direction direction
+		)
 		{
 			var availableWords = workspace.WordDatabase.ListAvailableMatchingWords(fragment);
 			foreach (var candidateWord in availableWords)
@@ -250,16 +261,63 @@
 			public int SlotIndex { get; internal set; }
 		}
 
+		internal static Grid GenerateGrid(this Workspace workspace)
+		{
+			GridCell[] gridCells = new GridCell[workspace.Board.Rectangle.Area];
+			Func<int, int> moveUp = n => n - workspace.Board.Rectangle.Width,
+				moveDown = n => n + workspace.Board.Rectangle.Width,
+				moveLeft = n => n - 1,
+				moveRight = n => n + 1;
+			for (int i = 0; i < gridCells.Length; ++i)
+			{
+				gridCells[i] = new GridCell();
+			}
+			foreach(var slot in workspace.Slots)
+			{
+				var cell = gridCells[workspace.Board.Rectangle.IndexOf(slot.Location)];
+				cell.Slot = slot;
+				cell.CellType = GridCellType.AvailableSlot;
+			}
+			foreach(var wordPlacement in workspace.Board.WordPlacements)
+			{
+				(Func<int, int> forward, Func<int, int> back) =
+					wordPlacement.Direction == Direction.Across
+					? (moveRight, moveLeft)
+					: (moveDown, moveUp);
+				int gridLocation = workspace.Board.Rectangle.IndexOf(wordPlacement.Location);
+				gridCells[back(gridLocation)].CellType = GridCellType.EnforcedBlank;
+				for (
+					int i = 0; i < wordPlacement.Word.Length;
+					++i,
+					gridLocation = forward(gridLocation)
+				)
+				{
+					var gridCell = gridCells[gridLocation];
+					gridCell.Letter = wordPlacement.Word[i];
+					if(!(gridCell.CellType == GridCellType.AvailableSlot))
+					{
+						gridCell.CellType = GridCellType.Complete;
+					}
+				}
+				gridCells[gridLocation].CellType = GridCellType.EnforcedBlank;
+			}
+			return new Grid
+			{
+				Rectangle = workspace.Board.Rectangle,
+				Cells = gridCells
+			};
+		}
+
 		public static Strip GenerateStrip(this Workspace workspace, Slot slot)
 		{
 			var rectangle = workspace.Board.Rectangle;
 			long amountToBeAdded = slot.Direction == Direction.Across
-				? workspace.Board.MaxWidth - rectangle.Width
-				: workspace.Board.MaxHeight - rectangle.Height;
+				? Board.MaxWidth - rectangle.Width
+				: Board.MaxHeight - rectangle.Height;
 			if (slot.Direction == Direction.Across)
 			{
-				int indexFirst = workspace.Board.Rectangle.Right - workspace.Board.MaxWidth + 1;
-				int indexLast = workspace.Board.Rectangle.Left + workspace.Board.MaxWidth - 1;
+				int indexFirst = workspace.Board.Rectangle.Right - Board.MaxWidth + 1;
+				int indexLast = workspace.Board.Rectangle.Left + Board.MaxWidth - 1;
 				var length = indexLast - indexFirst + 1;
 				var characters = new char[length];
 				var slotIndex = slot.Location.X - indexFirst;
@@ -308,8 +366,8 @@
 			}
 			else
 			{
-				int indexFirst = workspace.Board.Rectangle.Bottom - workspace.Board.MaxHeight + 1;
-				int indexLast = workspace.Board.Rectangle.Top + workspace.Board.MaxHeight - 1;
+				int indexFirst = workspace.Board.Rectangle.Bottom - Board.MaxHeight + 1;
+				int indexLast = workspace.Board.Rectangle.Top + Board.MaxHeight - 1;
 				var length = indexLast - indexFirst + 1;
 				var characters = new char[length];
 				var slotIndex = slot.Location.Y - indexFirst;
@@ -380,12 +438,14 @@
 
 		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
 		{
+			var grid = workspace.GenerateGrid();
 			if (workspace.PartialWords.Any())
 			{
 				workspace = workspace.PopPartialWord(out var partialSlot);
 				foreach(
 					var solution in CoverFragment(
 						workspace,
+						grid,
 						partialSlot.Value,
 						partialSlot.Rectangle.TopLeft,
 						partialSlot.Direction
@@ -412,8 +472,8 @@
 					{
 						var maxLength = (
 							slot.Direction == Direction.Across
-							? workspace.Board.MaxWidth 
-							: workspace.Board.MaxHeight
+							? Board.MaxWidth 
+							: Board.MaxHeight
 						) - 2;
 						if (candidateWord.Length > maxLength)
 							continue;

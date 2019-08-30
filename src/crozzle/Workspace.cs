@@ -1,11 +1,10 @@
-﻿namespace solve_crozzle
+﻿namespace crozzle
 {
     using System;
 	using System.Collections.Generic;
 	using System.Collections.Immutable;
 	using System.Linq;
 	using System.Text;
-	using crozzle;
 
 	public class Intersection
 	{
@@ -75,7 +74,7 @@
 		public override int GetHashCode() => _lazyHashCode.Value;
 
 
-		internal static Workspace Generate(IEnumerable<string> words)
+		public static Workspace Generate(IEnumerable<string> words)
 		{
 			var workspace = new Workspace()
 			{

@@ -14,7 +14,7 @@
 		{
 		}
 
-		internal WordDatabase Remove(string word)
+		public WordDatabase Remove(string word)
 		{
 			var wordAvailability = (BitArray)_wordAvailability.Clone();
 			wordAvailability.Set(_wordArrayIndex[word], false);
