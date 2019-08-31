@@ -19,4 +19,12 @@
 		public override int GetHashCode() =>
 			(Dx << 16) ^ Dy;
 	}
+
+	public static class Vectors
+	{
+		public static Vector UpOne = new Vector(0, -1);
+		public static Vector DownOne = new Vector(0, 1);
+		public static Vector LeftOne = new Vector(-1, 0);
+		public static Vector RightOne = new Vector(1, 0);
+	}
 }

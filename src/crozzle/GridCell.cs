@@ -21,6 +21,11 @@ namespace crozzle
 			CellType = GridCellType.EnforcedBlank
 		};
 
+		internal PartialWord PartialWordAbove { get; set; }
+		internal PartialWord PartialWordBelow { get; set; }
+		internal PartialWord PartialWordToLeft { get; set; }
+		internal PartialWord PartialWordToRight { get; set; }
+
 		internal static GridCell FromSlot(Slot slot) =>
 			new GridCell
 			{

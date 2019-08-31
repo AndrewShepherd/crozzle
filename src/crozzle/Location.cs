@@ -30,6 +30,12 @@
 			? Y.CompareTo(other.Y)
 			: X.CompareTo(other.X);
 
+		public static bool operator !=(Location l, Location r) =>
+			!(l.Equals(r));
+
+		public static bool operator ==(Location l, Location r) =>
+			l.Equals(r);
+
 		public static Vector operator -(Location l, Location r) =>
 			new Vector
 			(

@@ -226,6 +226,9 @@ namespace solve_crozzle
 				ulong generatedSolutionsCount = 0;
 				var maxScore = 0;
 				DateTime timeStart = DateTime.Now;
+				Console.WriteLine($"*** Run started {timeStart.ToShortDateString()} {timeStart.ToLongTimeString()}");
+				Console.WriteLine($"*** Input file: {parameters.FilePath} ***");
+				Console.WriteLine($"*** BeamSize: {parameters.BeamSize} ***");
 				foreach (var thisWorkspace in SolveUsingQueue(
 					workspaces,
 					10000000,

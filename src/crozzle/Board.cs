@@ -194,16 +194,12 @@ namespace crozzle
 			};
 		}
 
-		public static Board PlaceWord(this Board board, Direction direction, Location location, string word) =>
+		public static Board PlaceWord(this Board board, WordPlacement wordPlacement) =>
 			new Board
 			{
 				Rectangle = board.Rectangle,
 				WordPlacements = board.WordPlacements.Add(
-					new WordPlacement(
-						direction,
-						location,
-						word
-					)
+					wordPlacement
 				)
 			};
 

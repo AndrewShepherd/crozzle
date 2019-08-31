@@ -84,6 +84,14 @@
 				)
 			);
 
+		// Places the word in the workspace
+		// 
+		// The new workspace will have
+		//  - Different Slots
+		//  - Different Partial Words
+		//  - Different wordplacements
+		//  - Different available words
+		//  - Different Score
 		internal static Workspace PlaceWord(this Workspace workspace, Grid grid, WordPlacement wordPlacement)
 		{
 			var rectangle = wordPlacement.GetRectangle();		
@@ -98,30 +106,71 @@
 				: newWorkspace.Board.Rectangle.Width;
 			int x = wordPlacement.Location.X;
 			int y = wordPlacement.Location.Y;
-			(var startMarkerPoint, var endMarkerPoint) =
-				wordPlacement.Direction == Direction.Across
-				? (
-					newWorkspace.Board.IndexOf(
-					new Location(wordPlacement.Location.X - 1, wordPlacement.Location.Y)
-					), 
-					newWorkspace.Board.IndexOf(
-						new Location(wordPlacement.Location.X + wordPlacement.Word.Length, wordPlacement.Location.Y)
-					)
+
+			Vector locationIncrement = wordPlacement.Direction == Direction.Across
+				? new Vector(1, 0)
+				: new Vector(0, 1);
+			for(
+					(int stringIndex, Location l) = (0, wordPlacement.Location);
+					stringIndex < wordPlacement.Word.Length;
+					++stringIndex, l = l+locationIncrement
 				)
-				: (
-					newWorkspace.Board.IndexOf(
-						new Location(x, y - 1)
-					), 
-					newWorkspace.Board.IndexOf(
-						new Location(x, y + wordPlacement.Word.Length)
-					)
-				);
-			newWorkspace.Board.Values[startMarkerPoint] = '*';
-			newWorkspace.Board.Values[endMarkerPoint] = '*';
+			{
+				var gridCell = grid.CellAt(l);
+				if(gridCell.CellType == GridCellType.AvailableSlot)
+				{
+					newWorkspace.Score += Scoring.Score(gridCell.Slot.Letter);
+					newWorkspace.Intersections = newWorkspace.Intersections.Add(
+						new Intersection
+						{
+							Word = wordPlacement.Word,
+							Index = stringIndex
+						}
+					);
+					newWorkspace.Slots = newWorkspace.Slots.Remove(gridCell.Slot);
+				}
+				else if (gridCell.CellType == GridCellType.Blank)
+				{
+					newWorkspace.Slots = newWorkspace.Slots.Add(
+						new Slot(
+							wordPlacement.Word[stringIndex],
+							wordPlacement.Direction == Direction.Across ? Direction.Down : Direction.Across,
+							l
+						)
+					);
+					// Must now check for partial words
+					PartialWord partialWord;
+					if(wordPlacement.Direction == Direction.Across)
+					{
+						partialWord = MergePartialWords(
+							gridCell.PartialWordAbove,
+							wordPlacement.Word[stringIndex],
+							gridCell.PartialWordBelow
+						);
+					}
+					else
+					{
+						partialWord = MergePartialWords(
+							gridCell.PartialWordToLeft,
+							wordPlacement.Word[stringIndex],
+							gridCell.PartialWordToRight
+						);
+					}
+					if(partialWord != null)
+					{
+						newWorkspace.PartialWords = newWorkspace.PartialWords.Add(partialWord);
+					}
+				}
+				else
+				{
+					throw new Exception("Unexpected state");
+				}
+			}
+
 
 			for (
 				int i = newWorkspace.Board.IndexOf(
-					new Location(x, y)
+					wordPlacement.Location
 				), 
 				sIndex = 0; 
 				sIndex < wordPlacement.Word.Length; 
@@ -131,24 +180,6 @@
 			{
 				if(newWorkspace.Board.Values[i] == wordPlacement.Word[sIndex])
 				{
-					newWorkspace.Score += Scoring.Score(wordPlacement.Word[sIndex]);
-					newWorkspace.Intersections = newWorkspace.Intersections.Add(
-						new Intersection
-						{
-							Word = wordPlacement.Word,
-							Index = sIndex
-						}
-					);
-					var location = newWorkspace.Board.Rectangle.CalculateLocation(i);
-					var matchingSlot = newWorkspace
-						.Slots
-						.FirstOrDefault(
-							s => s.Location.Equals(location)
-						);
-					if(matchingSlot != null)
-					{
-						newWorkspace.Slots = newWorkspace.Slots.Remove(matchingSlot);
-					}
 				}
 				else
 				{
@@ -175,40 +206,23 @@
 						newWorkspace.PartialWords = newWorkspace.PartialWords.Add(
 							partialWord
 						);
-						newWorkspace.Slots = newWorkspace.Slots.Add(
-							new Slot
-								(
-									wordPlacement.Word[sIndex],
-									wordPlacement.Direction == Direction.Down ? Direction.Across : Direction.Down,
-									thisLocation
-								)
-							);
 					}
 					else
 					{
-						if(newWorkspace.WordDatabase.CanMatchWord(wordPlacement.Word.Substring(sIndex, 1)))
-						{
-							newWorkspace.Slots = newWorkspace.Slots.Add(
-								new Slot
-									(
-										wordPlacement.Word[sIndex],
-										wordPlacement.Direction == Direction.Down ? Direction.Across : Direction.Down,
-										thisLocation
-									)
-							);
-						}
 					}
 
 				}
 			}
 			newWorkspace.Board = newWorkspace.Board.PlaceWord(
-				wordPlacement.Direction,
-				new Location(x, y),
-				wordPlacement.Word
+				wordPlacement
 			);
 			return newWorkspace;			
 		}
 
+		private static PartialWord MergePartialWords(PartialWord partialWordAbove, char v, PartialWord partialWordBelow)
+		{
+			return null;
+		}
 
 		internal static IEnumerable<Workspace> CoverFragment(
 			this Workspace workspace,
@@ -309,15 +323,33 @@
 					if(!(gridCell.CellType == GridCellType.AvailableSlot))
 					{
 						gridCell.CellType = GridCellType.Complete;
+						// Must go on either side and set it to EnforcedBlank
+						// if they are already blank
+						(int s1, int s2) = wordPlacement.Direction == Direction.Across
+							? (moveUp(gridLocation), moveDown(gridLocation))
+							: (moveLeft(gridLocation), moveRight(gridLocation));
+						foreach(var s in new[] { s1, s2})
+						{
+							if((s >= 0) && (s < gridCells.Length))
+							{
+								var sideCell  = gridCells[s];
+								if(sideCell.CellType == GridCellType.Blank)
+								{
+									sideCell.CellType = GridCellType.EnforcedBlank;
+								}
+							}
+						}
 					}
 				}
 				gridCells[gridLocation].CellType = GridCellType.EnforcedBlank;
 			}
-			return new Grid
+
+			var grid = new Grid
 			{
 				Rectangle = workspace.Board.Rectangle,
 				Cells = gridCells
 			};
+			return grid;
 		}
 
 		internal static Strip GenerateStrip(this Workspace workspace, Grid grid, Slot slot)

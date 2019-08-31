@@ -10,9 +10,20 @@ namespace crozzle
 		internal GridCell[] Cells { get; set; }
 	}
 
-
 	internal static class GridExtensions
 	{
+		internal static void Traverse(
+			this Grid grid,
+			TraversalDirection traversalDirection,
+			Action handleLineStart,
+			Action<Location, GridCell> handleCell
+		) =>
+			grid.Rectangle.Traverse(
+				traversalDirection,
+				handleLineStart,
+				l => handleCell.Invoke(l, grid.CellAt(l))
+			);
+
 		internal static void RemoveSlot(this Grid grid, Slot slot)
 		{
 			var index = grid.Rectangle.IndexOf(slot.Location);
