@@ -8,6 +8,8 @@ namespace crozzle
 	{
 		internal Rectangle Rectangle { get; set; }
 		internal GridCell[] Cells { get; set; }
+
+		internal HashSet<PartialWord> PartialWords = new HashSet<PartialWord>();
 	}
 
 	internal static class GridExtensions
@@ -41,6 +43,21 @@ namespace crozzle
 			}
 			int index = grid.Rectangle.IndexOf(location);
 			return grid.Cells[index];
+		}
+
+		internal static GridCell CellAt(this GridCell[] gridCellArray, int index)
+		{
+			if((index >= 0) && (index < gridCellArray.Length))
+			{
+				return gridCellArray[index];
+			}
+			else
+			{
+				return new GridCell
+				{
+					CellType = GridCellType.Blank
+				};
+			}
 		}
 
 
