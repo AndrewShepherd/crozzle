@@ -21,7 +21,6 @@
 
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
-		public ImmutableList<PartialWord> PartialWords = ImmutableList<PartialWord>.Empty;
 		public WordDatabase WordDatabase = WordDatabase.Empty;
 
 		public Workspace()
@@ -43,11 +42,11 @@
 			{
 				return false;
 			}
-			if(!(this.WordDatabase.Equals(w.WordDatabase)))
+			if(this.IsValid != w.IsValid)
 			{
 				return false;
 			}
-			if(!Enumerable.SequenceEqual(this.PartialWords, w.PartialWords))
+			if(!(this.WordDatabase.Equals(w.WordDatabase)))
 			{
 				return false;
 			}
@@ -90,7 +89,7 @@
 		}
 
 
-		public bool IsValid => PartialWords.IsEmpty;
+		public bool IsValid { get; internal set; }
 
 		public string BoardRepresentation => Board.ToString();
 
@@ -156,13 +155,11 @@
 			var diff = Zero - topLeft;
 			return new Workspace
 			{
+				IsValid = this.IsValid,
 				WordDatabase = this.WordDatabase,
 				Board = this.Board.Move(diff),
 				IncludedWords = this.IncludedWords,
 				Intersections = this.Intersections,
-				PartialWords = ImmutableList<PartialWord>
-					.Empty
-					.AddRange(this.PartialWords.Select(pw => pw.Move(diff))),
 				Score = this.Score,
 				Slots = ImmutableList<Slot>
 					.Empty

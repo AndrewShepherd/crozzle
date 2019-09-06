@@ -13,7 +13,7 @@
 				Board = workspace.Board,
 				WordDatabase = workspace.WordDatabase,
 				Slots = workspace.Slots,
-				PartialWords = workspace.PartialWords,
+				IsValid = workspace.IsValid,
 				IncludedWords = workspace.IncludedWords,
 				Intersections = workspace.Intersections
 			};
@@ -30,22 +30,6 @@
 				var clone = workspace.Clone();
 				slot = workspace.Slots.OrderByDescending(s => Scoring.Score(s.Letter)).First();
 				clone.Slots = clone.Slots.Remove(slot);
-				return clone;
-			}
-		}
-
-		public static Workspace PopPartialWord(this Workspace workspace, out PartialWord partialWord)
-		{
-			if(workspace.PartialWords.IsEmpty)
-			{
-				partialWord = null;
-				return workspace;
-			}
-			else
-			{
-				var clone = workspace.Clone();
-				partialWord = workspace.PartialWords.OrderByDescending(pw => pw.Value.Length).First();
-				clone.PartialWords = workspace.PartialWords.Remove(partialWord);
 				return clone;
 			}
 		}
@@ -74,7 +58,7 @@
 		public static Rectangle GetCurrentRectangle(this Workspace workspace) => workspace.Board.Rectangle;
 
 		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y) =>
-			PlaceWord(
+			TryPlaceWord(
 				workspace,
 				workspace.GenerateGrid(),
 				new WordPlacement(
@@ -92,12 +76,13 @@
 		//  - Different wordplacements
 		//  - Different available words
 		//  - Different Score
-		internal static Workspace PlaceWord(this Workspace workspace, Grid grid, WordPlacement wordPlacement)
+		internal static Workspace TryPlaceWord(this Workspace workspace, Grid grid, WordPlacement wordPlacement)
 		{
 			var rectangle = wordPlacement.GetRectangle();		
 			var newWorkspace = workspace.ExpandSize(
 				rectangle
 			);
+			newWorkspace.IsValid = true;
 			newWorkspace.WordDatabase = newWorkspace.WordDatabase.Remove(wordPlacement.Word);
 			newWorkspace.IncludedWords = newWorkspace.IncludedWords.Add(wordPlacement.Word);
 			newWorkspace.Score = workspace.Score + Scoring.ScorePerWord;
@@ -138,66 +123,27 @@
 							l
 						)
 					);
-					// Must now check for partial words
-					PartialWord partialWord;
-					if(wordPlacement.Direction == Direction.Across)
+					bool formsPartialWord = wordPlacement.Direction == Direction.Across
+						? ((gridCell.PartialWordAbove != null) || (gridCell.PartialWordBelow != null))
+						: ((gridCell.PartialWordToLeft != null) || (gridCell.PartialWordToRight != null));
+					if(formsPartialWord)
 					{
-						partialWord = new PartialWord
+						newWorkspace.IsValid = false;
+						// This test might be too expensive
+						if(true)
 						{
-							Direction = Direction.Down,
-							Rectangle = new Rectangle(l, l),
-							Value = wordPlacement.Word[stringIndex].ToString()
-						};
-						if(gridCell.PartialWordAbove != null)
-						{
-							partialWord = new PartialWord
+							var partialWord = gridCell.PredictPartialWordToBeCreated(
+								l,
+								wordPlacement.Word[stringIndex],
+								wordPlacement.Direction
+							);
+							if(!(newWorkspace.WordDatabase.CanMatchWord(partialWord.Value)))
 							{
-								Direction = Direction.Down,
-								Rectangle = partialWord.Rectangle.Union(gridCell.PartialWordAbove.Rectangle),
-								Value = $"{gridCell.PartialWordAbove.Value}{partialWord.Value}",
-							};
-						}
-						if(gridCell.PartialWordBelow != null)
-						{
-							partialWord = new PartialWord
-							{
-								Direction = Direction.Down,
-								Rectangle = partialWord.Rectangle.Union(gridCell.PartialWordBelow.Rectangle),
-								Value = $"{partialWord.Value}{gridCell.PartialWordBelow.Value}",
-							};
+								return null;
+							}
 						}
 					}
-					else
-					{
-						partialWord = new PartialWord
-						{
-							Direction = Direction.Across,
-							Rectangle = new Rectangle(l, l),
-							Value = wordPlacement.Word[stringIndex].ToString()
-						};
-						if (gridCell.PartialWordToLeft != null)
-						{
-							partialWord = new PartialWord
-							{
-								Direction = Direction.Across,
-								Rectangle = partialWord.Rectangle.Union(gridCell.PartialWordToLeft.Rectangle),
-								Value = $"{gridCell.PartialWordToLeft.Value}{partialWord.Value}",
-							};
-						}
-						if (gridCell.PartialWordToRight != null)
-						{
-							partialWord = new PartialWord
-							{
-								Direction = Direction.Across,
-								Rectangle = partialWord.Rectangle.Union(gridCell.PartialWordToRight.Rectangle),
-								Value = $"{partialWord.Value}{gridCell.PartialWordToRight.Value}",
-							};
-						}
-					}
-					if(partialWord.Value.Length > 1)
-					{
-						newWorkspace.PartialWords = newWorkspace.PartialWords.Add(partialWord);
-					}
+
 				}
 				else
 				{
@@ -208,56 +154,6 @@
 				wordPlacement
 			);
 			return newWorkspace;			
-		}
-
-		private static PartialWord MergePartialWords(PartialWord partialWordAbove, char v, PartialWord partialWordBelow)
-		{
-			if((partialWordAbove == null) && (partialWordBelow == null))
-			{
-				return null;
-			}
-			string s = $"{partialWordAbove?.Value ?? string.Empty}{v}{partialWordBelow?.Value ?? string.Empty}";
-			var direction = partialWordAbove != null ? partialWordAbove.Direction : partialWordBelow.Direction;
-			Rectangle rectangle = partialWordAbove?.Rectangle;
-			if(rectangle != null)
-			{
-				if(direction == Direction.Across)
-				{
-					rectangle = new Rectangle(rectangle.TopLeft, new Location(rectangle.Right + 1, rectangle.Top));
-				}
-				else
-				{
-					rectangle = new Rectangle(rectangle.TopLeft, new Location(rectangle.Left, rectangle.Bottom + 1));
-				}
-				if(partialWordBelow != null)
-				{
-					rectangle = rectangle.Union(partialWordBelow.Rectangle);
-				}
-			}
-			else
-			{
-				rectangle = partialWordBelow.Rectangle;
-				if(direction == Direction.Across)
-				{
-					rectangle = new Rectangle(
-						new Location(rectangle.Left - 1, rectangle.Top),
-						new Location(rectangle.Right, rectangle.Top)
-					);
-				}
-				else
-				{
-					rectangle = new Rectangle(
-						new Location(rectangle.Left, rectangle.Top - 1),
-						new Location(rectangle.Right, rectangle.Top)
-					);
-				}
-			}
-			return new PartialWord
-			{
-				Direction = direction == Direction.Across ? Direction.Down : Direction.Across,
-				Rectangle = rectangle,
-				Value = s
-			};
 		}
 
 		internal static IEnumerable<Workspace> CoverFragment(
@@ -286,7 +182,7 @@
 					
 					if (grid.CanPlaceWord(direction, candidateWord, startLocation))
 					{
-						var newWorkspace = workspace.PlaceWord(
+						var newWorkspace = workspace.TryPlaceWord(
 							grid,
 							new WordPlacement(
 								direction,
@@ -294,19 +190,9 @@
 								candidateWord
 							)
 						);
-						// Quick check of the partial words
-						if(newWorkspace
-							.PartialWords
-							.All(
-								pw => newWorkspace.WordDatabase.CanMatchWord(pw.Value)
-							)
-						)
+						if(newWorkspace != null)
 						{
 							yield return newWorkspace;
-						}
-						else
-						{
-							int dummy = 3;
 						}
 					}
 					index = candidateWord.IndexOf(fragment, index + 1);
@@ -396,7 +282,7 @@
 				PartialWord partialWord = null;
 				if (gridCell.Slot.Direction == Direction.Across)
 				{
-					while (gridCells[moveRight(probe)].CellType == GridCellType.AvailableSlot)
+					while (gridCells[moveRight(probe)].HasLetter)
 					{
 						probe = moveRight(probe);
 					}
@@ -404,17 +290,16 @@
 					Location rectangleBottomRight = workspace.Board.Rectangle.CalculateLocation(probe);
 					string contiguousText = string.Empty;
 					Location rectangleTopLeft = rectangleBottomRight;
-					while (gridCells[probe].CellType == GridCellType.AvailableSlot)
+					while (gridCells[probe].HasLetter)
 					{
 						var thisSlot = gridCells[probe].Slot;
-						if(thisSlot.Direction != Direction.Across)
+						if(thisSlot != null)
 						{
-							throw new Exception("Unexpected state reached");
+							slotsToProcess.Remove(thisSlot);
 						}
-						slotsToProcess.Remove(thisSlot);
-						contiguousText = $"{thisSlot.Letter}{contiguousText}";
-						probe = moveLeft(probe);
+						contiguousText = $"{gridCells[probe].Letter}{contiguousText}";
 						rectangleTopLeft = workspace.Board.Rectangle.CalculateLocation(probe);
+						probe = moveLeft(probe);
 					}
 					partialWord = new PartialWord
 					{
@@ -428,7 +313,7 @@
 				}
 				else
 				{
-					while (gridCells.CellAt(moveDown(probe)).CellType == GridCellType.AvailableSlot)
+					while (gridCells.CellAt(moveDown(probe)).HasLetter)
 					{
 						probe = moveDown(probe);
 					}
@@ -436,29 +321,25 @@
 					Location rectangleBottomRight = workspace.Board.Rectangle.CalculateLocation(probe);
 					string contiguousText = string.Empty;
 					Location rectangleTopLeft = rectangleBottomRight;
-					while (gridCells.CellAt(probe).CellType == GridCellType.AvailableSlot)
+					while (gridCells.CellAt(probe).HasLetter)
 					{
 						var thisSlot = gridCells[probe].Slot;
-						if (thisSlot.Direction != Direction.Down)
+						if(thisSlot != null)
 						{
-							throw new Exception("Unexpected state reached");
+							slotsToProcess.Remove(thisSlot);
 						}
-						slotsToProcess.Remove(thisSlot);
-						contiguousText = $"{thisSlot.Letter}{contiguousText}";
-						probe = moveUp(probe);
+						contiguousText = $"{gridCells[probe].Letter}{contiguousText}";
 						rectangleTopLeft = workspace.Board.Rectangle.CalculateLocation(probe);
+						probe = moveUp(probe);
 					}
 					partialWord = new PartialWord
 					{
-						Direction = Direction.Across,
+						Direction = Direction.Down,
 						Value = contiguousText,
 						Rectangle = new Rectangle(rectangleTopLeft, rectangleBottomRight)
 					};
 					gridCells.CellAt(probe).PartialWordBelow = partialWord;
 					gridCells.CellAt(bottomNonSlotLocation).PartialWordAbove = partialWord;
-
-
-
 				}
 				if (partialWord.Value.Length > 1)
 				{
@@ -473,11 +354,8 @@
 
 		internal static Strip GenerateStrip(this Workspace workspace, Grid grid, Slot slot)
 		{
-			var rectangle = grid.Rectangle;
-			long amountToBeAdded = slot.Direction == Direction.Across
-				? Board.MaxWidth - rectangle.Width
-				: Board.MaxHeight - rectangle.Height;
-			if (slot.Direction == Direction.Across)
+			var direction = slot.Direction;
+			if (direction == Direction.Across)
 			{
 				int indexFirst = grid.Rectangle.Right - Board.MaxWidth + 1;
 				int indexLast = grid.Rectangle.Left + Board.MaxWidth - 1;
@@ -512,11 +390,8 @@
 				var slotIndex = slot.Location.Y - indexFirst;
 				gridCells[0] = GridCell.EnforcedBlank;
 				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
-				gridCells[slotIndex] = GridCell.FromSlot(slot);
 				for (int i = 1; i < (gridCells.Length - 1); ++i)
 				{
-					if (i == slotIndex)
-						continue;
 					var l = new Location(slot.Location.X, indexFirst + i);
 					var gridCell = grid.CellAt(l);
 					gridCells[i] = gridCell;
@@ -553,9 +428,11 @@
 		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
 		{
 			var grid = workspace.GenerateGrid();
-			if (workspace.PartialWords.Any())
+			if (grid.PartialWords.Any())
 			{
-				workspace = workspace.PopPartialWord(out var partialSlot);
+				var partialSlot = grid.PartialWords.First();
+				grid.PartialWords.Remove(partialSlot);
+				workspace = workspace.Clone();
 				foreach(
 					var solution in CoverFragment(
 						workspace,
@@ -566,6 +443,14 @@
 					)
 				)
 				{
+					if(grid.PartialWords.Any())
+					{
+						solution.IsValid = false;
+					}
+					else
+					{
+						int dummy = 3;
+					}
 					yield return solution.Normalise();
 				}
 				yield break;
@@ -575,6 +460,7 @@
 				while (!workspace.Slots.IsEmpty)
 				{
 					workspace = workspace.PopSlot(out var slot);
+					workspace.IsValid = true;
 					var availableWords = workspace.WordDatabase.ListAvailableMatchingWords($"{slot.Letter}");
 					if (!(availableWords.Any()))
 					{
@@ -626,11 +512,10 @@
 							}
 							if(success)
 							{
-
 								Location l = slot.Direction == Direction.Across
 									? new Location(strip.StartAt + start, slot.Location.Y)
 									: new Location(slot.Location.X, strip.StartAt + start);
-								var child = workspace.PlaceWord(
+								var child = workspace.TryPlaceWord(
 									grid,
 									new WordPlacement(
 										slot.Direction,
@@ -638,7 +523,10 @@
 										candidateWord
 									)
 								);
-								yield return child.Normalise();
+								if(child != null)
+								{
+									yield return child.Normalise();
+								}
 							}
 						}
 					}
