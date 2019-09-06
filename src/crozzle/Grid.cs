@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace crozzle
@@ -14,18 +15,6 @@ namespace crozzle
 
 	internal static class GridExtensions
 	{
-		internal static void Traverse(
-			this Grid grid,
-			TraversalDirection traversalDirection,
-			Action handleLineStart,
-			Action<Location, GridCell> handleCell
-		) =>
-			grid.Rectangle.Traverse(
-				traversalDirection,
-				handleLineStart,
-				l => handleCell.Invoke(l, grid.CellAt(l))
-			);
-
 		internal static void RemoveSlot(this Grid grid, Slot slot)
 		{
 			var index = grid.Rectangle.IndexOf(slot.Location);
@@ -60,49 +49,72 @@ namespace crozzle
 			}
 		}
 
-
-		internal static bool CanPlaceWord(this Grid grid, Direction direction, string word, Location location)
+		internal static Strip GenerateStrip(this Grid grid, Direction direction, Location location)
 		{
-			var wordPlacement = new WordPlacement(direction, location, word);
-			var r = wordPlacement.GetRectangle()
-				.Union(grid.Rectangle);
-			if ((r.Width > Board.MaxWidth) || (r.Height > Board.MaxHeight))
-				return false;
-			(
-				var startMarkerLocation,
-				var endMarkerLocation
-			) = direction == Direction.Across
-			? (new Location(location.X - 1, location.Y), new Location(location.X + word.Length, location.Y))
-			: (new Location(location.X, location.Y - 1), new Location(location.X, location.Y + word.Length));
-
-			var startMarker = grid.CellAt(startMarkerLocation);
-			if((startMarker.CellType != GridCellType.Blank) && (startMarker.CellType != GridCellType.EnforcedBlank))
+			if (direction == Direction.Across)
 			{
-				return false;
-			}
-			var endMarker = grid.CellAt(endMarkerLocation);
-			if ((endMarker.CellType != GridCellType.Blank) && (endMarker.CellType != GridCellType.EnforcedBlank))
-			{
-				return false;
-			}
-			for (int i = 0; i < word.Length; ++i)
-			{
-
-				var l = direction == Direction.Down
-					? new Location(location.X, location.Y + i)
-					: new Location(location.X + i, location.Y);
-				var c = grid.CellAt(l);
-				if(c.CellType == GridCellType.Blank)
+				int indexFirst = grid.Rectangle.Right - Board.MaxWidth + 1;
+				int indexLast = grid.Rectangle.Left + Board.MaxWidth - 1;
+				var length = indexLast - indexFirst + 1;
+				var gridCells = new GridCell[length];
+				var slotIndex = location.X - indexFirst;
+				gridCells[0] = GridCell.EnforcedBlank;
+				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
+				for (int i = 1; i < (gridCells.Length - 1); ++i)
 				{
-					continue;
+					var l = new Location(i + indexFirst, location.Y);
+					var gridCell = grid.CellAt(l);
+					gridCells[i] = gridCell;
 				}
-				if((c.CellType == GridCellType.AvailableSlot) && c.Slot.Letter == word[i])
+				return new Strip
 				{
-					continue;
-				}
-				return false;
+					GridCells = gridCells,
+					StartAt = indexFirst,
+					SlotIndex = slotIndex
+				};
 			}
-			return true;
+			else
+			{
+				int indexFirst = grid.Rectangle.Bottom - Board.MaxHeight + 1;
+				int indexLast = grid.Rectangle.Top + Board.MaxHeight - 1;
+				var length = indexLast - indexFirst + 1;
+				var gridCells = new GridCell[length];
+				var slotIndex = location.Y - indexFirst;
+				gridCells[0] = GridCell.EnforcedBlank;
+				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
+				for (int i = 1; i < (gridCells.Length - 1); ++i)
+				{
+					var l = new Location(location.X, indexFirst + i);
+					var gridCell = grid.CellAt(l);
+					gridCells[i] = gridCell;
+				}
+				var strip = new Strip
+				{
+					GridCells = gridCells,
+					StartAt = indexFirst,
+					SlotIndex = slotIndex
+				};
+
+
+				// Find the last dollar sign before the slotIndex
+				int indexOfFirstDollarBeforeSlotIndex = slotIndex - 1;
+				for (;
+					indexOfFirstDollarBeforeSlotIndex >= 0
+					&&
+					gridCells[indexOfFirstDollarBeforeSlotIndex].CellType != GridCellType.Complete;
+					--indexOfFirstDollarBeforeSlotIndex
+				) ;
+				if (indexOfFirstDollarBeforeSlotIndex != -1)
+				{
+					strip = new Strip
+					{
+						GridCells = strip.GridCells.Skip(indexOfFirstDollarBeforeSlotIndex + 1).ToArray(),
+						SlotIndex = strip.SlotIndex - (indexOfFirstDollarBeforeSlotIndex + 1),
+						StartAt = strip.StartAt + indexOfFirstDollarBeforeSlotIndex + 1
+					};
+				}
+				return strip;
+			}
 		}
 	}
 

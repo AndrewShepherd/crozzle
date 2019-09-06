@@ -129,7 +129,8 @@
 					if(formsPartialWord)
 					{
 						newWorkspace.IsValid = false;
-						// This test might be too expensive
+						// We test that there is a hope that the partial word 
+						// can be filled
 						if(true)
 						{
 							var partialWord = gridCell.PredictPartialWordToBeCreated(
@@ -154,15 +155,6 @@
 				wordPlacement
 			);
 			return newWorkspace;			
-		}
-
-
-		internal class Strip
-		{
-			public GridCell[] GridCells;
-			public int StartAt;
-
-			public int SlotIndex { get; internal set; }
 		}
 
 		internal static Grid GenerateGrid(this Workspace workspace)
@@ -308,81 +300,6 @@
 			return grid;
 		}
 
-		internal static Strip GenerateStrip(this Workspace workspace, Grid grid, Slot slot)
-		{
-			var direction = slot.Direction;
-			var location = slot.Location;
-			return GenerateStrip(grid, direction, location);
-		}
-
-		private static Strip GenerateStrip(Grid grid, Direction direction, Location location)
-		{
-			if (direction == Direction.Across)
-			{
-				int indexFirst = grid.Rectangle.Right - Board.MaxWidth + 1;
-				int indexLast = grid.Rectangle.Left + Board.MaxWidth - 1;
-				var length = indexLast - indexFirst + 1;
-				var gridCells = new GridCell[length];
-				var slotIndex = location.X - indexFirst;
-				gridCells[0] = GridCell.EnforcedBlank;
-				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
-				for (int i = 1; i < (gridCells.Length - 1); ++i)
-				{
-					var l = new Location(i + indexFirst, location.Y);
-					var gridCell = grid.CellAt(l);
-					gridCells[i] = gridCell;
-				}
-				return new Strip
-				{
-					GridCells = gridCells,
-					StartAt = indexFirst,
-					SlotIndex = slotIndex
-				};
-			}
-			else
-			{
-				int indexFirst = grid.Rectangle.Bottom - Board.MaxHeight + 1;
-				int indexLast = grid.Rectangle.Top + Board.MaxHeight - 1;
-				var length = indexLast - indexFirst + 1;
-				var gridCells = new GridCell[length];
-				var slotIndex = location.Y - indexFirst;
-				gridCells[0] = GridCell.EnforcedBlank;
-				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
-				for (int i = 1; i < (gridCells.Length - 1); ++i)
-				{
-					var l = new Location(location.X, indexFirst + i);
-					var gridCell = grid.CellAt(l);
-					gridCells[i] = gridCell;
-				}
-				var strip = new Strip
-				{
-					GridCells = gridCells,
-					StartAt = indexFirst,
-					SlotIndex = slotIndex
-				};
-
-
-				// Find the last dollar sign before the slotIndex
-				int indexOfFirstDollarBeforeSlotIndex = slotIndex - 1;
-				for (;
-					indexOfFirstDollarBeforeSlotIndex >= 0
-					&&
-					gridCells[indexOfFirstDollarBeforeSlotIndex].CellType != GridCellType.Complete;
-					--indexOfFirstDollarBeforeSlotIndex
-				) ;
-				if (indexOfFirstDollarBeforeSlotIndex != -1)
-				{
-					strip = new Strip
-					{
-						GridCells = strip.GridCells.Skip(indexOfFirstDollarBeforeSlotIndex + 1).ToArray(),
-						SlotIndex = strip.SlotIndex - (indexOfFirstDollarBeforeSlotIndex + 1),
-						StartAt = strip.StartAt + indexOfFirstDollarBeforeSlotIndex + 1
-					};
-				}
-				return strip;
-			}
-		}
-
 		internal static IEnumerable<Workspace> CoverFragment(
 				this Workspace workspace,
 				Grid grid,
@@ -396,7 +313,7 @@
 			{
 				yield break;
 			}
-			var strip = GenerateStrip(grid, direction, location);
+			var strip = grid.GenerateStrip(direction, location);
 
 			foreach (var candidateWord in availableWords)
 			{
