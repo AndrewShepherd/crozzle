@@ -96,17 +96,22 @@ namespace solve_crozzle
 					{
 						foreach (var ns in nextSteps)
 						{
-							//childWorkspaces.Add(ns);
-
-							if (ns.IsValid)
+							if (false)
 							{
 								childWorkspaces.Add(ns);
 							}
 							else
 							{
-								foreach (var nsChild in GetValidChildren(ns))
+								if (ns.IsValid)
 								{
-									childWorkspaces.Add(nsChild);
+									childWorkspaces.Add(ns);
+								}
+								else
+								{
+									foreach (var nsChild in GetValidChildren(ns))
+									{
+										childWorkspaces.Add(nsChild);
+									}
 								}
 							}
 						}

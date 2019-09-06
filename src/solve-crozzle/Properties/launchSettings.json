@@ -2,7 +2,7 @@
   "profiles": {
     "solve-crozzle": {
       "commandName": "Project",
-      "commandLineArgs": "--wordsfile C:\\Users\\sheph\\Documents\\GitHub\\crozzle\\wordlists\\20190814.txt --beamsize 512"
+      "commandLineArgs": "--wordsfile C:\\Users\\sheph\\Documents\\GitHub\\crozzle\\wordlists\\20190814.txt --beamsize 128"
     }
   }
 }

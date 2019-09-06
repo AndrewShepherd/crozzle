@@ -156,50 +156,6 @@
 			return newWorkspace;			
 		}
 
-		internal static IEnumerable<Workspace> CoverFragment(
-			this Workspace workspace,
-			Grid grid,
-			string fragment,
-			Location location,
-			Direction direction
-		)
-		{
-			var availableWords = workspace.WordDatabase.ListAvailableMatchingWords(fragment);
-			foreach (var candidateWord in availableWords)
-			{
-				var index = candidateWord.IndexOf(fragment, 0);
-				while (index != -1)
-				{
-					Location startLocation;
-					if (direction == Direction.Down)
-					{
-						startLocation = new Location(location.X, location.Y - index);
-					}
-					else
-					{
-						startLocation = new Location(location.X - index, location.Y);
-					}
-					
-					if (grid.CanPlaceWord(direction, candidateWord, startLocation))
-					{
-						var newWorkspace = workspace.TryPlaceWord(
-							grid,
-							new WordPlacement(
-								direction,
-								startLocation,
-								candidateWord
-							)
-						);
-						if(newWorkspace != null)
-						{
-							yield return newWorkspace;
-						}
-					}
-					index = candidateWord.IndexOf(fragment, index + 1);
-				}
-
-			}
-		}
 
 		internal class Strip
 		{
@@ -355,22 +311,24 @@
 		internal static Strip GenerateStrip(this Workspace workspace, Grid grid, Slot slot)
 		{
 			var direction = slot.Direction;
+			var location = slot.Location;
+			return GenerateStrip(grid, direction, location);
+		}
+
+		private static Strip GenerateStrip(Grid grid, Direction direction, Location location)
+		{
 			if (direction == Direction.Across)
 			{
 				int indexFirst = grid.Rectangle.Right - Board.MaxWidth + 1;
 				int indexLast = grid.Rectangle.Left + Board.MaxWidth - 1;
 				var length = indexLast - indexFirst + 1;
 				var gridCells = new GridCell[length];
-				var slotIndex = slot.Location.X - indexFirst;
+				var slotIndex = location.X - indexFirst;
 				gridCells[0] = GridCell.EnforcedBlank;
 				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
-				gridCells[slotIndex] = GridCell.FromSlot(slot);
-
 				for (int i = 1; i < (gridCells.Length - 1); ++i)
 				{
-					if (i == slotIndex)
-						continue;
-					var l = new Location(i + indexFirst, slot.Location.Y);
+					var l = new Location(i + indexFirst, location.Y);
 					var gridCell = grid.CellAt(l);
 					gridCells[i] = gridCell;
 				}
@@ -387,12 +345,12 @@
 				int indexLast = grid.Rectangle.Top + Board.MaxHeight - 1;
 				var length = indexLast - indexFirst + 1;
 				var gridCells = new GridCell[length];
-				var slotIndex = slot.Location.Y - indexFirst;
+				var slotIndex = location.Y - indexFirst;
 				gridCells[0] = GridCell.EnforcedBlank;
 				gridCells[gridCells.Length - 1] = GridCell.EnforcedBlank;
 				for (int i = 1; i < (gridCells.Length - 1); ++i)
 				{
-					var l = new Location(slot.Location.X, indexFirst + i);
+					var l = new Location(location.X, indexFirst + i);
 					var gridCell = grid.CellAt(l);
 					gridCells[i] = gridCell;
 				}
@@ -411,8 +369,8 @@
 					&&
 					gridCells[indexOfFirstDollarBeforeSlotIndex].CellType != GridCellType.Complete;
 					--indexOfFirstDollarBeforeSlotIndex
-				);
-				if(indexOfFirstDollarBeforeSlotIndex != -1)
+				) ;
+				if (indexOfFirstDollarBeforeSlotIndex != -1)
 				{
 					strip = new Strip
 					{
@@ -425,28 +383,34 @@
 			}
 		}
 
-		private static IEnumerable<Workspace> CoverSlot(this Workspace workspace, Grid grid, Slot slot)
+		internal static IEnumerable<Workspace> CoverFragment(
+				this Workspace workspace,
+				Grid grid,
+				string fragment,
+				Location location,
+				Direction direction
+			)
 		{
-			var availableWords = workspace.WordDatabase.ListAvailableMatchingWords($"{slot.Letter}");
+			var availableWords = workspace.WordDatabase.ListAvailableMatchingWords(fragment);
 			if (!(availableWords.Any()))
 			{
 				yield break;
 			}
-			var strip = workspace.GenerateStrip(grid, slot);
+			var strip = GenerateStrip(grid, direction, location);
 
 			foreach (var candidateWord in availableWords)
 			{
 				var maxLength = (
-					slot.Direction == Direction.Across
+					direction == Direction.Across
 					? Board.MaxWidth
 					: Board.MaxHeight
 				) - 2;
 				if (candidateWord.Length > maxLength)
 					continue;
 				for (
-					int index = candidateWord.IndexOf(slot.Letter, 0);
+					int index = candidateWord.IndexOf(fragment, 0);
 					index != -1;
-					index = candidateWord.IndexOf(slot.Letter, index + 1)
+					index = candidateWord.IndexOf(fragment, index + 1)
 				)
 				{
 					var start = strip.SlotIndex - index;
@@ -478,13 +442,13 @@
 					}
 					if (success)
 					{
-						Location l = slot.Direction == Direction.Across
-							? new Location(strip.StartAt + start, slot.Location.Y)
-							: new Location(slot.Location.X, strip.StartAt + start);
+						Location l = direction == Direction.Across
+							? new Location(strip.StartAt + start, location.Y)
+							: new Location(location.X, strip.StartAt + start);
 						var child = workspace.TryPlaceWord(
 							grid,
 							new WordPlacement(
-								slot.Direction,
+								direction,
 								l,
 								candidateWord
 							)
@@ -496,8 +460,15 @@
 					}
 				}
 			}
-
 		}
+
+		private static IEnumerable<Workspace> CoverSlot(this Workspace workspace, Grid grid, Slot slot) =>
+			workspace.CoverFragment(
+				grid,
+				new string(new[] { slot.Letter }),
+				slot.Location,
+				slot.Direction
+			);
 
 		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
 		{
