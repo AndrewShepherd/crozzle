@@ -425,6 +425,80 @@
 			}
 		}
 
+		private static IEnumerable<Workspace> CoverSlot(this Workspace workspace, Grid grid, Slot slot)
+		{
+			var availableWords = workspace.WordDatabase.ListAvailableMatchingWords($"{slot.Letter}");
+			if (!(availableWords.Any()))
+			{
+				yield break;
+			}
+			var strip = workspace.GenerateStrip(grid, slot);
+
+			foreach (var candidateWord in availableWords)
+			{
+				var maxLength = (
+					slot.Direction == Direction.Across
+					? Board.MaxWidth
+					: Board.MaxHeight
+				) - 2;
+				if (candidateWord.Length > maxLength)
+					continue;
+				for (
+					int index = candidateWord.IndexOf(slot.Letter, 0);
+					index != -1;
+					index = candidateWord.IndexOf(slot.Letter, index + 1)
+				)
+				{
+					var start = strip.SlotIndex - index;
+					if (start < 1)
+						continue;
+					var charBefore = strip.GridCells[start - 1];
+					if (!((charBefore.CellType == GridCellType.Blank) || (charBefore.CellType == GridCellType.EnforcedBlank)))
+						continue;
+					if (start + candidateWord.Length > (strip.GridCells.Length - 1))
+						continue;
+					var charAfter = strip.GridCells[start + candidateWord.Length];
+					if (!((charAfter.CellType == GridCellType.Blank) || (charAfter.CellType == GridCellType.EnforcedBlank)))
+						continue;
+					bool success = true;
+					for (
+						int cIndex = 0, sIndex = start;
+						cIndex < candidateWord.Length && success;
+						++cIndex, ++sIndex
+					)
+					{
+						if (strip.GridCells[sIndex].CellType == GridCellType.Blank)
+						{
+							continue;
+						}
+						if (strip.GridCells[sIndex].Slot?.Letter != candidateWord[cIndex])
+						{
+							success = false;
+						}
+					}
+					if (success)
+					{
+						Location l = slot.Direction == Direction.Across
+							? new Location(strip.StartAt + start, slot.Location.Y)
+							: new Location(slot.Location.X, strip.StartAt + start);
+						var child = workspace.TryPlaceWord(
+							grid,
+							new WordPlacement(
+								slot.Direction,
+								l,
+								candidateWord
+							)
+						);
+						if (child != null)
+						{
+							yield return child.Normalise();
+						}
+					}
+				}
+			}
+
+		}
+
 		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
 		{
 			var grid = workspace.GenerateGrid();
@@ -460,77 +534,10 @@
 				while (!workspace.Slots.IsEmpty)
 				{
 					workspace = workspace.PopSlot(out var slot);
-					workspace.IsValid = true;
-					var availableWords = workspace.WordDatabase.ListAvailableMatchingWords($"{slot.Letter}");
-					if (!(availableWords.Any()))
+					foreach(var child in workspace.CoverSlot(grid, slot))
 					{
-						continue;
+						yield return child;
 					}
-					var strip = workspace.GenerateStrip(grid, slot);
-
-					foreach (var candidateWord in availableWords)
-					{
-						var maxLength = (
-							slot.Direction == Direction.Across
-							? Board.MaxWidth 
-							: Board.MaxHeight
-						) - 2;
-						if (candidateWord.Length > maxLength)
-							continue;
-						for (
-							int index = candidateWord.IndexOf(slot.Letter, 0);
-							index != -1;
-							index = candidateWord.IndexOf(slot.Letter, index + 1)
-						)
-						{
-							var start = strip.SlotIndex - index;
-							if (start < 1)
-								continue;
-							var charBefore = strip.GridCells[start - 1];
-							if (!((charBefore.CellType == GridCellType.Blank) || (charBefore.CellType == GridCellType.EnforcedBlank)))
-								continue;
-							if (start + candidateWord.Length > (strip.GridCells.Length-1))
-								continue;
-							var charAfter = strip.GridCells[start + candidateWord.Length];
-							if (!((charAfter.CellType == GridCellType.Blank) || (charAfter.CellType == GridCellType.EnforcedBlank)))
-								continue;
-							bool success = true;
-							for(
-								int cIndex = 0, sIndex=start;
-								cIndex < candidateWord.Length && success;
-								++cIndex, ++sIndex
-							)
-							{
-								if(strip.GridCells[sIndex].CellType == GridCellType.Blank)
-								{
-									continue;
-								}
-								if(strip.GridCells[sIndex].Slot?.Letter != candidateWord[cIndex])
-								{
-									success = false;
-								}
-							}
-							if(success)
-							{
-								Location l = slot.Direction == Direction.Across
-									? new Location(strip.StartAt + start, slot.Location.Y)
-									: new Location(slot.Location.X, strip.StartAt + start);
-								var child = workspace.TryPlaceWord(
-									grid,
-									new WordPlacement(
-										slot.Direction,
-										l,
-										candidateWord
-									)
-								);
-								if(child != null)
-								{
-									yield return child.Normalise();
-								}
-							}
-						}
-					}
-
 
 					grid.RemoveSlot(slot);
 				}
