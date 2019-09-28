@@ -295,6 +295,15 @@
 				}
 			}
 
+			if(
+				(!grid.PartialWords.Any())
+				&& (grid.Rectangle.Width == Board.MaxWidth)
+				&& (grid.Rectangle.Height == Board.MaxHeight)
+			)
+			{
+				// Got to find blocks
+				int dummy = 3;
+			}
 
 
 			return grid;

@@ -1,0 +1,61 @@
+﻿<Window x:Class="crozzle_desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:crozzle_desktop"
+        mc:Ignorable="d"
+        Title="Crozzle Solver" Height="450" Width="800"
+        
+    >
+    <Window.Resources>
+        <RoutedCommand  x:Key="OpenFileCommand" />
+        <local:MainWindowViewModel x:Key="MainWindowViewModel" />
+    </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="{StaticResource OpenFileCommand}" Executed="FileOpen_Executed"/>
+    </Window.CommandBindings>
+    <Grid Name="_mainGrid" DataContext="{StaticResource MainWindowViewModel}">
+
+        <Grid.Resources>
+        </Grid.Resources>
+                <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Menu IsMainMenu="True" Grid.Row="0">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open" Command="{StaticResource OpenFileCommand}" />
+            </MenuItem> 
+
+        </Menu>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ListBox Grid.Column="0" ItemsSource="{Binding Path=Words}" />
+            <GridSplitter Grid.Column="1" Background="Gray" Width="10" HorizontalAlignment="Stretch" />
+            <Grid Grid.Column="2">
+                <Grid.Resources>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="FontFamily" Value="Courier New" />
+                        <Setter Property="FontSize" Value="24" />
+                    </Style>
+                </Grid.Resources>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Row="0">
+                    <TextBlock>Solutions Generated: </TextBlock>
+                    <TextBlock Text="{Binding Path=GeneratedSolutionCount, StringFormat='{}{0:#,#.}' }" />
+                </StackPanel>
+                <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Path=LastSolution}" />
+                <TextBlock Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"  Text="{Binding Path=BestSolution}" />
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
