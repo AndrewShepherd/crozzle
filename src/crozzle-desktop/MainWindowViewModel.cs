@@ -34,6 +34,13 @@ namespace crozzle_desktop
 			get => _bestWorkspace?.BoardRepresentation;
 		}
 
+		public int BestScore
+		{
+			get => _bestWorkspace?.Score ?? 0;
+		}
+		
+
+
 		public Workspace _lastWorkspace;
 
 		public string LastSolution
@@ -99,13 +106,21 @@ namespace crozzle_desktop
 							this._bestWorkspace = thisWorkspace;
 
 							_dispatcher.BeginInvoke(
-								() => 
+								() =>
+								{
 									this
 										.PropertyChanged
 										?.Invoke(
 											this,
 											new PropertyChangedEventArgs(nameof(BestSolution))
-										)
+										);
+									this
+										.PropertyChanged
+										?.Invoke(
+											this,
+											new PropertyChangedEventArgs(nameof(BestScore))
+										);
+								}
 							);
 						}
 					}

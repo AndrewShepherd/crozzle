@@ -46,6 +46,7 @@
                 </Grid.Resources>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
@@ -53,8 +54,12 @@
                     <TextBlock>Solutions Generated: </TextBlock>
                     <TextBlock Text="{Binding Path=GeneratedSolutionCount, StringFormat='{}{0:#,#.}' }" />
                 </StackPanel>
-                <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Path=LastSolution}" />
-                <TextBlock Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"  Text="{Binding Path=BestSolution}" />
+                <StackPanel Orientation="Horizontal" Grid.Row="1">
+                    <TextBlock>Top Score:</TextBlock>
+                    <TextBlock Text="{Binding Path=BestScore, StringFormat='{}{0:#,#.}' }" />
+                </StackPanel>
+                <TextBlock Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Path=LastSolution}" />
+                <TextBlock Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center"  Text="{Binding Path=BestSolution}" />
             </Grid>
         </Grid>
     </Grid>

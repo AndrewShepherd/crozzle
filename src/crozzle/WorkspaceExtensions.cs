@@ -2,6 +2,7 @@
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Collections.Immutable;
 	using System.Linq;
 
 	public static class WorkspaceExtensions
@@ -27,11 +28,16 @@
 			}
 			else
 			{
-				var clone = workspace.Clone();
 				slot = workspace.Slots.OrderByDescending(s => Scoring.Score(s.Letter)).First();
-				clone.Slots = clone.Slots.Remove(slot);
-				return clone;
+				return workspace.RemoveSlot(slot);
 			}
+		}
+
+		public static Workspace RemoveSlot(this Workspace workspace, Slot slot)
+		{
+			var clone = workspace.Clone();
+			clone.Slots = clone.Slots.Remove(slot);
+			return clone;
 		}
 
 		public static Workspace RemoveWord(this Workspace workspace, string word)
@@ -294,18 +300,6 @@
 					grid.PartialWords.Add(partialWord);
 				}
 			}
-
-			if(
-				(!grid.PartialWords.Any())
-				&& (grid.Rectangle.Width == Board.MaxWidth)
-				&& (grid.Rectangle.Height == Board.MaxHeight)
-			)
-			{
-				// Got to find blocks
-				int dummy = 3;
-			}
-
-
 			return grid;
 		}
 
@@ -428,15 +422,78 @@
 			}
 			else
 			{
-				while (!workspace.Slots.IsEmpty)
+				List<Slot> slotsToFill = null;
+
+				if(
+					(grid.Rectangle.Width == Board.MaxWidth)
+					&& (grid.Rectangle.Height == Board.MaxHeight)
+				)
 				{
-					workspace = workspace.PopSlot(out var slot);
+					var spaces = grid.GenerateSpaces();
+					var firstSpaceThatMustBeFilled = spaces.Where(s => s.CountLocations() > 4)
+						.FirstOrDefault();
+					slotsToFill = GetAdjacentSlots(workspace.Slots, firstSpaceThatMustBeFilled).ToList();
+				}
+				if(slotsToFill == null)
+				{
+					slotsToFill = workspace.Slots.ToList();
+				}
+
+
+				while (slotsToFill.Any())
+				{
+					var slot = slotsToFill[0];
+					slotsToFill.RemoveAt(0);
+					workspace = workspace.RemoveSlot(slot);
 					foreach(var child in workspace.CoverSlot(grid, slot))
 					{
 						yield return child;
 					}
 
 					grid.RemoveSlot(slot);
+				}
+			}
+		}
+
+		private static IEnumerable<Slot> GetAdjacentSlots(
+			IEnumerable<Slot> slots,
+			IEnumerable<RowIndexAndRanges> rowIndexAndRanges
+		)
+		{
+			foreach(var slot in slots)
+			{
+				foreach(var rr in rowIndexAndRanges)
+				{
+					if(rr.RowIndex == slot.Location.Y)
+					{
+						if(
+							rr.Ranges.Any(
+								r => 
+									(
+										r.Start.Value == slot.Location.X+1 
+										|| r.End.Value == slot.Location.X-1
+									)
+							)
+						)
+						{
+							yield return slot;
+						}
+					}
+					else if (Math.Abs(rr.RowIndex - slot.Location.Y) == 1)
+					{
+						if(
+							rr.Ranges.Any(
+								r =>
+									(
+										(r.Start.Value <= slot.Location.X)
+										&& (r.End.Value > slot.Location.X)
+									)
+							)
+						)
+						{
+							yield return slot;
+						}
+					}
 				}
 			}
 		}
