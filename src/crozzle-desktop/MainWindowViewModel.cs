@@ -52,8 +52,33 @@ namespace crozzle_desktop
 
 		public event PropertyChangedEventHandler PropertyChanged;
 
+		readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(0.1);
 
-		readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(0.25);
+		private HashSet<String> _propertyNamesToFire = new HashSet<string>();
+		void FirePropertyChangedEvents(params string[] propertyNames)
+		{
+			foreach(var n in propertyNames)
+			{
+				_propertyNamesToFire.Add(n);
+			}
+			this._dispatcher.BeginInvoke(
+				() =>
+				{
+					var pn = Interlocked.Exchange<HashSet<String>>(
+						ref _propertyNamesToFire,
+						new HashSet<string>()
+					);
+					foreach(var n in pn)
+					{
+						PropertyChanged?.Invoke(
+							this,
+							new PropertyChangedEventArgs(n)
+						);
+					}
+				}
+			);
+		}
+
 		private void StartEngine()
 		{
 			_cancellationTokenSource?.Cancel();
@@ -71,7 +96,7 @@ namespace crozzle_desktop
 					foreach (var thisWorkspace in Runner.SolveUsingQueue(
 						workspaces,
 						10000000,
-						256,
+						4096,
 						_cancellationTokenSource.Token
 					))
 					{
@@ -79,24 +104,7 @@ namespace crozzle_desktop
 						if(DateTime.UtcNow - lastRefresh > RefreshInterval)
 						{
 							this._lastWorkspace = thisWorkspace;
-
-							_dispatcher.BeginInvoke(
-								() =>
-								{
-									foreach(var propertyName in new[] { 
-										nameof(LastSolution),
-										nameof(GeneratedSolutionCount)
-									})
-									{
-										this
-											.PropertyChanged
-											?.Invoke(
-												this,
-												new PropertyChangedEventArgs(propertyName)
-											);
-									}
-								}
-							);
+							FirePropertyChangedEvents(nameof(LastSolution), nameof(GeneratedSolutionCount));
 							lastRefresh = DateTime.UtcNow;
 						}
 
@@ -104,24 +112,7 @@ namespace crozzle_desktop
 						{
 							maxScore = thisWorkspace.Score;
 							this._bestWorkspace = thisWorkspace;
-
-							_dispatcher.BeginInvoke(
-								() =>
-								{
-									this
-										.PropertyChanged
-										?.Invoke(
-											this,
-											new PropertyChangedEventArgs(nameof(BestSolution))
-										);
-									this
-										.PropertyChanged
-										?.Invoke(
-											this,
-											new PropertyChangedEventArgs(nameof(BestScore))
-										);
-								}
-							);
+							FirePropertyChangedEvents(nameof(BestSolution), nameof(BestScore));
 						}
 					}
 				}

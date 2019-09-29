@@ -423,22 +423,17 @@
 			else
 			{
 				List<Slot> slotsToFill = null;
-
-				if(
-					(grid.Rectangle.Width == Board.MaxWidth)
-					&& (grid.Rectangle.Height == Board.MaxHeight)
-				)
+				var spaces = grid.FindEnclosedSpaces();
+				var firstSpaceThatMustBeFilled = spaces.Where(s => s.CountLocations() > 4)
+					.FirstOrDefault();
+				if(firstSpaceThatMustBeFilled != null)
 				{
-					var spaces = grid.GenerateSpaces();
-					var firstSpaceThatMustBeFilled = spaces.Where(s => s.CountLocations() > 4)
-						.FirstOrDefault();
 					slotsToFill = GetAdjacentSlots(workspace.Slots, firstSpaceThatMustBeFilled).ToList();
 				}
-				if(slotsToFill == null)
+				else
 				{
 					slotsToFill = workspace.Slots.ToList();
 				}
-
 
 				while (slotsToFill.Any())
 				{

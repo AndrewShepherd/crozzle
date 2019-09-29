@@ -194,8 +194,33 @@ namespace crozzle
 			return true;
 		}
 
-		internal static IEnumerable<List<RowIndexAndRanges>> GenerateSpaces(this Grid grid)
+		internal static IEnumerable<List<RowIndexAndRanges>> FindEnclosedSpaces(this Grid grid)
 		{
+			if(
+				(grid.Rectangle.Width < Board.MaxWidth)
+				&& (grid.Rectangle.Height < Board.MaxHeight)
+			)
+			{
+				yield break;
+			}
+
+			Func<RowIndexAndRanges, bool> isClosed = _ => true;
+			if(grid.Rectangle.Width != Board.MaxWidth)
+			{
+				isClosed = rr =>
+					!rr.Ranges.Any(
+						r =>
+							r.Start.Value == 1
+							|| r.End.Value == grid.Rectangle.Width - 2
+					);
+			}
+			if(grid.Rectangle.Height != Board.MaxHeight)
+			{
+				var isClosedCopy = isClosed;
+				isClosed = rr => 
+					isClosedCopy(rr) 
+					&& (rr.RowIndex > 1 && rr.RowIndex < grid.Rectangle.Height - 2);
+			}
 			var rowIndexAndRanges = grid.GetContiguousRangesForEachRow();
 
 			var nodes = rowIndexAndRanges.SelectMany(
@@ -248,7 +273,16 @@ namespace crozzle
 							}
 						}
 					}
-					yield return space;
+
+					// Now we need to determine if this space is enclosed or not
+					if (space.All(isClosed))
+					{
+						yield return space;
+					}
+					else
+					{
+						int dummy = 3;
+					}
 				}
 			}
 		}
