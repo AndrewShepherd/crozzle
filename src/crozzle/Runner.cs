@@ -47,6 +47,8 @@ namespace crozzle
 					{
 						foreach (var ns in nextSteps)
 						{
+							//childWorkspaces.Add(ns);
+							//continue;	
 							if (ns.IsValid)
 							{
 								childWorkspaces.Add(ns);

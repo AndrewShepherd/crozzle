@@ -187,7 +187,11 @@
 					? (moveRight, moveLeft)
 					: (moveDown, moveUp);
 				int gridLocation = workspace.Board.Rectangle.IndexOf(wordPlacement.Location);
-				gridCells[back(gridLocation)].CellType = GridCellType.EnforcedBlank;
+				if (gridCells[back(gridLocation)].CellType == GridCellType.AvailableSlot)
+				{
+					throw new Exception("Workspace got into an invalid state");
+				}
+				gridCells[back(gridLocation)].CellType = GridCellType.EndOfWordMarker;
 				for (
 					int i = 0; i < wordPlacement.Word.Length;
 					++i,
@@ -211,13 +215,17 @@
 								var sideCell  = gridCells[s];
 								if(sideCell.CellType == GridCellType.Blank)
 								{
-									sideCell.CellType = GridCellType.EnforcedBlank;
+									sideCell.CellType = GridCellType.BlankNoAdjacentSlots;
 								}
 							}
 						}
 					}
 				}
-				gridCells[gridLocation].CellType = GridCellType.EnforcedBlank;
+				if(gridCells[gridLocation].CellType == GridCellType.AvailableSlot)
+				{
+					throw new Exception("Workspace got into an invalid state");
+				}
+				gridCells[gridLocation].CellType = GridCellType.EndOfWordMarker;
 			}
 
 			var grid = new Grid
@@ -233,6 +241,10 @@
 				var gridCell = grid.CellAt(slot.Location);
 				// We have to search for adjacent words
 				int probe = grid.Rectangle.IndexOf(slot.Location);
+				if(!(gridCells[probe].HasLetter))
+				{
+					throw new Exception("Invalid grid state");
+				}
 				PartialWord partialWord = null;
 				if (gridCell.Slot.Direction == Direction.Across)
 				{
@@ -337,13 +349,25 @@
 					if (start < 1)
 						continue;
 					var charBefore = strip.GridCells[start - 1];
-					if (!((charBefore.CellType == GridCellType.Blank) || (charBefore.CellType == GridCellType.EnforcedBlank)))
+					if (
+						!(
+							charBefore.CanPlaceEndOfWordMarker
+						)
+					)
+					{
 						continue;
+					}
 					if (start + candidateWord.Length > (strip.GridCells.Length - 1))
 						continue;
 					var charAfter = strip.GridCells[start + candidateWord.Length];
-					if (!((charAfter.CellType == GridCellType.Blank) || (charAfter.CellType == GridCellType.EnforcedBlank)))
+					if (
+						!(
+							charAfter.CanPlaceEndOfWordMarker
+						)
+					)
+					{
 						continue;
+					}
 					bool success = true;
 					for (
 						int cIndex = 0, sIndex = start;
@@ -398,7 +422,7 @@
 				var partialSlot = grid.PartialWords.First();
 				grid.PartialWords.Remove(partialSlot);
 				workspace = workspace.Clone();
-				foreach(
+				foreach (
 					var solution in CoverFragment(
 						workspace,
 						grid,
@@ -408,7 +432,7 @@
 					)
 				)
 				{
-					if(grid.PartialWords.Any())
+					if (grid.PartialWords.Any())
 					{
 						solution.IsValid = false;
 					}
@@ -423,12 +447,66 @@
 			else
 			{
 				List<Slot> slotsToFill = null;
-				var spaces = grid.FindEnclosedSpaces();
-				var firstSpaceThatMustBeFilled = spaces.Where(s => s.CountLocations() > 4)
-					.FirstOrDefault();
-				if(firstSpaceThatMustBeFilled != null)
+				if (
+					grid.FindEnclosedSpaces(
+						c =>
+							(
+								(c.CellType == GridCellType.EndOfWordMarker)
+								|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
+							)
+					)
+					.Where(s => s.CountLocations() > 3)
+					.Any()
+				)
 				{
-					slotsToFill = GetAdjacentSlots(workspace.Slots, firstSpaceThatMustBeFilled).ToList();
+					yield break;
+				}
+				
+				var spaces = grid.FindEnclosedSpaces(
+					c => 
+						(
+							(c.CellType == GridCellType.Blank)
+							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
+						)
+				);
+				var spacesThatMustBeFilled = spaces.Where(s => s.CountLocations() > 2).ToList();
+				// Confirm that each space CAN be filled
+				foreach(var space in spacesThatMustBeFilled)
+				{
+					var adjacentSlots = GetAdjacentSlots(workspace.Slots, space)
+						.ToList();
+					if (!(adjacentSlots.SelectMany(adj => workspace.CoverSlot(grid, adj)).Any()))
+					{
+						yield break;
+					}
+				}
+
+				// Another check - threre cannot be more than 3 of any kind of blank
+				var spacesOtherCheck = grid.FindEnclosedSpaces(
+					c =>
+						(
+							(c.CellType == GridCellType.Blank)
+							|| (c.CellType == GridCellType.EndOfWordMarker)
+							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
+						)
+					).Where(s => s.CountLocations() > 4).ToList();
+				foreach (var space in spacesOtherCheck)
+				{
+					var adjacentSlots = GetAdjacentSlots(workspace.Slots, space)
+						.ToList();
+					if (!(adjacentSlots.SelectMany(adj => workspace.CoverSlot(grid, adj)).Any()))
+					{
+						yield break;
+					}
+				}
+
+				if (spacesThatMustBeFilled.Any())
+				{
+					var maxCount = spacesThatMustBeFilled.Select(s => s.CountLocations()).Max();
+					slotsToFill = GetAdjacentSlots(
+						workspace.Slots,
+						spacesThatMustBeFilled.First(s => s.CountLocations() == maxCount)
+					).ToList();
 				}
 				else
 				{

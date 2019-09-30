@@ -2,8 +2,11 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:crozzle_desktop"
+             xmlns:crozzle="clr-namespace:crozzle;assembly=crozzle"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <DataTemplate DataType="{x:Type crozzle:Workspace}">
+            <local:WorskpaceView />
+        </DataTemplate>
     </Application.Resources>
 </Application>

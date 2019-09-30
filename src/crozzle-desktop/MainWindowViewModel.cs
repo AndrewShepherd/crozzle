@@ -29,23 +29,24 @@ namespace crozzle_desktop
 		}
 
 
-		public string BestSolution
+		public Workspace BestSolution
 		{
-			get => _bestWorkspace?.BoardRepresentation;
+			get => _bestWorkspace;
 		}
 
-		public int BestScore
+		public string BestScore
 		{
-			get => _bestWorkspace?.Score ?? 0;
+			get;
+			set;
 		}
 		
 
 
 		public Workspace _lastWorkspace;
 
-		public string LastSolution
+		public Workspace LastSolution
 		{
-			get => _lastWorkspace?.BoardRepresentation;
+			get => _lastWorkspace;
 		}
 
 		public ulong GeneratedSolutionCount { get; set; }
@@ -112,6 +113,7 @@ namespace crozzle_desktop
 						{
 							maxScore = thisWorkspace.Score;
 							this._bestWorkspace = thisWorkspace;
+							this.BestScore = String.Format("Scored {0:N0} at {1:N0} solutions", maxScore, this.GeneratedSolutionCount);
 							FirePropertyChangedEvents(nameof(BestSolution), nameof(BestScore));
 						}
 					}

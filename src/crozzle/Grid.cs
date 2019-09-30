@@ -69,7 +69,7 @@ namespace crozzle
 			}
 		}
 
-		static internal IEnumerable<RowIndexAndRanges> GetContiguousRangesForEachRow(this Grid grid)
+		static internal IEnumerable<RowIndexAndRanges> GetContiguousRangesForEachRow(this Grid grid, Func<GridCell, bool> matchingCell)
 		{
 			for (int row = grid.Rectangle.Top + 1; row <= grid.Rectangle.Bottom - 1; ++row)
 			{
@@ -81,7 +81,7 @@ namespace crozzle
 				)
 				{
 					var cell = grid.CellAt(l);
-					if ((cell.CellType == GridCellType.Blank) || (cell.CellType == GridCellType.EnforcedBlank))
+					if (matchingCell(cell))
 					{
 						emptyCellsInRow.Add(new Range(l.X, l.X + 1));
 					}
@@ -128,6 +128,10 @@ namespace crozzle
 				{
 					var l = new Location(i + indexFirst, location.Y);
 					var gridCell = grid.CellAt(l);
+					if(gridCell.CellType == GridCellType.BlankNoAdjacentSlots)
+					{
+						gridCell = GridCell.EnforcedBlank;
+					}
 					gridCells[i] = gridCell;
 				}
 				return new Strip
@@ -194,16 +198,8 @@ namespace crozzle
 			return true;
 		}
 
-		internal static IEnumerable<List<RowIndexAndRanges>> FindEnclosedSpaces(this Grid grid)
+		internal static IEnumerable<List<RowIndexAndRanges>> FindEnclosedSpaces(this Grid grid, Func<GridCell, bool> cellMatches)
 		{
-			if(
-				(grid.Rectangle.Width < Board.MaxWidth)
-				&& (grid.Rectangle.Height < Board.MaxHeight)
-			)
-			{
-				yield break;
-			}
-
 			Func<RowIndexAndRanges, bool> isClosed = _ => true;
 			if(grid.Rectangle.Width != Board.MaxWidth)
 			{
@@ -221,7 +217,7 @@ namespace crozzle
 					isClosedCopy(rr) 
 					&& (rr.RowIndex > 1 && rr.RowIndex < grid.Rectangle.Height - 2);
 			}
-			var rowIndexAndRanges = grid.GetContiguousRangesForEachRow();
+			var rowIndexAndRanges = grid.GetContiguousRangesForEachRow(cellMatches);
 
 			var nodes = rowIndexAndRanges.SelectMany(
 				r =>
@@ -275,14 +271,10 @@ namespace crozzle
 					}
 
 					// Now we need to determine if this space is enclosed or not
-					if (space.All(isClosed))
-					{
+					//if (space.All(isClosed))
+					//{
 						yield return space;
-					}
-					else
-					{
-						int dummy = 3;
-					}
+					//}
 				}
 			}
 		}

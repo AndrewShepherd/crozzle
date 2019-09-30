@@ -16,7 +16,7 @@
 	{
 		public int Score = 0;
 		public Board Board;
-		public ImmutableList<string> IncludedWords;
+		public ImmutableList<string> IncludedWords { get; set; }
 		public ImmutableList<Intersection> Intersections;
 
 

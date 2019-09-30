@@ -6,7 +6,8 @@ namespace crozzle
 {
 	enum GridCellType {
 		Blank, // Currently Blank, can be filled
-		EnforcedBlank, // Currently Blank, must remain blank
+		EndOfWordMarker, // Currently Blank, must remain blank
+		BlankNoAdjacentSlots, // Currently blank because there is an adjacent cell that is not a slot
 		AvailableSlot, // Has a letter, can be intersected with
 		Complete // Has a letter, but cannot be intersected with
 	};
@@ -18,7 +19,7 @@ namespace crozzle
 
 		internal static GridCell EnforcedBlank = new GridCell
 		{ 
-			CellType = GridCellType.EnforcedBlank
+			CellType = GridCellType.EndOfWordMarker
 		};
 
 		internal PartialWord PartialWordAbove { get; set; }
@@ -39,6 +40,12 @@ namespace crozzle
 		};
 
 		internal bool HasLetter => CellType == GridCellType.AvailableSlot || CellType == GridCellType.Complete;
+
+
+		internal bool CanPlaceEndOfWordMarker =>
+			CellType == GridCellType.EndOfWordMarker
+			|| CellType == GridCellType.Blank
+			|| CellType == GridCellType.BlankNoAdjacentSlots;
 
 	}
 
