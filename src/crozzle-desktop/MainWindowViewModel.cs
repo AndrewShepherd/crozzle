@@ -1,5 +1,6 @@
 ﻿using crozzle;
 using System;
+using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -10,21 +11,23 @@ using System.Windows.Threading;
 
 namespace crozzle_desktop
 {
-	class MainWindowViewModel : INotifyPropertyChanged
+	sealed class MainWindowViewModel : ViewModelBase
 	{
 		private List<string> _words;
 		private Workspace _bestWorkspace;
 		private CancellationTokenSource _cancellationTokenSource;
 
-		private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
-		public List<string> Words
+		public IEnumerable<string> Words
 		{
 			get => _words;
 			set
 			{
-				this._words = value;
-				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Words)));
-				StartEngine();
+				this._words = value?.ToList();
+				FirePropertyChangedEvents(nameof(Words));
+				if(this._words != null)
+				{
+					StartEngine();
+				}
 			}
 		}
 
@@ -51,33 +54,47 @@ namespace crozzle_desktop
 
 		public ulong GeneratedSolutionCount { get; set; }
 
-		public event PropertyChangedEventHandler PropertyChanged;
 
 		readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(0.1);
 
-		private HashSet<String> _propertyNamesToFire = new HashSet<string>();
-		void FirePropertyChangedEvents(params string[] propertyNames)
+
+		private int[] SolutionsEachSecond = new int[10];
+
+		public double SolutionsPerSecond
 		{
-			foreach(var n in propertyNames)
+			get
 			{
-				_propertyNamesToFire.Add(n);
-			}
-			this._dispatcher.BeginInvoke(
-				() =>
+				if(_startingSecond == -1)
 				{
-					var pn = Interlocked.Exchange<HashSet<String>>(
-						ref _propertyNamesToFire,
-						new HashSet<string>()
-					);
-					foreach(var n in pn)
+					return default(double);
+				}
+				int sum = 0;
+				int secondNow = DateTime.Now.Second % SolutionsEachSecond.Length;
+				for(int i = _startingSecond; i < SolutionsEachSecond.Length; ++i)
+				{
+					if(i != secondNow)
 					{
-						PropertyChanged?.Invoke(
-							this,
-							new PropertyChangedEventArgs(n)
-						);
+						sum += SolutionsEachSecond[i];
 					}
 				}
-			);
+				return sum / (SolutionsEachSecond.Length-1);
+			}
+		}
+
+		int _lastSecondChecked = -1;
+		int _startingSecond = -1;
+		void IncrementSolutionCount()
+		{
+			int thisSecond = DateTime.Now.Second % SolutionsEachSecond.Length;
+			_startingSecond = Math.Min(_startingSecond, thisSecond);
+			if (_lastSecondChecked != thisSecond)
+			{
+				Interlocked.Exchange(ref SolutionsEachSecond[thisSecond], 0);
+			}
+
+			_lastSecondChecked = thisSecond;
+			Interlocked.Increment(ref SolutionsEachSecond[thisSecond]);
+			++this.GeneratedSolutionCount;
 		}
 
 		private void StartEngine()
@@ -89,10 +106,13 @@ namespace crozzle_desktop
 				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
 				.ToArray();
 			this.GeneratedSolutionCount = 0;
+			
+
 			Task.Factory.StartNew(
 				() =>
 				{
 					DateTime lastRefresh = DateTime.UtcNow;
+					_startingSecond = lastRefresh.Second;
 					int maxScore = 0;
 					foreach (var thisWorkspace in Runner.SolveUsingQueue(
 						workspaces,
@@ -101,11 +121,16 @@ namespace crozzle_desktop
 						_cancellationTokenSource.Token
 					))
 					{
-						++(this.GeneratedSolutionCount);
-						if(DateTime.UtcNow - lastRefresh > RefreshInterval)
+						IncrementSolutionCount();
+						DateTime now = DateTime.UtcNow;
+						if(now - lastRefresh > RefreshInterval)
 						{
 							this._lastWorkspace = thisWorkspace;
-							FirePropertyChangedEvents(nameof(LastSolution), nameof(GeneratedSolutionCount));
+							FirePropertyChangedEvents(
+								nameof(LastSolution),
+								nameof(GeneratedSolutionCount),
+								nameof(SolutionsPerSecond)
+							);
 							lastRefresh = DateTime.UtcNow;
 						}
 

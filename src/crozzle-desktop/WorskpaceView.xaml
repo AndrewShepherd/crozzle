@@ -12,6 +12,24 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <ListView Grid.Column="0" ItemsSource="{Binding Path=IncludedWords}" />
-        <TextBlock Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Path=BoardRepresentation}" />
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <Label>Score:</Label>
+                <TextBlock Text="{Binding Path=Score}" />
+            </StackPanel>
+            <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Path=BoardRepresentation}">
+                <TextBlock.Style>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="FontFamily" Value="Courier New" />
+                        <Setter Property="FontSize" Value="24" />
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+        </Grid>
     </Grid>
 </UserControl>

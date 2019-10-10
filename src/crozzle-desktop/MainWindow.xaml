@@ -9,56 +9,45 @@
         
     >
     <Window.Resources>
-        <RoutedCommand  x:Key="OpenFileCommand" />
         <local:MainWindowViewModel x:Key="MainWindowViewModel" />
     </Window.Resources>
-    <Window.CommandBindings>
-        <CommandBinding Command="{StaticResource OpenFileCommand}" Executed="FileOpen_Executed"/>
-    </Window.CommandBindings>
     <Grid Name="_mainGrid" DataContext="{StaticResource MainWindowViewModel}">
 
         <Grid.Resources>
         </Grid.Resources>
                 <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Menu IsMainMenu="True" Grid.Row="0">
-            <MenuItem Header="_File">
-                <MenuItem Header="_Open" Command="{StaticResource OpenFileCommand}" />
-            </MenuItem> 
-
-        </Menu>
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <ListBox Grid.Column="0" ItemsSource="{Binding Path=Words}" />
+            <local:WordsSelector Grid.Column="0" Words="{Binding Path=Words, Mode=OneWayToSource}" />
             <GridSplitter Grid.Column="1" Background="Gray" Width="10" HorizontalAlignment="Stretch" />
             <Grid Grid.Column="2">
-                <Grid.Resources>
-                    <Style TargetType="{x:Type TextBlock}">
-                        <Setter Property="FontFamily" Value="Courier New" />
-                        <Setter Property="FontSize" Value="24" />
-                    </Style>
-                </Grid.Resources>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Grid.Row="0">
-                    <TextBlock>Solutions Generated: </TextBlock>
+                    <Label>Solutions Generated: </Label>
                     <TextBlock Text="{Binding Path=GeneratedSolutionCount, StringFormat='{}{0:#,#.}' }" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Grid.Row="1">
+                <StackPanel Orientation="Horizontal" Grid.Row="1" >
+                    <Label>Solutions/Second:</Label>
+                    <TextBlock Text="{Binding Path=SolutionsPerSecond, StringFormat='{}{0:#,#.}'}" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Grid.Row="2">
                     <TextBlock Text="{Binding Path=BestScore}" />
                 </StackPanel>
-                <ContentPresenter Grid.Row="2" Content="{Binding LastSolution}" />
-                <ContentPresenter Grid.Row="3" Content="{Binding BestSolution}" />
+                <ContentPresenter Grid.Row="3" Content="{Binding LastSolution}" />
+                <ContentPresenter Grid.Row="4" Content="{Binding BestSolution}" />
             </Grid>
         </Grid>
     </Grid>

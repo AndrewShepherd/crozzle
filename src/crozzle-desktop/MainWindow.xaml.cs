@@ -29,26 +29,5 @@ namespace crozzle_desktop
 
 		MainWindowViewModel MainWindowViewModel => (MainWindowViewModel)(_mainGrid.DataContext);
 
-		private async void FileOpen_Executed(object sender, ExecutedRoutedEventArgs e)
-		{
-			OpenFileDialog ofd = new OpenFileDialog();
-			if(ofd.ShowDialog() == true)
-			{
-				List<string> words = new List<string>();
-				using (StreamReader sr = new StreamReader(ofd.FileName))
-				{
-					while(!sr.EndOfStream)
-					{
-						var line = await sr.ReadLineAsync();
-						if(!String.IsNullOrWhiteSpace(line))
-						{
-							words.Add(line.Trim());
-						}
-					}
-				}
-				this.MainWindowViewModel.Words = words;
-
-			}
-		}
 	}
 }
