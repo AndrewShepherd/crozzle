@@ -14,7 +14,7 @@
 
 	public class Workspace
 	{
-		public int Score = 0;
+		public int Score { get; set; } = 0;
 		public Board Board;
 		public ImmutableList<string> IncludedWords { get; set; }
 		public ImmutableList<Intersection> Intersections;
@@ -135,7 +135,7 @@
 					_potentialScore = this.Score
 						+ Math.Min(
 							0
-							//+ this.Slots.Select(c => Scoring.Score(c.Letter)).Sum()
+							+ this.Slots.Select(c => Scoring.Score(c.Letter)).Sum()
 								+ (this.Intersections.Count())
 								/*- (this.IncludedWords.Select(w => w.Length).Sum())*/,
 							0);

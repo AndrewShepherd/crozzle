@@ -414,6 +414,28 @@
 				slot.Direction
 			);
 
+		private static bool CanCoverSpace(
+			this Workspace workspace,
+			Grid grid,
+			IEnumerable<RowIndexAndRange> space
+		) =>
+			GetAdjacentSlots(workspace.Slots, space)
+			.SelectMany(
+				adj =>
+					workspace.CoverSlot(grid, adj)
+			).Any();
+
+
+		private static bool CanCoverEachSpace(
+			this Workspace workspace,
+			Grid grid,
+			IEnumerable<IEnumerable<RowIndexAndRange>> spaces
+		) =>
+			spaces.All(
+				space =>
+					workspace.CanCoverSpace(grid, space)
+			);
+
 		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
 		{
 			var grid = workspace.GenerateGrid();
@@ -455,7 +477,7 @@
 								|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 							)
 					)
-					.Where(s => s.CountLocations() > 3)
+					.Where(s => s.CountLocations() > 5)
 					.Any()
 				)
 				{
@@ -469,19 +491,12 @@
 							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 						)
 				);
-				var spacesThatMustBeFilled = spaces.Where(s => s.CountLocations() > 2).ToList();
+				var spacesThatMustBeFilled = spaces.Where(s => s.CountLocations() > 5).ToList();
 				// Confirm that each space CAN be filled
-				foreach(var space in spacesThatMustBeFilled)
+				if(!(workspace.CanCoverEachSpace(grid, spacesThatMustBeFilled)))
 				{
-					var adjacentSlots = GetAdjacentSlots(workspace.Slots, space)
-						.ToList();
-					if (!(adjacentSlots.SelectMany(adj => workspace.CoverSlot(grid, adj)).Any()))
-					{
-						yield break;
-					}
+					yield break;
 				}
-
-				// Another check - threre cannot be more than 3 of any kind of blank
 				var spacesOtherCheck = grid.FindEnclosedSpaces(
 					c =>
 						(
@@ -489,17 +504,11 @@
 							|| (c.CellType == GridCellType.EndOfWordMarker)
 							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 						)
-					).Where(s => s.CountLocations() > 4).ToList();
-				foreach (var space in spacesOtherCheck)
+					).Where(s => s.CountLocations() > 5).ToList();
+				if(!(workspace.CanCoverEachSpace(grid, spacesOtherCheck)))
 				{
-					var adjacentSlots = GetAdjacentSlots(workspace.Slots, space)
-						.ToList();
-					if (!(adjacentSlots.SelectMany(adj => workspace.CoverSlot(grid, adj)).Any()))
-					{
-						yield break;
-					}
+					yield break;
 				}
-
 				if (spacesThatMustBeFilled.Any())
 				{
 					var maxCount = spacesThatMustBeFilled.Select(s => s.CountLocations()).Max();
@@ -530,7 +539,7 @@
 
 		private static IEnumerable<Slot> GetAdjacentSlots(
 			IEnumerable<Slot> slots,
-			IEnumerable<RowIndexAndRanges> rowIndexAndRanges
+			IEnumerable<RowIndexAndRange> rowIndexAndRanges
 		)
 		{
 			foreach(var slot in slots)
@@ -539,14 +548,10 @@
 				{
 					if(rr.RowIndex == slot.Location.Y)
 					{
+						var r = rr.Range;
 						if(
-							rr.Ranges.Any(
-								r => 
-									(
-										r.Start.Value == slot.Location.X+1 
-										|| r.End.Value == slot.Location.X-1
-									)
-							)
+							r.Start.Value == slot.Location.X+1 
+							|| r.End.Value == slot.Location.X-1
 						)
 						{
 							yield return slot;
@@ -554,13 +559,11 @@
 					}
 					else if (Math.Abs(rr.RowIndex - slot.Location.Y) == 1)
 					{
+						var r = rr.Range;
 						if(
-							rr.Ranges.Any(
-								r =>
-									(
-										(r.Start.Value <= slot.Location.X)
-										&& (r.End.Value > slot.Location.X)
-									)
+							(
+								(r.Start.Value <= slot.Location.X)
+								&& (r.End.Value > slot.Location.X)
 							)
 						)
 						{

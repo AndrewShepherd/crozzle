@@ -13,27 +13,24 @@ namespace crozzle
 		internal HashSet<PartialWord> PartialWords = new HashSet<PartialWord>();
 	}
 
-	class RowIndexAndRanges
+	class RowIndexAndRange
 	{
 		public int RowIndex;
-		public List<Range> Ranges;
+		public Range Range;
 
 		public IEnumerable<Location> GetLocations()
 		{
-			foreach(var r in Ranges)
+			for (int i = Range.Start.Value; i < Range.End.Value; ++i)
 			{
-				for(int i = r.Start.Value; i < r.End.Value; ++i)
-				{
-					yield return new Location(i, RowIndex);
-				}
+				yield return new Location(i, RowIndex);
 			}
 		}
 	}
 
 	internal static class GridExtensions
 	{
-		internal static int CountLocations(this IEnumerable<RowIndexAndRanges> e) =>
-			e.SelectMany(rr => rr.Ranges).Sum(r => r.End.Value - r.Start.Value);
+		internal static int CountLocations(this IEnumerable<RowIndexAndRange> e) =>
+			e.Select(rr => rr.Range).Sum(r => r.End.Value - r.Start.Value);
 
 		internal static void RemoveSlot(this Grid grid, Slot slot)
 		{
@@ -69,7 +66,7 @@ namespace crozzle
 			}
 		}
 
-		static internal IEnumerable<RowIndexAndRanges> GetContiguousRangesForEachRow(this Grid grid, Func<GridCell, bool> matchingCell)
+		static internal IEnumerable<RowIndexAndRange> GetContiguousRangesForEachRow(this Grid grid, Func<GridCell, bool> matchingCell)
 		{
 			for (int row = grid.Rectangle.Top + 1; row <= grid.Rectangle.Bottom - 1; ++row)
 			{
@@ -86,7 +83,6 @@ namespace crozzle
 						emptyCellsInRow.Add(new Range(l.X, l.X + 1));
 					}
 				}
-				List<Range> emptySpans = new List<Range>();
 				if (emptyCellsInRow.Any())
 				{
 					Range contiguousSpan = emptyCellsInRow.First();
@@ -98,17 +94,20 @@ namespace crozzle
 						}
 						else
 						{
-							emptySpans.Add(contiguousSpan);
+							yield return new RowIndexAndRange
+							{
+								RowIndex = row,
+								Range = contiguousSpan
+							};
 							contiguousSpan = new Range(l.Start, l.End);
 						}
 					}
-					emptySpans.Add(contiguousSpan);
+					yield return new RowIndexAndRange
+					{
+						RowIndex = row,
+						Range = contiguousSpan
+					};
 				}
-				yield return new RowIndexAndRanges
-				{
-					RowIndex = row,
-					Ranges = emptySpans
-				};
 			}
 		}
 
@@ -198,38 +197,11 @@ namespace crozzle
 			return true;
 		}
 
-		internal static IEnumerable<List<RowIndexAndRanges>> FindEnclosedSpaces(this Grid grid, Func<GridCell, bool> cellMatches)
+		internal static IEnumerable<List<RowIndexAndRange>> FindEnclosedSpaces(this Grid grid, Func<GridCell, bool> cellMatches)
 		{
-			Func<RowIndexAndRanges, bool> isClosed = _ => true;
-			if(grid.Rectangle.Width != Board.MaxWidth)
-			{
-				isClosed = rr =>
-					!rr.Ranges.Any(
-						r =>
-							r.Start.Value == 1
-							|| r.End.Value == grid.Rectangle.Width - 2
-					);
-			}
-			if(grid.Rectangle.Height != Board.MaxHeight)
-			{
-				var isClosedCopy = isClosed;
-				isClosed = rr => 
-					isClosedCopy(rr) 
-					&& (rr.RowIndex > 1 && rr.RowIndex < grid.Rectangle.Height - 2);
-			}
 			var rowIndexAndRanges = grid.GetContiguousRangesForEachRow(cellMatches);
 
-			var nodes = rowIndexAndRanges.SelectMany(
-				r =>
-					r.Ranges.Select(
-						rr =>
-							new RowIndexAndRanges
-							{
-								RowIndex = r.RowIndex,
-								Ranges = new List<Range>() { rr }
-							}
-					)
-			).ToArray();
+			var nodes = rowIndexAndRanges.ToArray();
 			bool[,] connections = new bool[nodes.Length, nodes.Length];
 			for (int i = 0; i < nodes.Length - 1; ++i)
 			{
@@ -239,7 +211,7 @@ namespace crozzle
 					var node2 = nodes[j];
 					if (
 						(Math.Abs(node.RowIndex - node2.RowIndex) == 1)
-						&& (Intersects(node.Ranges[0], node2.Ranges[0]))
+						&& (Intersects(node.Range, node2.Range))
 					)
 					{
 						connections[i, j] = true;
@@ -251,7 +223,7 @@ namespace crozzle
 			{
 				if (nodes[i] != null)
 				{
-					List<RowIndexAndRanges> space = new List<RowIndexAndRanges>();
+					List<RowIndexAndRange> space = new List<RowIndexAndRange>();
 					var bag = new Stack<int>();
 					bag.Push(i);
 					space.Add(nodes[i]);
