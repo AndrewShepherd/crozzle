@@ -11,20 +11,18 @@ using System.Windows.Threading;
 
 namespace crozzle_desktop
 {
-	sealed class MainWindowViewModel : ViewModelBase
+	sealed class MainWindowViewModel : PropertyChangedEventSource
 	{
-		private List<string> _words;
 		private Workspace _bestWorkspace;
-		private CancellationTokenSource _cancellationTokenSource;
 
 		public IEnumerable<string> Words
 		{
-			get => _words;
+			get => Engine.Words;
 			set
 			{
-				this._words = value?.ToList();
+				Engine.Words = value?.ToList();
 				FirePropertyChangedEvents(nameof(Words));
-				if(this._words != null)
+				if(this.Engine.Words != null)
 				{
 					StartEngine();
 				}
@@ -52,73 +50,52 @@ namespace crozzle_desktop
 			get => _lastWorkspace;
 		}
 
-		public ulong GeneratedSolutionCount { get; set; }
+		public ulong GeneratedSolutionCount
+		{
+			get => Engine?.SolutionsGenerated ?? 0;
+			set
+			{
+				if (Engine != null)
+				{
+					Engine.SolutionsGenerated = value;
+				}
+			}
+		}
 
 
 		readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(0.1);
 
+		public Speedometer Speedometer { get; } = new Speedometer();
 
-		private int[] SolutionsEachSecond = new int[10];
-
-		public double SolutionsPerSecond
-		{
-			get
-			{
-				if(_startingSecond == -1)
-				{
-					return default(double);
-				}
-				int sum = 0;
-				int secondNow = DateTime.Now.Second % SolutionsEachSecond.Length;
-				for(int i = _startingSecond; i < SolutionsEachSecond.Length; ++i)
-				{
-					if(i != secondNow)
-					{
-						sum += SolutionsEachSecond[i];
-					}
-				}
-				return sum / (SolutionsEachSecond.Length-1);
-			}
-		}
-
-		int _lastSecondChecked = -1;
-		int _startingSecond = -1;
 		void IncrementSolutionCount()
 		{
-			int thisSecond = DateTime.Now.Second % SolutionsEachSecond.Length;
-			_startingSecond = Math.Min(_startingSecond, thisSecond);
-			if (_lastSecondChecked != thisSecond)
-			{
-				Interlocked.Exchange(ref SolutionsEachSecond[thisSecond], 0);
-			}
-
-			_lastSecondChecked = thisSecond;
-			Interlocked.Increment(ref SolutionsEachSecond[thisSecond]);
-			++this.GeneratedSolutionCount;
+			++this.Engine.SolutionsGenerated;
 		}
+
+		public Engine Engine { get; } = new Engine();
 
 		private void StartEngine()
 		{
-			_cancellationTokenSource?.Cancel();
-			_cancellationTokenSource = new CancellationTokenSource();
+			Engine._cancellationTokenSource?.Cancel();
+			Engine._cancellationTokenSource = new CancellationTokenSource();
 			Workspace workspace = Workspace.Generate(this.Words);
 			var workspaces = this.Words
 				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
 				.ToArray();
 			this.GeneratedSolutionCount = 0;
 			
-
 			Task.Factory.StartNew(
 				() =>
 				{
+					Speedometer.Measure(Engine);
 					DateTime lastRefresh = DateTime.UtcNow;
-					_startingSecond = lastRefresh.Second;
 					int maxScore = 0;
-					foreach (var thisWorkspace in Runner.SolveUsingQueue(
+					Engine.FireEngineStarted();
+					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
 						workspaces,
 						10000000,
 						4096,
-						_cancellationTokenSource.Token
+						Engine._cancellationTokenSource.Token
 					))
 					{
 						IncrementSolutionCount();
@@ -127,9 +104,7 @@ namespace crozzle_desktop
 						{
 							this._lastWorkspace = thisWorkspace;
 							FirePropertyChangedEvents(
-								nameof(LastSolution),
-								nameof(GeneratedSolutionCount),
-								nameof(SolutionsPerSecond)
+								nameof(LastSolution)
 							);
 							lastRefresh = DateTime.UtcNow;
 						}
@@ -142,6 +117,7 @@ namespace crozzle_desktop
 							FirePropertyChangedEvents(nameof(BestSolution), nameof(BestScore));
 						}
 					}
+					Engine.FireEngineStopped();
 				}
 			);
 		}

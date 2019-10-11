@@ -73,6 +73,7 @@ namespace crozzle_desktop
 					}
 				}
 				this.Words = words;
+				this.ViewModel.FileName = System.IO.Path.GetFileName(ofd.FileName);
 			}
 		}
 

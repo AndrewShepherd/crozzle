@@ -16,7 +16,7 @@
     </UserControl.CommandBindings>
     <Grid DataContext="{StaticResource ViewModel}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="48" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
@@ -24,7 +24,9 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock>File Name goes here</TextBlock>
+            <Viewbox>
+                <TextBlock Text="{Binding FileName}" />
+            </Viewbox>
             <Button Grid.Column="1" Command="{StaticResource OpenFileCommand}">Select File</Button>
         </Grid>
         <ListView Grid.Row="1" ItemsSource="{Binding Words}" />

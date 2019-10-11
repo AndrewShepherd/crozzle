@@ -8,7 +8,7 @@ using System.Windows.Threading;
 
 namespace crozzle_desktop
 {
-	class ViewModelBase : INotifyPropertyChanged
+	class PropertyChangedEventSource : INotifyPropertyChanged
 	{
 		private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
 

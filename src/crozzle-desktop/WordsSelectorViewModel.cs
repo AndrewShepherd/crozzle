@@ -4,9 +4,21 @@ using System.Text;
 
 namespace crozzle_desktop
 {
-	class WordsSelectorViewModel : ViewModelBase
+	class WordsSelectorViewModel : PropertyChangedEventSource
 	{
-		public string FileName { get; set; }
+		private string _fileName = "No file selected";
+		public string FileName 
+		{
+			get => _fileName;
+			set
+			{
+				if(this._fileName != value)
+				{
+					this._fileName = value;
+					FirePropertyChangedEvents(nameof(FileName));
+				}
+			}
+		}
 
 		private IEnumerable<string> _words;
 		public IEnumerable<string> Words

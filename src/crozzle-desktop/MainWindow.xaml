@@ -29,25 +29,31 @@
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal" Grid.Row="0">
-                    <Label>Solutions Generated: </Label>
-                    <TextBlock Text="{Binding Path=GeneratedSolutionCount, StringFormat='{}{0:#,#.}' }" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Grid.Row="1" >
-                    <Label>Solutions/Second:</Label>
-                    <TextBlock Text="{Binding Path=SolutionsPerSecond, StringFormat='{}{0:#,#.}'}" />
-                </StackPanel>
+                <Grid Grid.Row="0" Name="Dashboard">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Grid.Row="0">
+                        <Label>Solutions Generated:</Label>
+                        <TextBlock Text="{Binding Path=Engine.SolutionsGenerated, StringFormat='{}{0:#,#.}' }" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Grid.Row="1" >
+                        <Label>Solutions/Second:</Label>
+                        <TextBlock Text="{Binding Path=Speedometer.SolutionsPerSecond, StringFormat='{}{0:#,#.}'}" />
+                    </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Grid.Row="2">
-                    <TextBlock Text="{Binding Path=BestScore}" />
-                </StackPanel>
-                <ContentPresenter Grid.Row="3" Content="{Binding LastSolution}" />
-                <ContentPresenter Grid.Row="4" Content="{Binding BestSolution}" />
+                    <StackPanel Orientation="Horizontal" Grid.Row="2">
+                        <TextBlock Text="{Binding Path=BestScore}" />
+                    </StackPanel>
+                </Grid>
+
+                <ContentPresenter Grid.Row="1" Content="{Binding LastSolution}" />
+                <ContentPresenter Grid.Row="2" Content="{Binding BestSolution}" />
             </Grid>
         </Grid>
     </Grid>
