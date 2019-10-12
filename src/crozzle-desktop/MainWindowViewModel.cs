@@ -74,6 +74,22 @@ namespace crozzle_desktop
 
 		public Engine Engine { get; } = new Engine();
 
+
+		public TimeSpan? RunDuration
+		{
+			get => _startDateTime.HasValue ? DateTime.Now - _startDateTime : null;
+		}
+
+		DateTime? _startDateTime;
+		private void StartTimer()
+		{
+			_startDateTime = DateTime.Now;
+			var timer = new System.Timers.Timer(1000);
+			timer.Elapsed += (sender, args) => FirePropertyChangedEvents(nameof(RunDuration));
+			timer.Start();
+		}
+
+
 		private void StartEngine()
 		{
 			Engine._cancellationTokenSource?.Cancel();
@@ -83,7 +99,9 @@ namespace crozzle_desktop
 				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
 				.ToArray();
 			this.GeneratedSolutionCount = 0;
-			
+			StartTimer();
+
+
 			Task.Factory.StartNew(
 				() =>
 				{
@@ -94,7 +112,7 @@ namespace crozzle_desktop
 					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
 						workspaces,
 						10000000,
-						4096,
+						8192,
 						Engine._cancellationTokenSource.Token
 					))
 					{
@@ -104,7 +122,8 @@ namespace crozzle_desktop
 						{
 							this._lastWorkspace = thisWorkspace;
 							FirePropertyChangedEvents(
-								nameof(LastSolution)
+								nameof(LastSolution),
+								nameof(RunDuration)
 							);
 							lastRefresh = DateTime.UtcNow;
 						}
@@ -114,7 +133,10 @@ namespace crozzle_desktop
 							maxScore = thisWorkspace.Score;
 							this._bestWorkspace = thisWorkspace;
 							this.BestScore = String.Format("Scored {0:N0} at {1:N0} solutions", maxScore, this.GeneratedSolutionCount);
-							FirePropertyChangedEvents(nameof(BestSolution), nameof(BestScore));
+							FirePropertyChangedEvents(
+								nameof(BestSolution),
+								nameof(BestScore)
+							);
 						}
 					}
 					Engine.FireEngineStopped();

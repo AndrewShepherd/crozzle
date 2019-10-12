@@ -11,50 +11,98 @@
     <Window.Resources>
         <local:MainWindowViewModel x:Key="MainWindowViewModel" />
     </Window.Resources>
+
     <Grid Name="_mainGrid" DataContext="{StaticResource MainWindowViewModel}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <local:WordsSelector Grid.Column="0" Words="{Binding Path=Words, Mode=OneWayToSource}" />
+        <GridSplitter Grid.Column="1" Background="Gray" Width="10" HorizontalAlignment="Stretch" />
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Background="Black">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Vertical" Grid.Column="0" Name="ControlPanel" VerticalAlignment="Center">
+                    <StackPanel.Resources>
+                        <Style TargetType="{x:Type Button}">
+                            <Setter Property="Margin" Value="10,3" />
+                            <Setter Property="Height" Value="Auto" />
+                        </Style>
+                        
+                    </StackPanel.Resources>
+                    <Button>Start / Stop</Button>
+                    <Button>Reset</Button>
+                </StackPanel>
+                <Border 
+                    Background="Black" 
+                    HorizontalAlignment="Stretch" 
+                    Grid.Column="1"
+                    MinWidth="200"
+                    >
+                    <TextBlock Foreground="LightGreen" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Courier New" FontSize="36">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0:0;;#} {1:00}:{2:00;00}:{3:00;00}">
+                                <Binding Path="RunDuration.TotalDays" />
+                                <Binding Path="RunDuration.Hours" />
+                                <Binding Path="RunDuration.Minutes" />
+                                <Binding Path="RunDuration.Seconds" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
 
-        <Grid.Resources>
-        </Grid.Resources>
-                <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <local:WordsSelector Grid.Column="0" Words="{Binding Path=Words, Mode=OneWayToSource}" />
-            <GridSplitter Grid.Column="1" Background="Gray" Width="10" HorizontalAlignment="Stretch" />
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Name="Dashboard">
+                </Border>
+                <Grid Grid.Column="2" Name="Dashboard">
+                    <Grid.Resources>
+                        <Style TargetType="{x:Type TextBlock}">
+                            <Setter Property="Foreground" Value="LightGreen" />
+                        </Style>
+                        <Style TargetType="{x:Type Label}">
+                            <Setter Property="Foreground" Value="LightGreen" />
+                            <Setter Property="VerticalAlignment" Value="Bottom" />
+                        </Style>
+                        <Style TargetType="{x:Type TextBlock}" x:Key="LargeNumber">
+                            <Setter Property="FontSize" Value="30" />
+                            <Setter Property="FontFamily" Value="Courier New" />
+                            <Setter Property="Foreground" Value="LightGreen" />
+                            <Setter Property="MinWidth" Value="150" />
+                            <Setter Property="TextAlignment" Value="Right" />
+                            <Setter Property="VerticalAlignment" Value="Bottom" />
+                        </Style>
+
+                    </Grid.Resources>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <StackPanel Orientation="Horizontal" Grid.Row="0">
-                        <Label>Solutions Generated:</Label>
-                        <TextBlock Text="{Binding Path=Engine.SolutionsGenerated, StringFormat='{}{0:#,#.}' }" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Grid.Row="1" >
-                        <Label>Solutions/Second:</Label>
-                        <TextBlock Text="{Binding Path=Speedometer.SolutionsPerSecond, StringFormat='{}{0:#,#.}'}" />
-                    </StackPanel>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                    <StackPanel Orientation="Horizontal" Grid.Row="2">
-                        <TextBlock Text="{Binding Path=BestScore}" />
-                    </StackPanel>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LargeNumber}" Text="{Binding Path=Engine.SolutionsGenerated, StringFormat='{}{0:#,#.}' }" />
+                        <Label Grid.Row="0" Grid.Column="1">Solutions</Label>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LargeNumber}" Text="{Binding Path=Speedometer.SolutionsPerSecond, StringFormat='{}{0:#,#.}'}" />
+                        <Label Grid.Row="1" Grid.Column="1">Solutions per Second</Label>
                 </Grid>
 
-                <ContentPresenter Grid.Row="1" Content="{Binding LastSolution}" />
-                <ContentPresenter Grid.Row="2" Content="{Binding BestSolution}" />
             </Grid>
+            <StackPanel Grid.Row="1" Orientation="Horizontal">
+                <TextBlock Text="{Binding Path=BestScore}" />
+            </StackPanel>
+            <ContentPresenter Grid.Row="2" Content="{Binding LastSolution}" />
+            <ContentPresenter Grid.Row="3" Content="{Binding BestSolution}" />
         </Grid>
     </Grid>
+
 </Window>
