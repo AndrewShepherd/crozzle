@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Text;
@@ -15,32 +16,35 @@ namespace crozzle_desktop
 		public event PropertyChangedEventHandler PropertyChanged;
 
 
-		private ImmutableHashSet<String> _propertyNamesToFire = ImmutableHashSet<string>.Empty;
+		private ConcurrentDictionary<String, bool> _propertyNamesToFire = new ConcurrentDictionary<string, bool>();
+		private AutoResetEvent _dispatchPending = new AutoResetEvent(true);
 		protected void FirePropertyChangedEvents(params string[] propertyNames)
 		{
 			foreach (var n in propertyNames)
 			{
-				Interlocked.Exchange(
-					ref _propertyNamesToFire,
-					_propertyNamesToFire.Add(n)
+				_propertyNamesToFire.TryAdd(n, true);
+			}
+			if(_dispatchPending.WaitOne(0))
+			{
+				this._dispatcher.BeginInvoke(
+					() =>
+					{
+						_dispatchPending.Set();
+						var pn = Interlocked.Exchange(
+							ref _propertyNamesToFire,
+							new ConcurrentDictionary<string, bool>()
+						);
+						foreach (var n in pn)
+						{
+							PropertyChanged?.Invoke(
+								this,
+								new PropertyChangedEventArgs(n.Key)
+							);
+						}
+					}
 				);
 			}
-			this._dispatcher.BeginInvoke(
-				() =>
-				{
-					var pn = Interlocked.Exchange(
-						ref _propertyNamesToFire,
-						ImmutableHashSet<string>.Empty
-					);
-					foreach (var n in pn)
-					{
-						PropertyChanged?.Invoke(
-							this,
-							new PropertyChangedEventArgs(n)
-						);
-					}
-				}
-			);
+
 		}
 	}
 }

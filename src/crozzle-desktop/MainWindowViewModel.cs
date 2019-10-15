@@ -15,6 +15,11 @@ namespace crozzle_desktop
 	{
 		private Workspace _bestWorkspace;
 
+		public MainWindowViewModel()
+		{
+			this.Engine = new Engine();
+		}
+
 		public IEnumerable<string> Words
 		{
 			get => Engine.Words;
@@ -57,26 +62,35 @@ namespace crozzle_desktop
 
 		public Speedometer Speedometer { get; } = new Speedometer();
 
-		void IncrementSolutionCount()
+		int _maxScore = 0;
+		private Engine _engine;
+		public Engine Engine 
 		{
-			++this.Engine.SolutionsGenerated;
+			get => _engine;
+			set
+			{
+				_engine = value;
+				_engine.SolutionGenerated += this.SolutionGenerated;
+			}
 		}
 
-		public Engine Engine { get; } = new Engine();
-
-
-		public TimeSpan? RunDuration
+		private void SolutionGenerated(object sender, SolutionGeneratedEventArgs e)
 		{
-			get => _startDateTime.HasValue ? DateTime.Now - _startDateTime : null;
-		}
+			if (e.Solution.Score > _maxScore)
+			{
+				_maxScore = e.Solution.Score;
 
-		DateTime? _startDateTime;
-		private void StartTimer()
-		{
-			_startDateTime = DateTime.Now;
-			var timer = new System.Timers.Timer(1000);
-			timer.Elapsed += (sender, args) => FirePropertyChangedEvents(nameof(RunDuration));
-			timer.Start();
+				this._bestWorkspace = e.Solution;
+				this.BestScore = String.Format(
+					"Scored {0:N0} at {1:N0} solutions",
+					_maxScore, 
+					e.SolutionNumber
+				);
+				FirePropertyChangedEvents(
+					nameof(BestSolution),
+					nameof(BestScore)
+				);
+			}
 		}
 
 		private StopWatch _stopWatch = new StopWatch();
@@ -101,17 +115,13 @@ namespace crozzle_desktop
 			var workspaces = this.Words
 				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
 				.ToArray();
-			this.GeneratedSolutionCount = 0;
-			StartTimer();
-
+			this.Engine.SolutionsGenerated = 0;
 
 			Task.Factory.StartNew(
 				() =>
 				{
 					Speedometer.Measure(Engine);
 					_stopWatch.Start();
-					DateTime lastRefresh = DateTime.UtcNow;
-					int maxScore = 0;
 					Engine.FireEngineStarted();
 					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
 						workspaces,
@@ -120,24 +130,12 @@ namespace crozzle_desktop
 						Engine._cancellationTokenSource.Token
 					))
 					{
-						IncrementSolutionCount();
-						DateTime now = DateTime.UtcNow;
-						if(now - lastRefresh > RefreshInterval)
-						{
-							this.Engine.LastSolution = thisWorkspace;
-							lastRefresh = DateTime.UtcNow;
-						}
-
-						if (thisWorkspace.Score > maxScore)
-						{
-							maxScore = thisWorkspace.Score;
-							this._bestWorkspace = thisWorkspace;
-							this.BestScore = String.Format("Scored {0:N0} at {1:N0} solutions", maxScore, this.GeneratedSolutionCount);
-							FirePropertyChangedEvents(
-								nameof(BestSolution),
-								nameof(BestScore)
-							);
-						}
+						++this.Engine.SolutionsGenerated;
+						this.Engine.LastSolution = thisWorkspace;
+						Engine.FireSolutionGenerated(
+							this.Engine.SolutionsGenerated,
+							thisWorkspace
+						);
 					}
 					Engine.FireEngineStopped();
 				}

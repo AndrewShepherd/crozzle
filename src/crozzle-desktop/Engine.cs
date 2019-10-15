@@ -6,6 +6,12 @@ using System.Threading;
 
 namespace crozzle_desktop
 {
+	class SolutionGeneratedEventArgs : EventArgs
+	{
+		public ulong SolutionNumber { get; set; }
+		public Workspace Solution { get; set; }
+	}
+
 	class Engine : PropertyChangedEventSource, ISolutionEngine
 	{
 		public CancellationTokenSource _cancellationTokenSource;
@@ -45,6 +51,8 @@ namespace crozzle_desktop
 
 		public event EventHandler EngineStopped;
 
+		public event EventHandler<SolutionGeneratedEventArgs> SolutionGenerated;
+
 		public void FireEngineStarted()
 		{
 			EngineStarted?.Invoke(this, EventArgs.Empty);
@@ -54,6 +62,19 @@ namespace crozzle_desktop
 		{
 			EngineStopped?.Invoke(this, EventArgs.Empty);
 		}
+
+		public void FireSolutionGenerated(ulong solutionNumber, Workspace solution)
+		{
+			SolutionGenerated?.Invoke(
+				this,
+				new SolutionGeneratedEventArgs
+				{
+					Solution = solution,
+					SolutionNumber = solutionNumber
+				}
+			);
+		}
+
 
 		public void Start()
 		{
