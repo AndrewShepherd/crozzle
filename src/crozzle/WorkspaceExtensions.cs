@@ -491,7 +491,7 @@
 							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 						)
 				);
-				var spacesThatMustBeFilled = spaces.Where(s => s.CountLocations() > 5).ToList();
+				var spacesThatMustBeFilled = spaces.Where(s => s.CountLocations() > 4).ToList();
 				// Confirm that each space CAN be filled
 				if(!(workspace.CanCoverEachSpace(grid, spacesThatMustBeFilled)))
 				{
@@ -504,7 +504,7 @@
 							|| (c.CellType == GridCellType.EndOfWordMarker)
 							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 						)
-					).Where(s => s.CountLocations() > 5).ToList();
+					).Where(s => s.CountLocations() > 4).ToList();
 				if(!(workspace.CanCoverEachSpace(grid, spacesOtherCheck)))
 				{
 					yield break;

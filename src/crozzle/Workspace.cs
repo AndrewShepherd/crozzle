@@ -17,7 +17,7 @@
 		public int Score { get; set; } = 0;
 		public Board Board;
 		public ImmutableList<string> IncludedWords { get; set; }
-		public ImmutableList<Intersection> Intersections;
+		public ImmutableList<Intersection> Intersections { get; set; }
 
 
 		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;

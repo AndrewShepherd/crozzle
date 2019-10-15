@@ -41,15 +41,6 @@ namespace crozzle_desktop
 			set;
 		}
 		
-
-
-		public Workspace _lastWorkspace;
-
-		public Workspace LastSolution
-		{
-			get => _lastWorkspace;
-		}
-
 		public ulong GeneratedSolutionCount
 		{
 			get => Engine?.SolutionsGenerated ?? 0;
@@ -61,7 +52,6 @@ namespace crozzle_desktop
 				}
 			}
 		}
-
 
 		readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(0.1);
 
@@ -89,6 +79,19 @@ namespace crozzle_desktop
 			timer.Start();
 		}
 
+		private StopWatch _stopWatch = new StopWatch();
+		public StopWatch StopWatch
+		{
+			get => _stopWatch;
+			set
+			{
+				if(_stopWatch != value)
+				{
+					_stopWatch = value;
+					FirePropertyChangedEvents(nameof(StopWatch));
+				}
+			}
+		}
 
 		private void StartEngine()
 		{
@@ -106,6 +109,7 @@ namespace crozzle_desktop
 				() =>
 				{
 					Speedometer.Measure(Engine);
+					_stopWatch.Start();
 					DateTime lastRefresh = DateTime.UtcNow;
 					int maxScore = 0;
 					Engine.FireEngineStarted();
@@ -120,11 +124,7 @@ namespace crozzle_desktop
 						DateTime now = DateTime.UtcNow;
 						if(now - lastRefresh > RefreshInterval)
 						{
-							this._lastWorkspace = thisWorkspace;
-							FirePropertyChangedEvents(
-								nameof(LastSolution),
-								nameof(RunDuration)
-							);
+							this.Engine.LastSolution = thisWorkspace;
 							lastRefresh = DateTime.UtcNow;
 						}
 

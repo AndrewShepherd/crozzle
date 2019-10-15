@@ -44,25 +44,9 @@
                     <Button>Start / Stop</Button>
                     <Button>Reset</Button>
                 </StackPanel>
-                <Border 
-                    Background="Black" 
-                    HorizontalAlignment="Stretch" 
-                    Grid.Column="1"
-                    MinWidth="200"
-                    >
-                    <TextBlock Foreground="LightGreen" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Courier New" FontSize="36">
-                        <TextBlock.Text>
-                            <MultiBinding StringFormat="{}{0:0;;#} {1:00}:{2:00;00}:{3:00;00}">
-                                <Binding Path="RunDuration.TotalDays" />
-                                <Binding Path="RunDuration.Hours" />
-                                <Binding Path="RunDuration.Minutes" />
-                                <Binding Path="RunDuration.Seconds" />
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
+                <local:StopWatchView Grid.Column="1" StopWatch="{Binding Path=StopWatch}" />
 
-                </Border>
-                <Grid Grid.Column="2" Name="Dashboard">
+                <Grid Grid.Column="2" Name="Dashboard" HorizontalAlignment="Center">
                     <Grid.Resources>
                         <Style TargetType="{x:Type TextBlock}">
                             <Setter Property="Foreground" Value="LightGreen" />
@@ -76,6 +60,7 @@
                             <Setter Property="FontFamily" Value="Courier New" />
                             <Setter Property="Foreground" Value="LightGreen" />
                             <Setter Property="MinWidth" Value="150" />
+                            <Setter Property="HorizontalAlignment" Value="Right" />
                             <Setter Property="TextAlignment" Value="Right" />
                             <Setter Property="VerticalAlignment" Value="Bottom" />
                         </Style>
@@ -86,7 +71,7 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
@@ -97,11 +82,19 @@
                 </Grid>
 
             </Grid>
-            <StackPanel Grid.Row="1" Orientation="Horizontal">
-                <TextBlock Text="{Binding Path=BestScore}" />
-            </StackPanel>
-            <ContentPresenter Grid.Row="2" Content="{Binding LastSolution}" />
-            <ContentPresenter Grid.Row="3" Content="{Binding BestSolution}" />
+            <TextBlock 
+                Grid.Row="1"
+                HorizontalAlignment="Stretch"
+                TextAlignment="Center"
+                Background="LightBlue"
+                Foreground="Navy"
+                Padding="0,6,0,6"
+                Text="{Binding Path=BestScore}"
+                FontSize="16"
+                />
+            <ContentPresenter Grid.Row="2" Content="{Binding BestSolution}" />
+
+            <ContentPresenter Grid.Row="3" Content="{Binding Engine.LastSolution}" />
         </Grid>
     </Grid>
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using crozzle;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -24,6 +25,19 @@ namespace crozzle_desktop
 				}
 			}
 		}
+
+		private Workspace _lastSolution;
+
+		public Workspace LastSolution
+		{
+			get => _lastSolution;
+			set
+			{
+				Interlocked.Exchange(ref _lastSolution, value);
+				base.FirePropertyChangedEvents(nameof(LastSolution));
+			}
+		}
+
 
 		public bool IsRunning { get; set; }
 

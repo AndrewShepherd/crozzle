@@ -8,28 +8,55 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="3*" />
         </Grid.ColumnDefinitions>
-        <ListView Grid.Column="0" ItemsSource="{Binding Path=IncludedWords}" />
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="0">
+            <ListView Grid.Row="1" ItemsSource="{Binding Path=IncludedWords}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel IsItemsHost="True" Orientation="Vertical" />
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+            </ListView>
+        </Grid>
+        <Grid Name="_statistics" HorizontalAlignment="Center" Grid.Column="1">
+            <Grid.Resources>
+                <Style TargetType="{x:Type Label}">
+                    <Setter Property="HorizontalAlignment" Value="Right" />
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                </Style>
+                <Style TargetType="{x:Type TextBlock}">
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                    <Setter Property="FontSize" Value="14" />
+                </Style>
+            </Grid.Resources>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Horizontal">
-                <Label>Score:</Label>
-                <TextBlock Text="{Binding Path=Score}" />
-            </StackPanel>
-            <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Path=BoardRepresentation}">
-                <TextBlock.Style>
-                    <Style TargetType="{x:Type TextBlock}">
-                        <Setter Property="FontFamily" Value="Courier New" />
-                        <Setter Property="FontSize" Value="24" />
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Label Grid.Column="0">Score</Label>
+            <TextBlock Grid.Column="1" Text="{Binding Path=Score}" TextAlignment="Center" VerticalAlignment="Center" FontSize="16" />
+            <Label Grid.Row="1">Word Count</Label>
+            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Path=IncludedWords.Count}" />
+            <Label Grid.Row="2">Intersection Count</Label>
+            <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding Path=Intersections.Count}"/>
         </Grid>
+
+        <TextBlock Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Top" Text="{Binding Path=BoardRepresentation}">
+            <TextBlock.Style>
+                <Style TargetType="{x:Type TextBlock}">
+                    <Setter Property="FontFamily" Value="Courier New" />
+                    <Setter Property="FontSize" Value="24" />
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
     </Grid>
 </UserControl>
