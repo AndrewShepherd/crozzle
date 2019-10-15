@@ -92,9 +92,8 @@
                 Text="{Binding Path=BestScore}"
                 FontSize="16"
                 />
-            <ContentPresenter Grid.Row="2" Content="{Binding BestSolution}" />
-
-            <ContentPresenter Grid.Row="3" Content="{Binding Engine.LastSolution}" />
+            <local:WorkspaceView Grid.Row="2" Workspace="{Binding Path=BestSolution}" RefreshInterval="0" />
+            <local:WorkspaceView Grid.Row="3" Workspace="{Binding Path=Engine.LastSolution}" RefreshInterval="1000" />
         </Grid>
     </Grid>
 

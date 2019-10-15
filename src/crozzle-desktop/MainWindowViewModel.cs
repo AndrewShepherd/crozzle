@@ -38,6 +38,7 @@ namespace crozzle_desktop
 		public Workspace BestSolution
 		{
 			get => _bestWorkspace;
+			set => _bestWorkspace = value;
 		}
 
 		public string BestScore

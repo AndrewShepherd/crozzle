@@ -5,8 +5,5 @@
              xmlns:crozzle="clr-namespace:crozzle;assembly=crozzle"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <DataTemplate DataType="{x:Type crozzle:Workspace}">
-            <local:WorskpaceView />
-        </DataTemplate>
     </Application.Resources>
 </Application>
