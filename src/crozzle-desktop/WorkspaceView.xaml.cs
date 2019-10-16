@@ -41,6 +41,20 @@ namespace crozzle_desktop
 		}
 
 		private Workspace _workspace;
+
+		private DateTime _lastDateTimeSet = default(DateTime);
+
+		private static Workspace BestScoringWorkspace(Workspace w1, Workspace w2)
+		{
+			if (w1 == null)
+				return w2;
+			if (w2 == null)
+				return w1;
+			return w1.Score > w2.Score ? w1 : w2;
+		}
+
+		private Workspace _winningWorkspace = null;
+
 		public Workspace Workspace
 		{
 			get => _workspace;
@@ -49,8 +63,13 @@ namespace crozzle_desktop
 				if(_workspace != value)
 				{
 					_workspace = value;
-					//this.SetValue(UserControl.DataContextProperty, _workspace);
-					//this.DataContext = _workspace;
+					_winningWorkspace = BestScoringWorkspace(_winningWorkspace, _workspace);
+					if ((DateTime.Now - _lastDateTimeSet).TotalMilliseconds > this.RefreshInterval)
+					{
+						_lastDateTimeSet = DateTime.Now;
+						MainGrid.DataContext = _winningWorkspace;
+						_winningWorkspace = null;
+					}
 				}
 			}
 		}
