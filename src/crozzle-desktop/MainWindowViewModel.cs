@@ -1,13 +1,8 @@
 ﻿using crozzle;
 using System;
-using System.Collections.Immutable;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Threading;
 
 namespace crozzle_desktop
 {
@@ -112,35 +107,9 @@ namespace crozzle_desktop
 		{
 			Engine._cancellationTokenSource?.Cancel();
 			Engine._cancellationTokenSource = new CancellationTokenSource();
-			Workspace workspace = Workspace.Generate(this.Words);
-			var workspaces = this.Words
-				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
-				.ToArray();
-			this.Engine.SolutionsGenerated = 0;
-
-			Task.Factory.StartNew(
-				() =>
-				{
-					Speedometer.Measure(Engine);
-					_stopWatch.Start();
-					Engine.FireEngineStarted();
-					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
-						workspaces,
-						10000000,
-						8192,
-						Engine._cancellationTokenSource.Token
-					))
-					{
-						++this.Engine.SolutionsGenerated;
-						this.Engine.LastSolution = thisWorkspace;
-						Engine.FireSolutionGenerated(
-							this.Engine.SolutionsGenerated,
-							thisWorkspace
-						);
-					}
-					Engine.FireEngineStopped();
-				}
-			);
+			Speedometer.Measure(Engine);
+			_stopWatch.Start();
+			Engine.Start();
 		}
 	}
 }
