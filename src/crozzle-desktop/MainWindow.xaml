@@ -41,7 +41,9 @@
                         </Style>
                         
                     </StackPanel.Resources>
-                    <Button>Start / Stop</Button>
+                    <Button Command="{Binding ToggleOnOffCommand}">
+                        <TextBlock Text="{Binding ToggleStartStopCommandText}" />
+                    </Button>
                     <Button>Reset</Button>
                 </StackPanel>
                 <local:StopWatchView Grid.Column="1" StopWatch="{Binding Path=StopWatch}" />

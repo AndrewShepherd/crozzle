@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Windows.Input;
 
 namespace crozzle_desktop
 {
@@ -21,11 +22,11 @@ namespace crozzle_desktop
 			set
 			{
 				Engine.Words = value?.ToList();
-				FirePropertyChangedEvents(nameof(Words));
-				if(this.Engine.Words != null)
-				{
-					StartEngine();
-				}
+				FirePropertyChangedEvents(
+					nameof(Words),
+					nameof(CanToggleOnOff),
+					nameof(ToggleStartStopCommandText)
+				);
 			}
 		}
 
@@ -103,6 +104,37 @@ namespace crozzle_desktop
 			}
 		}
 
+		private readonly DelegateCommand _toggleOnOffCommand;
+
+		public ICommand ToggleOnOffCommand
+		{
+			get
+			{
+				return new DelegateCommand
+				(
+					() => this.ToggleStartStop(),
+					() => this.CanToggleOnOff
+				);
+			}
+		}
+
+		private void ToggleStartStop()
+		{
+			if(this.Engine.IsRunning)
+			{
+			}
+			else
+			{
+				this.StartEngine();
+			}
+			FirePropertyChangedEvents(nameof(ToggleStartStopCommandText));
+		}
+
+		public string ToggleStartStopCommandText =>
+			(CanToggleOnOff && this.Engine.IsRunning) ? "Stop" : "Start";
+
+		public bool CanToggleOnOff => this.Engine?.Words != null;
+
 		private void StartEngine()
 		{
 			Engine._cancellationTokenSource?.Cancel();
@@ -111,5 +143,7 @@ namespace crozzle_desktop
 			_stopWatch.Start();
 			Engine.Start();
 		}
+
+
 	}
 }

@@ -84,6 +84,7 @@ namespace crozzle_desktop
 				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
 				.ToArray();
 			this.SolutionsGenerated = 0;
+			this.IsRunning = true;
 
 			Task.Factory.StartNew(
 				() =>
