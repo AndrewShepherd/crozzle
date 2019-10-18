@@ -44,7 +44,7 @@
                     <Button Command="{Binding ToggleOnOffCommand}">
                         <TextBlock Text="{Binding ToggleStartStopCommandText}" />
                     </Button>
-                    <Button>Reset</Button>
+                    <Button Command="{Binding ResetCommand}">Reset</Button>
                 </StackPanel>
                 <local:StopWatchView Grid.Column="1" StopWatch="{Binding Path=StopWatch}" />
 
@@ -95,7 +95,7 @@
                 FontSize="16"
                 />
             <local:WorkspaceView Grid.Row="2" Workspace="{Binding Path=BestSolution}" RefreshInterval="0" />
-            <local:WorkspaceView Grid.Row="3" Workspace="{Binding Path=Engine.LastSolution}" RefreshInterval="1000" />
+            <local:WorkspaceView Grid.Row="3" Workspace="{Binding Path=Engine.LastSolution}" RefreshInterval="100" />
         </Grid>
     </Grid>
 

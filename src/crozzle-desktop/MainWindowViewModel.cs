@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace crozzle_desktop
@@ -104,44 +105,50 @@ namespace crozzle_desktop
 			}
 		}
 
-		private readonly DelegateCommand _toggleOnOffCommand;
 
-		public ICommand ToggleOnOffCommand
-		{
-			get
-			{
-				return new DelegateCommand
-				(
-					() => this.ToggleStartStop(),
-					() => this.CanToggleOnOff
-				);
-			}
-		}
+		public ICommand ToggleOnOffCommand =>
+			new DelegateCommand(
+				this.ToggleStartStop,
+				() => this.CanToggleOnOff
+			);
 
-		private void ToggleStartStop()
+		public ICommand ResetCommand =>
+			new DelegateCommand(
+				this.Reset,
+				() => this.CanToggleOnOff
+			);
+
+		private async void ToggleStartStop()
 		{
 			if(this.Engine.IsRunning)
 			{
+				this.Engine?.Pause();
+				_stopWatch.Stop();
 			}
 			else
 			{
-				this.StartEngine();
+				await this.StartEngine();
 			}
 			FirePropertyChangedEvents(nameof(ToggleStartStopCommandText));
 		}
 
+		private async void Reset()
+		{
+			await this.Engine?.Reset();
+			_stopWatch.Reset();
+			FirePropertyChangedEvents(nameof(ToggleStartStopCommandText));
+		}
+
 		public string ToggleStartStopCommandText =>
-			(CanToggleOnOff && this.Engine.IsRunning) ? "Stop" : "Start";
+			(CanToggleOnOff && this.Engine.IsRunning) ? "Pause" : "Start";
 
 		public bool CanToggleOnOff => this.Engine?.Words != null;
 
-		private void StartEngine()
+		private async Task StartEngine()
 		{
-			Engine._cancellationTokenSource?.Cancel();
-			Engine._cancellationTokenSource = new CancellationTokenSource();
 			Speedometer.Measure(Engine);
 			_stopWatch.Start();
-			Engine.Start();
+			await Engine.Start();
 		}
 
 

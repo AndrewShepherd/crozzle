@@ -15,7 +15,7 @@ namespace crozzle_desktop
 
 	class Engine : PropertyChangedEventSource, ISolutionEngine
 	{
-		public CancellationTokenSource _cancellationTokenSource;
+		private CancellationTokenSource _cancellationTokenSource;
 
 		public IEnumerable<string> Words { get; set; }
 
@@ -46,7 +46,7 @@ namespace crozzle_desktop
 		}
 
 
-		public bool IsRunning { get; set; }
+		public bool IsRunning => this._state == EngineState.Running;
 
 		public event EventHandler EngineStarted;
 
@@ -76,17 +76,48 @@ namespace crozzle_desktop
 			);
 		}
 
-
-		public void Start()
+		private readonly ManualResetEvent _continuation = new ManualResetEvent(true);
+		public void Pause()
 		{
+			EngineStopped?.Invoke(this, EventArgs.Empty);
+			_continuation.Reset();
+			this._state = EngineState.Paused;
+		}
+
+		public async Task Reset()
+		{
+			this._cancellationTokenSource?.Cancel();
+			_continuation.Set();
+			await _currentlyRunningTask;
+			LastSolution = null;
+			SolutionsGenerated = 0;
+			this._state = EngineState.Reset;
+		}
+
+		private enum EngineState { Reset, Running, Paused };
+		private EngineState _state = EngineState.Reset;
+
+
+		private void Resume()
+		{
+			this._continuation.Set();
+			this._state = EngineState.Running;
+			this.FireEngineStarted();
+		}
+
+		Task _currentlyRunningTask = Task.FromResult(0);
+
+		private async Task Restart()
+		{
+			await this.Reset();
+			this._state = EngineState.Running;
 			Workspace workspace = Workspace.Generate(this.Words);
+			this._cancellationTokenSource = new CancellationTokenSource();
 			var workspaces = this.Words
 				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
 				.ToArray();
-			this.SolutionsGenerated = 0;
-			this.IsRunning = true;
 
-			Task.Factory.StartNew(
+			_currentlyRunningTask = Task.Factory.StartNew(
 				() =>
 				{
 					this.FireEngineStarted();
@@ -103,11 +134,28 @@ namespace crozzle_desktop
 							this.SolutionsGenerated,
 							thisWorkspace
 						);
+						_continuation.WaitOne();
+						if(this._cancellationTokenSource.Token.IsCancellationRequested)
+						{
+							break;
+						}
 					}
 					this.FireEngineStopped();
 				}
 			);
 
+		}
+
+		public async Task Start()
+		{
+			if(_state == EngineState.Paused)
+			{
+				Resume();
+			}
+			else
+			{
+				await Restart();
+			}
 		}
 	}
 }
