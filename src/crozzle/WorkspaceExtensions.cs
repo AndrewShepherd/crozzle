@@ -47,19 +47,12 @@
 			return newWorkspace;
 		}
 
-		public static int IndexOf(this Workspace workspace, Location location) =>
-			workspace.Board.IndexOf(location);
-
-		public static char CharAt(this Workspace workspace, Location location) =>
-			workspace.Board.CharAt(location);
-
 		public static Workspace ExpandSize(this Workspace workspace, Rectangle newRectangle)
 		{
 			var newWorkspace = workspace.Clone();
 			newWorkspace.Board = workspace.Board.ExpandSize(newRectangle);
 			return newWorkspace;
 		}
-
 
 		public static Rectangle GetCurrentRectangle(this Workspace workspace) => workspace.Board.Rectangle;
 
@@ -417,7 +410,7 @@
 		private static bool CanCoverSpace(
 			this Workspace workspace,
 			Grid grid,
-			IEnumerable<RowIndexAndRange> space
+			GridRegion space
 		) =>
 			GetAdjacentSlots(workspace.Slots, space)
 			.SelectMany(
@@ -425,16 +418,12 @@
 					workspace.CoverSlot(grid, adj)
 			).Any();
 
-
 		private static bool CanCoverEachSpace(
 			this Workspace workspace,
 			Grid grid,
-			IEnumerable<IEnumerable<RowIndexAndRange>> spaces
+			IEnumerable<GridRegion> regions
 		) =>
-			spaces.All(
-				space =>
-					workspace.CanCoverSpace(grid, space)
-			);
+			regions.All(region => workspace.CanCoverSpace(grid, region));
 
 		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
 		{
@@ -509,12 +498,15 @@
 				{
 					yield break;
 				}
+
+
 				if (spacesThatMustBeFilled.Any())
 				{
 					var maxCount = spacesThatMustBeFilled.Select(s => s.CountLocations()).Max();
+					var regionToCover = spacesThatMustBeFilled.First(s => s.CountLocations() == maxCount);
 					slotsToFill = GetAdjacentSlots(
 						workspace.Slots,
-						spacesThatMustBeFilled.First(s => s.CountLocations() == maxCount)
+						regionToCover
 					).ToList();
 				}
 				else
@@ -539,12 +531,12 @@
 
 		private static IEnumerable<Slot> GetAdjacentSlots(
 			IEnumerable<Slot> slots,
-			IEnumerable<RowIndexAndRange> rowIndexAndRanges
+			GridRegion gridRegion
 		)
 		{
 			foreach(var slot in slots)
 			{
-				foreach(var rr in rowIndexAndRanges)
+				foreach(var rr in gridRegion.RowIndexAndRanges)
 				{
 					if(rr.RowIndex == slot.Location.Y)
 					{

@@ -29,9 +29,6 @@ namespace crozzle
 
 	internal static class GridExtensions
 	{
-		internal static int CountLocations(this IEnumerable<RowIndexAndRange> e) =>
-			e.Select(rr => rr.Range).Sum(r => r.End.Value - r.Start.Value);
-
 		internal static void RemoveSlot(this Grid grid, Slot slot)
 		{
 			var index = grid.Rectangle.IndexOf(slot.Location);
@@ -197,7 +194,7 @@ namespace crozzle
 			return true;
 		}
 
-		internal static IEnumerable<List<RowIndexAndRange>> FindEnclosedSpaces(this Grid grid, Func<GridCell, bool> cellMatches)
+		internal static IEnumerable<GridRegion> FindEnclosedSpaces(this Grid grid, Func<GridCell, bool> cellMatches)
 		{
 			var rowIndexAndRanges = grid.GetContiguousRangesForEachRow(cellMatches);
 
@@ -241,12 +238,10 @@ namespace crozzle
 							}
 						}
 					}
-
-					// Now we need to determine if this space is enclosed or not
-					//if (space.All(isClosed))
-					//{
-						yield return space;
-					//}
+					yield return new GridRegion
+					{
+						RowIndexAndRanges = space
+					};
 				}
 			}
 		}
