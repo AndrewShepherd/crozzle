@@ -136,7 +136,7 @@
 						+ Math.Min(
 							0
 							+ this.Slots.Select(c => Scoring.Score(c.Letter)).Sum()
-								+ (this.Intersections.Count())
+//								+ (this.Intersections.Count())
 								/*- (this.IncludedWords.Select(w => w.Length).Sum())*/,
 							0);
 				}

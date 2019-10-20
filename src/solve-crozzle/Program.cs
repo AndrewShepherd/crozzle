@@ -31,12 +31,16 @@ namespace solve_crozzle
 				Console.WriteLine($"*** Run started {timeStart.ToShortDateString()} {timeStart.ToLongTimeString()}");
 				Console.WriteLine($"*** Input file: {parameters.FilePath} ***");
 				Console.WriteLine($"*** BeamSize: {parameters.BeamSize} ***");
-				foreach (var thisWorkspace in Runner.SolveUsingQueue(
-					workspaces,
-					10000000,
-					parameters.BeamSize,
-					new CancellationTokenSource().Token
-				))
+				//foreach (var thisWorkspace in Runner.SolveUsingQueue(
+				//	workspaces,
+				//	10000000,
+				//	parameters.BeamSize,
+				//	new CancellationTokenSource().Token
+				//))
+				foreach(var thisWorkspace in Runner.SolveUsingSimpleRecursion(
+					workspaces.First(),
+					new CancellationTokenSource().Token)
+				)
 				{
 					++generatedSolutionsCount;
 					if (thisWorkspace.Score > maxScore)

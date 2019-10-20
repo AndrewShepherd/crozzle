@@ -16,11 +16,11 @@ namespace crozzle
 	class RowIndexAndRange
 	{
 		public int RowIndex;
-		public Range Range;
+		public IntRange Range;
 
 		public IEnumerable<Location> GetLocations()
 		{
-			for (int i = Range.Start.Value; i < Range.End.Value; ++i)
+			for (int i = Range.Start; i < Range.EndExclusive; ++i)
 			{
 				yield return new Location(i, RowIndex);
 			}
@@ -67,7 +67,7 @@ namespace crozzle
 		{
 			for (int row = grid.Rectangle.Top + 1; row <= grid.Rectangle.Bottom - 1; ++row)
 			{
-				List<Range> emptyCellsInRow = new List<Range>();
+				var emptyCellsInRow = new List<IntRange>();
 				for (
 					Location l = new Location(grid.Rectangle.Left+1, row);
 					l.X <= grid.Rectangle.Right-1;
@@ -77,17 +77,27 @@ namespace crozzle
 					var cell = grid.CellAt(l);
 					if (matchingCell(cell))
 					{
-						emptyCellsInRow.Add(new Range(l.X, l.X + 1));
+						emptyCellsInRow.Add(
+							new IntRange
+							{
+								Start = l.X,
+								EndExclusive = l.X + 1
+							}
+						);
 					}
 				}
 				if (emptyCellsInRow.Any())
 				{
-					Range contiguousSpan = emptyCellsInRow.First();
+					var contiguousSpan = emptyCellsInRow.First();
 					foreach (var l in emptyCellsInRow.Skip(1))
 					{
-						if (l.Start.Equals(contiguousSpan.End))
+						if (l.Start.Equals(contiguousSpan.EndExclusive))
 						{
-							contiguousSpan = new Range(contiguousSpan.Start.Value, l.End.Value);
+							contiguousSpan = new IntRange
+							{
+								Start = contiguousSpan.Start,
+								EndExclusive = l.EndExclusive
+							};
 						}
 						else
 						{
@@ -96,7 +106,11 @@ namespace crozzle
 								RowIndex = row,
 								Range = contiguousSpan
 							};
-							contiguousSpan = new Range(l.Start, l.End);
+							contiguousSpan = new IntRange
+							{
+								Start = l.Start,
+								EndExclusive = l.EndExclusive
+							}; 
 						}
 					}
 					yield return new RowIndexAndRange
@@ -181,19 +195,6 @@ namespace crozzle
 			}
 		}
 
-		internal static bool Intersects(Range r1, Range r2)
-		{
-			if (r1.End.Value <= r2.Start.Value)
-			{
-				return false;
-			}
-			if (r2.End.Value <= r1.Start.Value)
-			{
-				return false;
-			}
-			return true;
-		}
-
 		internal static IEnumerable<GridRegion> FindEnclosedSpaces(this Grid grid, Func<GridCell, bool> cellMatches)
 		{
 			var rowIndexAndRanges = grid.GetContiguousRangesForEachRow(cellMatches);
@@ -208,7 +209,7 @@ namespace crozzle
 					var node2 = nodes[j];
 					if (
 						(Math.Abs(node.RowIndex - node2.RowIndex) == 1)
-						&& (Intersects(node.Range, node2.Range))
+						&& (node.Range.Intersects(node2.Range))
 					)
 					{
 						connections[i, j] = true;

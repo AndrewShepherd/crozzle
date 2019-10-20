@@ -21,7 +21,7 @@
 
 		public static Workspace PopSlot(this Workspace workspace, out Slot slot)
 		{
-			if(workspace.Slots.IsEmpty)
+			if (workspace.Slots.IsEmpty)
 			{
 				slot = null;
 				return workspace;
@@ -43,7 +43,7 @@
 		public static Workspace RemoveWord(this Workspace workspace, string word)
 		{
 			var newWorkspace = WorkspaceExtensions.Clone(workspace);
-			newWorkspace.WordDatabase = workspace.WordDatabase.Remove(word); 
+			newWorkspace.WordDatabase = workspace.WordDatabase.Remove(word);
 			return newWorkspace;
 		}
 
@@ -67,6 +67,15 @@
 				)
 			);
 
+		private static bool RectangleIsTooBig(Rectangle rectangle)
+		{ 
+			if(rectangle.Width > Board.MaxWidth)
+			{
+				return true;
+			}
+			return (rectangle.Height > Board.MaxHeight);
+		}
+
 		// Places the word in the workspace
 		// 
 		// The new workspace will have
@@ -81,6 +90,10 @@
 			var newWorkspace = workspace.ExpandSize(
 				rectangle
 			);
+			if(RectangleIsTooBig(newWorkspace.Board.Rectangle))
+			{
+				return null;
+			}
 			newWorkspace.IsValid = true;
 			newWorkspace.WordDatabase = newWorkspace.WordDatabase.Remove(wordPlacement.Word);
 			newWorkspace.IncludedWords = newWorkspace.IncludedWords.Add(wordPlacement.Word);
@@ -147,6 +160,7 @@
 				}
 				else
 				{
+					return null;
 					throw new Exception("Unexpected state");
 				}
 			}
@@ -308,6 +322,82 @@
 			return grid;
 		}
 
+		private static bool CanPlaceWord(Strip strip, string candidateWord, int start)
+		{
+			if(start < 1)
+			{
+				return false;
+			}
+			var charBefore = strip.GridCells[start - 1];
+			if (
+				!(
+					charBefore.CanPlaceEndOfWordMarker
+				)
+			)
+			{
+				return false;
+			}
+			if (start + candidateWord.Length > (strip.GridCells.Length - 1))
+				return false;
+			var charAfter = strip.GridCells[start + candidateWord.Length];
+			if (
+				!(
+					charAfter.CanPlaceEndOfWordMarker
+				)
+			)
+			{
+				return false;
+			}
+			bool success = true;
+			for (
+				int cIndex = 0, sIndex = start;
+				cIndex < candidateWord.Length && success;
+				++cIndex, ++sIndex
+			)
+			{
+				if (strip.GridCells[sIndex].CellType == GridCellType.Blank)
+				{
+					continue;
+				}
+				if (strip.GridCells[sIndex].Slot?.Letter != candidateWord[cIndex])
+				{
+					success = false;
+				}
+			}
+			return success;
+		}
+
+
+		internal static IEnumerable<WordPlacement> GetCandidateWordPlacements(
+			this Workspace workspace,
+			string fragment,
+			Location location,
+			Direction direction
+			)
+		{
+			var availableWords = workspace.WordDatabase.ListAvailableMatchingWords(fragment);
+			foreach(var candidateWord in availableWords)
+			{
+				for (
+					int index = candidateWord.IndexOf(fragment, 0);
+					index != -1;
+					index = candidateWord.IndexOf(fragment, index + 1)
+				)
+				{
+					Location l = direction == Direction.Across
+						? new Location(location.X - index, location.Y)
+						: new Location(location.X, location.Y - index);
+					yield return new WordPlacement
+					(
+						direction,
+						l,
+						candidateWord
+					);
+				}
+			}
+		}
+
+
 		internal static IEnumerable<Workspace> CoverFragment(
 				this Workspace workspace,
 				Grid grid,
@@ -316,84 +406,44 @@
 				Direction direction
 			)
 		{
-			var availableWords = workspace.WordDatabase.ListAvailableMatchingWords(fragment);
-			if (!(availableWords.Any()))
+			// TODO: Use GetCandidateWordPlacements from above
+			var candidateWordPlacements = workspace.GetCandidateWordPlacements(
+				fragment,
+				location,
+				direction
+			);
+			if (!(candidateWordPlacements.Any()))
 			{
 				yield break;
 			}
 			var strip = grid.GenerateStrip(direction, location);
 
-			foreach (var candidateWord in availableWords)
+			foreach(var candidateWordPlacement in candidateWordPlacements)
 			{
-				var maxLength = (
-					direction == Direction.Across
-					? Board.MaxWidth
-					: Board.MaxHeight
-				) - 2;
-				if (candidateWord.Length > maxLength)
-					continue;
-				for (
-					int index = candidateWord.IndexOf(fragment, 0);
-					index != -1;
-					index = candidateWord.IndexOf(fragment, index + 1)
-				)
+				var fullRectangle = candidateWordPlacement.GetRectangle()
+					.Union(workspace.GetCurrentRectangle());
+				if(RectangleIsTooBig(fullRectangle))
 				{
-					var start = strip.SlotIndex - index;
-					if (start < 1)
-						continue;
-					var charBefore = strip.GridCells[start - 1];
-					if (
-						!(
-							charBefore.CanPlaceEndOfWordMarker
-						)
-					)
+					continue;
+				}
+				// Where is the start
+				var start = candidateWordPlacement.Direction == Direction.Across
+					? candidateWordPlacement.Location.X - strip.StartAt
+					: candidateWordPlacement.Location.Y - strip.StartAt;
+				bool success = CanPlaceWord(
+					strip,
+					candidateWordPlacement.Word,
+					start
+				);
+				if (success)
+				{
+					var child = workspace.TryPlaceWord(
+						grid,
+						candidateWordPlacement
+					);
+					if (child != null)
 					{
-						continue;
-					}
-					if (start + candidateWord.Length > (strip.GridCells.Length - 1))
-						continue;
-					var charAfter = strip.GridCells[start + candidateWord.Length];
-					if (
-						!(
-							charAfter.CanPlaceEndOfWordMarker
-						)
-					)
-					{
-						continue;
-					}
-					bool success = true;
-					for (
-						int cIndex = 0, sIndex = start;
-						cIndex < candidateWord.Length && success;
-						++cIndex, ++sIndex
-					)
-					{
-						if (strip.GridCells[sIndex].CellType == GridCellType.Blank)
-						{
-							continue;
-						}
-						if (strip.GridCells[sIndex].Slot?.Letter != candidateWord[cIndex])
-						{
-							success = false;
-						}
-					}
-					if (success)
-					{
-						Location l = direction == Direction.Across
-							? new Location(strip.StartAt + start, location.Y)
-							: new Location(location.X, strip.StartAt + start);
-						var child = workspace.TryPlaceWord(
-							grid,
-							new WordPlacement(
-								direction,
-								l,
-								candidateWord
-							)
-						);
-						if (child != null)
-						{
-							yield return child.Normalise();
-						}
+						yield return child;
 					}
 				}
 			}
@@ -425,39 +475,233 @@
 		) =>
 			regions.All(region => workspace.CanCoverSpace(grid, region));
 
+
+		class CoverageConstraint
+		{
+			private readonly int _maxLocations = 4;
+
+			public CoverageConstraint(int maxLocations)
+			{
+				_maxLocations = maxLocations;
+			}
+
+			public bool SatisfiesConstraint(GridRegion gridRegion) =>
+				gridRegion.CountLocations() <= _maxLocations;
+		}
+		
+		private static IEnumerable<Workspace> CoverOnePartialWord(Workspace workspace, Grid grid)
+		{
+			var partialSlot = grid.PartialWords.First();
+			grid.PartialWords.Remove(partialSlot);
+			workspace = workspace.Clone();
+			foreach (
+				var solution in CoverFragment(
+					workspace,
+					grid,
+					partialSlot.Value,
+					partialSlot.Rectangle.TopLeft,
+					partialSlot.Direction
+				)
+			)
+			{
+				if (grid.PartialWords.Any())
+				{
+					solution.IsValid = false;
+				}
+				yield return solution;
+			}
+		}
+
+		private static IEnumerable<Workspace> CoverRegion(this Workspace workspace, CoverageConstraint coverageConstraint, GridRegion gridRegion)
+		{
+			var grid = workspace.GenerateGrid();
+			if (grid.PartialWords.Any())
+			{
+				foreach(var child in CoverOnePartialWord(workspace, grid))
+				{
+					foreach(var grandchild in CoverRegion(child, coverageConstraint, gridRegion))
+					{
+						yield return grandchild;
+					}
+				}
+				yield break;
+			}
+			// Find the overlapping regions
+			var allRegions = grid.FindEnclosedSpaces(
+				c =>
+					(
+						(c.CellType == GridCellType.Blank)
+						|| (c.CellType == GridCellType.EndOfWordMarker)
+						|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
+					)
+				).Where(
+					s =>
+						!coverageConstraint.SatisfiesConstraint(s)
+				).ToList();
+			var overlappingRegions = allRegions
+				.Where(r => r.OverlapsWith(gridRegion))
+				.ToList();
+			if (!overlappingRegions.Any())
+			{
+				yield return workspace;
+				yield break;
+			}
+
+
+			var intersections = overlappingRegions
+				.Select(r => r.Intersection(gridRegion))
+				.Where(r => !coverageConstraint.SatisfiesConstraint(r))
+				.ToList();
+
+			if(!intersections.Any())
+			{
+				yield return workspace;
+				yield break;
+			}
+			// TODO: Create a rgion that's the intersection 
+			// of the gridRegion and the overlapping region
+			//
+			// We want the slots that are adjacent to the intersection
+			// Also, the direction of the slots are important:
+			//   If they are above or below the region, they must be vertical
+			//   If they are to the left or right of the region, they must be horizontal
+			//
+			// Another todo: if there are more than one overlapping region
+			// we should do the divide-and-conquer trick
+			var slotsToFill = GetAdjacentSlots(
+				workspace.Slots,
+				intersections.First() // overlappingRegions.First()
+			).ToList();
+			while (slotsToFill.Any())
+			{
+				var slot = slotsToFill[0];
+				slotsToFill.RemoveAt(0);
+				workspace = workspace.RemoveSlot(slot);
+				foreach (var child in workspace.CoverSlot(grid, slot))
+				{
+					foreach(var grandchild in child.CoverRegion(coverageConstraint, gridRegion))
+					{
+						yield return grandchild;
+					}
+				}
+
+				grid.RemoveSlot(slot);
+			}
+		}
+
+		public static bool TryCombineWorkspaces(Workspace w1, Workspace w2, out Workspace combined)
+		{
+			var newRectangle = w2.GetCurrentRectangle().Union(w1.GetCurrentRectangle());
+			if (RectangleIsTooBig(newRectangle))
+			{
+				combined = null;
+				return false;
+			}
+			combined = null;
+			foreach(var includedWord in w2.IncludedWords)
+			{
+				var w2Placement = w2
+					.Board
+					.WordPlacements
+					.Where(wp => wp.Word == includedWord)
+					.First();
+				var w1Placement = w1.Board.WordPlacements.Where(wp => wp.Word == includedWord).FirstOrDefault();
+				if(w1Placement != null)
+				{
+					if(!(w1Placement.Location.Equals(w2Placement.Location)))
+					{
+						return false;
+					}
+					if(!(w1Placement.Direction == w2Placement.Direction))
+					{
+						return false;
+					}
+				}
+				else
+				{
+					var grid = w1.GenerateGrid();
+					
+					// Try place word doesn't test if the word can go there
+					var strip = grid.GenerateStrip(w2Placement.Direction, w2Placement.Location);
+					if(strip.SlotIndex <= 0)
+					{
+						int dummy = 3;
+					}
+					bool canPlaceWord = CanPlaceWord(strip, w2Placement.Word, strip.SlotIndex);
+					if(!canPlaceWord)
+					{
+						return false;
+					}
+					w1 = w1.TryPlaceWord(grid, w2Placement);
+					if(w1 == null)
+					{
+						return false;
+					}
+				}
+			}
+			combined = w1;
+			return true;
+		}
+
+		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(IEnumerable<Workspace> g1, IEnumerable<Workspace> g2)
+		{
+			foreach(var w1 in g1)
+			{
+				foreach(var w2 in g2)
+				{
+					if(TryCombineWorkspaces(w1, w2, out Workspace combined))
+					{
+						yield return combined;
+					}
+				}
+			}
+		}
+
+		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(IEnumerable<IEnumerable<Workspace>> generators)
+		{
+			if(generators.Count() == 0)
+			{
+				return Enumerable.Empty<Workspace>();
+
+			}
+			if (generators.Count() == 1)
+			{
+				return generators.First();
+			}
+			if(!generators.All(e => e.Any()))
+			{
+				return Enumerable.Empty<Workspace>();
+			}
+			else
+			{
+				return CombineGeneratedWorkspaces(
+					new[]
+					{
+						CombineGeneratedWorkspaces(
+							generators.First(),
+							generators.Skip(1).First()
+						).Buffer()
+					}.Concat(generators.Skip(2))
+				);
+			}
+		}
+
 		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
 		{
 			var grid = workspace.GenerateGrid();
 			if (grid.PartialWords.Any())
 			{
-				var partialSlot = grid.PartialWords.First();
-				grid.PartialWords.Remove(partialSlot);
-				workspace = workspace.Clone();
-				foreach (
-					var solution in CoverFragment(
-						workspace,
-						grid,
-						partialSlot.Value,
-						partialSlot.Rectangle.TopLeft,
-						partialSlot.Direction
-					)
-				)
+				foreach(var child in CoverOnePartialWord(workspace, grid))
 				{
-					if (grid.PartialWords.Any())
-					{
-						solution.IsValid = false;
-					}
-					else
-					{
-						int dummy = 3;
-					}
-					yield return solution.Normalise();
+					yield return child.Normalise();
 				}
 				yield break;
 			}
 			else
 			{
 				List<Slot> slotsToFill = null;
+				CoverageConstraint coverageConstraint = new CoverageConstraint(4);
+
 				if (
 					grid.FindEnclosedSpaces(
 						c =>
@@ -466,7 +710,7 @@
 								|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 							)
 					)
-					.Where(s => s.CountLocations() > 5)
+					.Where(s => (!coverageConstraint.SatisfiesConstraint(s)))
 					.Any()
 				)
 				{
@@ -480,7 +724,10 @@
 							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 						)
 				);
-				var spacesThatMustBeFilled = spaces.Where(s => s.CountLocations() > 4).ToList();
+				var spacesThatMustBeFilled = spaces.Where(
+					s => 
+						!coverageConstraint.SatisfiesConstraint(s)
+				).ToList();
 				// Confirm that each space CAN be filled
 				if(!(workspace.CanCoverEachSpace(grid, spacesThatMustBeFilled)))
 				{
@@ -493,21 +740,24 @@
 							|| (c.CellType == GridCellType.EndOfWordMarker)
 							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 						)
-					).Where(s => s.CountLocations() > 4).ToList();
+					).Where(
+						s => 
+							!coverageConstraint.SatisfiesConstraint(s)
+					).ToList();
 				if(!(workspace.CanCoverEachSpace(grid, spacesOtherCheck)))
 				{
 					yield break;
 				}
-
-
 				if (spacesThatMustBeFilled.Any())
 				{
-					var maxCount = spacesThatMustBeFilled.Select(s => s.CountLocations()).Max();
-					var regionToCover = spacesThatMustBeFilled.First(s => s.CountLocations() == maxCount);
-					slotsToFill = GetAdjacentSlots(
-						workspace.Slots,
-						regionToCover
-					).ToList();
+					IEnumerable<IEnumerable<Workspace>> generators = spacesThatMustBeFilled
+						.Select(region => CoverRegion(workspace, coverageConstraint, region).Buffer())
+						.ToList();
+					foreach(var child in CombineGeneratedWorkspaces(generators))
+					{
+						yield return child;
+					}
+					yield break;
 				}
 				else
 				{
@@ -521,7 +771,7 @@
 					workspace = workspace.RemoveSlot(slot);
 					foreach(var child in workspace.CoverSlot(grid, slot))
 					{
-						yield return child;
+						yield return child.Normalise();
 					}
 
 					grid.RemoveSlot(slot);
@@ -529,41 +779,41 @@
 			}
 		}
 
+		private static bool LocationIsAdjacentOrInside(Location l, RowIndexAndRange rr)
+		{
+			if (rr.RowIndex == l.Y)
+			{
+				var r = rr.Range;
+				return (
+					(l.X >= r.Start - 1)
+						&& (l.X <= r.EndExclusive)
+				);
+			}
+			if(Math.Abs(rr.RowIndex - l.Y) == 1)
+			{
+				var r = rr.Range;
+				return (
+					(l.X >= r.Start)
+					&& (l.X < r.EndExclusive)
+				);
+			}
+			return false;
+		}
+
+		private static bool LocationIsAdjacentOrInsideGridRegion(Location l, GridRegion gridRegion)
+		{
+			return gridRegion.RowIndexAndRanges
+				.Any(
+					riar => LocationIsAdjacentOrInside(l, riar)
+				);
+		}
+
 		private static IEnumerable<Slot> GetAdjacentSlots(
 			IEnumerable<Slot> slots,
 			GridRegion gridRegion
 		)
 		{
-			foreach(var slot in slots)
-			{
-				foreach(var rr in gridRegion.RowIndexAndRanges)
-				{
-					if(rr.RowIndex == slot.Location.Y)
-					{
-						var r = rr.Range;
-						if(
-							r.Start.Value == slot.Location.X+1 
-							|| r.End.Value == slot.Location.X-1
-						)
-						{
-							yield return slot;
-						}
-					}
-					else if (Math.Abs(rr.RowIndex - slot.Location.Y) == 1)
-					{
-						var r = rr.Range;
-						if(
-							(
-								(r.Start.Value <= slot.Location.X)
-								&& (r.End.Value > slot.Location.X)
-							)
-						)
-						{
-							yield return slot;
-						}
-					}
-				}
-			}
+			return slots.Where(s => LocationIsAdjacentOrInsideGridRegion(s.Location, gridRegion));
 		}
 	}
 }

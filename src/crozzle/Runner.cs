@@ -8,6 +8,32 @@ namespace crozzle
 {
 	public class Runner
 	{
+		public static IEnumerable<Workspace> SolveUsingSimpleRecursion(
+			Workspace startWorkspace,
+			CancellationToken cancellationToken
+		)
+		{
+			foreach(var child in startWorkspace.GenerateNextSteps())
+			{
+				if(child.IsValid)
+				{
+					yield return child;
+				}
+				if(cancellationToken.IsCancellationRequested)
+				{
+					yield break;
+				}
+				foreach(var grandChild in SolveUsingSimpleRecursion(child, cancellationToken))
+				{
+					yield return grandChild;
+					if (cancellationToken.IsCancellationRequested)
+					{
+						yield break;
+					}
+				}
+			}
+		}
+
 		public static IEnumerable<Workspace> SolveUsingQueue(
 			IEnumerable<Workspace> startWorkspaces,
 			int queueLength,
@@ -42,7 +68,7 @@ namespace crozzle
 				List<Workspace> childWorkspaces = new List<Workspace>();
 				foreach (var thisWorkspace in wList)
 				{
-					var nextSteps = thisWorkspace.GenerateNextSteps().ToList();
+					var nextSteps = thisWorkspace.GenerateNextSteps().Buffer();
 					if (nextSteps.Any())
 					{
 						foreach (var ns in nextSteps)
@@ -51,12 +77,14 @@ namespace crozzle
 							//continue;	
 							if (ns.IsValid)
 							{
+								yield return ns; // Partially complete, but interesting
 								childWorkspaces.Add(ns);
 							}
 							else
 							{
 								foreach (var nsChild in GetValidChildren(ns))
 								{
+									yield return nsChild;
 									childWorkspaces.Add(nsChild);
 								}
 							}

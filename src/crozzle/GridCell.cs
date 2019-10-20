@@ -13,6 +13,7 @@ namespace crozzle
 	};
 	class GridCell
 	{
+		public override string ToString() => CellType.ToString();
 		public GridCellType CellType { get; set; } = GridCellType.Blank;
 		public Slot Slot { get; set; }
 		public char Letter { get; internal set; }

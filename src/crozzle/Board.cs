@@ -54,7 +54,7 @@ namespace crozzle
 		public override string ToString()
 		{
 			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < Values.Length; ++i)
+			for (int i = 0; i < _values.Value.Length; ++i)
 			{
 				sb.Append((Values[i] == (char)0) || (Values[i] == '*') ? '_' : Values[i]);
 				if (i % Rectangle.Width == Rectangle.Width - 1)

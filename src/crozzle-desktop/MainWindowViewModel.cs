@@ -28,6 +28,10 @@ namespace crozzle_desktop
 					nameof(CanToggleOnOff),
 					nameof(ToggleStartStopCommandText)
 				);
+				if(value != null)
+				{
+					StartEngine();
+				}
 			}
 		}
 
