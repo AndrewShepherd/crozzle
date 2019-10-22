@@ -46,9 +46,10 @@ namespace crozzle
 			{
 				wpq.Push(workspace);
 			}
-
+			int queueIteration = 0;
 			while ((!wpq.IsEmpty) && (!cancellationToken.IsCancellationRequested))
 			{
+				++queueIteration;
 				List<Workspace> wList = new List<Workspace>(batchSize);
 				wList.Add(wpq.Pop());
 				while (wList.Count < batchSize && !wpq.IsEmpty)
@@ -68,29 +69,27 @@ namespace crozzle
 				List<Workspace> childWorkspaces = new List<Workspace>();
 				foreach (var thisWorkspace in wList)
 				{
-					var nextSteps = thisWorkspace.GenerateNextSteps().Buffer();
-					if (nextSteps.Any())
+					bool atLeastOneChild = false;
+					foreach (var ns in thisWorkspace.GenerateNextSteps())
 					{
-						foreach (var ns in nextSteps)
+						atLeastOneChild = true;
+						//childWorkspaces.Add(ns);
+						//continue;	
+						if (ns.IsValid)
 						{
-							//childWorkspaces.Add(ns);
-							//continue;	
-							if (ns.IsValid)
+							yield return ns; // Partially complete, but interesting
+							childWorkspaces.Add(ns);
+						}
+						else
+						{
+							foreach (var nsChild in GetValidChildren(ns))
 							{
-								yield return ns; // Partially complete, but interesting
-								childWorkspaces.Add(ns);
-							}
-							else
-							{
-								foreach (var nsChild in GetValidChildren(ns))
-								{
-									yield return nsChild;
-									childWorkspaces.Add(nsChild);
-								}
+								yield return nsChild;
+								childWorkspaces.Add(nsChild);
 							}
 						}
 					}
-					else
+					if(!atLeastOneChild)
 					{
 						if (thisWorkspace.IsValid)
 						{

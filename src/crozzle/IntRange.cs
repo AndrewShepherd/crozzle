@@ -9,6 +9,8 @@ namespace crozzle
 	{
 		public int Start { get; set; }
 		public int EndExclusive { get; set; }
+
+		public override string ToString() => $"{Start}..{EndExclusive - 1}";
 	}
 
 	static class IntRangeExtensions

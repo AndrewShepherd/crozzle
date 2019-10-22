@@ -25,6 +25,8 @@ namespace crozzle
 				yield return new Location(i, RowIndex);
 			}
 		}
+
+		public override string ToString() => $"{RowIndex}: {Range?.ToString()}";
 	}
 
 	internal static class GridExtensions

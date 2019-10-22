@@ -19,6 +19,7 @@ namespace crozzle
 			=> CountLocations(gridRegion.RowIndexAndRanges);
 
 
+
 		internal static GridRegion Intersection(this GridRegion r1, GridRegion r2)
 		{
 			List<RowIndexAndRange> list = new List<RowIndexAndRange>();
@@ -55,6 +56,32 @@ namespace crozzle
 						.Any(
 							r2 => ((r2.RowIndex == r.RowIndex) && (r2.Range.Intersects(r.Range)))
 						)
+			);
+
+		internal static bool OverlapsWith(this RowIndexAndRange rowIndexAndRange, Rectangle rectangle)
+		{
+			if(rowIndexAndRange.RowIndex < rectangle.Top)
+			{
+				return false;
+			}
+			if(rowIndexAndRange.RowIndex > rectangle.Bottom)
+			{
+				return false;
+			}
+			if(rowIndexAndRange.Range.Start > rectangle.Right)
+			{
+				return false;
+			}
+			if(rowIndexAndRange.Range.EndExclusive <= rectangle.Left)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		internal static bool OverlapsWith(this GridRegion gridRegion, Rectangle rectangle) =>
+			gridRegion.RowIndexAndRanges.Any(
+				r => r.OverlapsWith(rectangle)
 			);
 	}
 }

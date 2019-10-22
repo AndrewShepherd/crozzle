@@ -76,7 +76,14 @@
 			new WordPlacement(wp.Direction, wp.Location + v, wp.Word);
 
 
-		public static Rectangle GetRectangle(this WordPlacement wp) =>
+		public static Rectangle GetRectangleExcludingEndMarkers(this WordPlacement wp) =>
+			new Rectangle(
+				wp.Location,
+				wp.Direction == Direction.Across ? wp.Word.Length : 1,
+				wp.Direction == Direction.Down ? wp.Word.Length : 1
+			);
+
+	public static Rectangle GetRectangle(this WordPlacement wp) =>
 			new Rectangle(
 				new Location(
 					wp.Location.X - (wp.Direction == Direction.Across ? 1 : 0),
