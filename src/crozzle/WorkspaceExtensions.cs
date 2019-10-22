@@ -526,6 +526,157 @@
 				slot.Direction
 			);
 
+		public static bool TryCombineWorkspaces(Workspace w1, Workspace w2, out Workspace combined)
+		{
+			var newRectangle = w2.GetCurrentRectangle().Union(w1.GetCurrentRectangle());
+			if (RectangleIsTooBig(newRectangle))
+			{
+				combined = null;
+				return false;
+			}
+			combined = null;
+
+			var justInW1 = w1.Board.WordPlacements.Except(w2.Board.WordPlacements);
+			var justInW2 = w2.Board.WordPlacements.Except(w1.Board.WordPlacements);
+			if (
+				justInW2
+					.Where(
+						w2wp =>
+							justInW1.Where(w1wp => w1wp.Word == w2wp.Word).Any()
+					).Any()
+			)
+			{
+				return false;
+			}
+			foreach (var w2Placement in justInW2)
+			{
+				var grid = w1.GenerateGrid();
+				var strip = grid.GenerateStrip(w2Placement.Direction, w2Placement.Location);
+				bool canPlaceWord = CanPlaceWord(strip, w2Placement.Word, strip.SlotIndex);
+				if (!canPlaceWord)
+				{
+					return false;
+				}
+				w1 = w1.TryPlaceWord(grid, w2Placement);
+				if (w1 == null)
+				{
+					return false;
+				}
+			}
+			combined = w1;
+			var combinedGrid = combined.GenerateGrid();
+			if (combinedGrid.PartialWords.Any())
+			{
+				combined.IsValid = false;
+			}
+			return true;
+		}
+
+		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(IEnumerable<Workspace> g1, IEnumerable<Workspace> g2)
+		{
+			foreach (var w1 in g1)
+			{
+				foreach (var w2 in g2)
+				{
+					if (TryCombineWorkspaces(w1, w2, out Workspace combined))
+					{
+						yield return combined;
+					}
+				}
+			}
+		}
+
+		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(IEnumerable<IEnumerable<Workspace>> generators)
+		{
+			if (generators.Count() == 0)
+			{
+				return Enumerable.Empty<Workspace>();
+
+			}
+			if (generators.Count() == 1)
+			{
+				return generators.First();
+			}
+			if (!generators.All(e => e.Any()))
+			{
+				return Enumerable.Empty<Workspace>();
+			}
+			else
+			{
+				return CombineGeneratedWorkspaces(
+					new[]
+					{
+						CombineGeneratedWorkspaces(
+							generators.First(),
+							generators.Skip(1).First()
+						).Buffer()
+					}.Concat(generators.Skip(2))
+				);
+			}
+		}
+
+		private static IEnumerable<Workspace> CoverFocusedRegion(
+			this Workspace workspace,
+			Grid grid,
+			CoverageConstraint coverageConstraint,
+			GridRegion focusedRegion,
+			IImmutableSet<Slot> excludedSlots)
+		{
+			var slotsToFill = GetAdjacentSlots(
+				workspace.Slots,
+				focusedRegion // overlappingRegions.First()
+			).Where(
+				s => (!(excludedSlots.Contains(s)))
+			).ToList();
+			while (slotsToFill.Any())
+			{
+				var slot = slotsToFill[0];
+				slotsToFill.RemoveAt(0);
+				excludedSlots = excludedSlots.Add(slot);
+				var candidateWordPlacements = workspace.GetCandidateWordPlacements(slot)
+					.Where(
+						cwp =>
+						{
+							var rectangle = cwp.GetRectangleExcludingEndMarkers();
+							if (focusedRegion.OverlapsWith(rectangle))
+							{
+								return true;
+							}
+							else
+							{
+								return false;
+							}
+
+						}
+					).ToList();
+				if (!candidateWordPlacements.Any())
+				{
+					continue;
+				}
+				var strip = grid.GenerateStrip(slot.Direction, slot.Location);
+				foreach (var candidateWordPlacement in candidateWordPlacements)
+				{
+					if (CanPlaceWord(strip, candidateWordPlacement))
+					{
+						var child = workspace.TryPlaceWord(grid, candidateWordPlacement);
+						if (child != null)
+						{
+							foreach (var grandchild in child.CoverRegion(
+								coverageConstraint,
+								focusedRegion,
+								excludedSlots
+								)
+							)
+							{
+								yield return grandchild;
+							}
+						}
+					}
+				}
+			}
+
+		}
+
 		private static IEnumerable<Workspace> CoverRegion(
 			this Workspace workspace,
 			CoverageConstraint coverageConstraint,
@@ -587,156 +738,18 @@
 			// TODO: Create a rgion that's the intersection 
 			// of the gridRegion and the overlapping region
 			//
-			// We want the slots that are adjacent to the intersection
-			// Also, the direction of the slots are important:
-			//   If they are above or below the region, they must be vertical
-			//   If they are to the left or right of the region, they must be horizontal
 			//
 			// Another todo: if there are more than one overlapping region
 			// we should do the divide-and-conquer trick
 
-			var focusedRegion = intersections.First();
-			var slotsToFill = GetAdjacentSlots(
-				workspace.Slots,
-				focusedRegion // overlappingRegions.First()
-			).Where(
-				s => (!(excludedSlots.Contains(s)))
-			).ToList();
-			while (slotsToFill.Any())
+			var generators = intersections.Select(
+				i => CoverFocusedRegion(workspace, grid, coverageConstraint, i, excludedSlots)
+			);
+			foreach(var child in CombineGeneratedWorkspaces(generators))
 			{
-				var slot = slotsToFill[0];
-				slotsToFill.RemoveAt(0);
-				excludedSlots = excludedSlots.Add(slot);
-				var candidateWordPlacements = workspace.GetCandidateWordPlacements(slot)
-					.Where(
-						cwp =>
-						{
-							var rectangle = cwp.GetRectangleExcludingEndMarkers();
-							if (focusedRegion.OverlapsWith(rectangle))
-							{
-								return true;
-							}
-							else
-							{
-								return false;
-							}
-
-						}
-					).ToList();
-				if(!candidateWordPlacements.Any())
-				{
-					continue;
-				}
-				var strip = grid.GenerateStrip(slot.Direction, slot.Location);
-				foreach (var candidateWordPlacement in candidateWordPlacements)
-				{
-					if(CanPlaceWord(strip, candidateWordPlacement))
-					{
-						var child = workspace.TryPlaceWord(grid, candidateWordPlacement);
-						if(child != null)
-						{
-							foreach (var grandchild in child.CoverRegion(
-								coverageConstraint,
-								gridRegion,
-								excludedSlots
-								)
-							)
-							{
-								yield return grandchild;
-							}
-						}
-					}
-				}
+				yield return child;
 			}
-		}
-
-		public static bool TryCombineWorkspaces(Workspace w1, Workspace w2, out Workspace combined)
-		{
-			var newRectangle = w2.GetCurrentRectangle().Union(w1.GetCurrentRectangle());
-			if (RectangleIsTooBig(newRectangle))
-			{
-				combined = null;
-				return false;
-			}
-			combined = null;
-
-			var justInW1 = w1.Board.WordPlacements.Except(w2.Board.WordPlacements);
-			var justInW2 = w2.Board.WordPlacements.Except(w1.Board.WordPlacements);
-			if(
-				justInW2
-					.Where(
-						w2wp =>
-							justInW1.Where(w1wp => w1wp.Word == w2wp.Word).Any()
-					).Any()
-			)
-			{
-				return false;
-			}
-			foreach(var w2Placement in justInW2)
-			{
-				var grid = w1.GenerateGrid();
-				var strip = grid.GenerateStrip(w2Placement.Direction, w2Placement.Location);
-				bool canPlaceWord = CanPlaceWord(strip, w2Placement.Word, strip.SlotIndex);
-				if (!canPlaceWord)
-				{
-					return false;
-				}
-				w1 = w1.TryPlaceWord(grid, w2Placement);
-				if (w1 == null)
-				{
-					return false;
-				}
-			}
-			combined = w1;
-			var combinedGrid = combined.GenerateGrid();
-			if(combinedGrid.PartialWords.Any())
-			{
-				combined.IsValid = false;
-			}
-			return true;
-		}
-
-		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(IEnumerable<Workspace> g1, IEnumerable<Workspace> g2)
-		{
-			foreach(var w1 in g1)
-			{
-				foreach(var w2 in g2)
-				{
-					if(TryCombineWorkspaces(w1, w2, out Workspace combined))
-					{
-						yield return combined;
-					}
-				}
-			}
-		}
-
-		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(IEnumerable<IEnumerable<Workspace>> generators)
-		{
-			if(generators.Count() == 0)
-			{
-				return Enumerable.Empty<Workspace>();
-
-			}
-			if (generators.Count() == 1)
-			{
-				return generators.First();
-			}
-			if(!generators.All(e => e.Any()))
-			{
-				return Enumerable.Empty<Workspace>();
-			}
-			else
-			{
-				return CombineGeneratedWorkspaces(
-					new[]
-					{
-						CombineGeneratedWorkspaces(
-							generators.First(),
-							generators.Skip(1).First()
-						).Buffer()
-					}.Concat(generators.Skip(2))
-				);
-			}
+			
 		}
 
 		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
@@ -786,7 +799,7 @@
 				{
 					yield break;
 				}
-				var spacesOtherCheck = grid.FindEnclosedSpaces(
+				spacesThatMustBeFilled = grid.FindEnclosedSpaces(
 					c =>
 						(
 							(c.CellType == GridCellType.Blank)
@@ -797,7 +810,7 @@
 						s => 
 							!coverageConstraint.SatisfiesConstraint(s)
 					).ToList();
-				if(!(workspace.CanCoverEachSpace(grid, spacesOtherCheck)))
+				if(!(workspace.CanCoverEachSpace(grid, spacesThatMustBeFilled)))
 				{
 					yield break;
 				}
@@ -828,7 +841,7 @@
 							).ToList();
 						foreach (var child in CombineGeneratedWorkspaces(generators))
 						{
-							yield return child;
+							yield return child.Normalise();
 						}
 						yield break;
 					}
