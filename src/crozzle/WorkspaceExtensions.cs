@@ -542,7 +542,26 @@
 				justInW2
 					.Where(
 						w2wp =>
-							justInW1.Where(w1wp => w1wp.Word == w2wp.Word).Any()
+							(
+								justInW1
+									.Where(
+										w1wp =>
+										{
+											if (w1wp.Word == w2wp.Word)
+												return true;
+											if(
+												(w1wp.Direction == w2wp.Direction)
+												&& (
+													w1wp.GetRectangleExcludingEndMarkers()
+													.IntersectsWith(w2wp.GetRectangleExcludingEndMarkers())
+												)
+											)
+											{
+												return true;
+											}
+											return false;
+										}
+									).Any())
 					).Any()
 			)
 			{
@@ -763,42 +782,13 @@
 				}
 				yield break;
 			}
-			else
-			{
-				List<Slot> slotsToFill = null;
-				CoverageConstraint coverageConstraint = new CoverageConstraint(4);
 
-				if (
-					grid.FindEnclosedSpaces(
-						c =>
-							(
-								(c.CellType == GridCellType.EndOfWordMarker)
-								|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
-							)
-					)
-					.Where(s => (!coverageConstraint.SatisfiesConstraint(s)))
-					.Any()
-				)
-				{
-					yield break;
-				}
-				
-				var spaces = grid.FindEnclosedSpaces(
-					c => 
-						(
-							(c.CellType == GridCellType.Blank)
-							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
-						)
-				);
-				var spacesThatMustBeFilled = spaces.Where(
-					s => 
-						!coverageConstraint.SatisfiesConstraint(s)
-				).ToList();
-				// Confirm that each space CAN be filled
-				if(!(workspace.CanCoverEachSpace(grid, spacesThatMustBeFilled)))
-				{
-					yield break;
-				}
+			List<Slot> slotsToFill = null;
+			List<GridRegion> spacesThatMustBeFilled = new List<GridRegion>();
+			CoverageConstraint coverageConstraint = new CoverageConstraint(4);
+
+			if (workspace.IncludedWords.Count() > 2)
+			{
 				spacesThatMustBeFilled = grid.FindEnclosedSpaces(
 					c =>
 						(
@@ -807,62 +797,56 @@
 							|| (c.CellType == GridCellType.BlankNoAdjacentSlots)
 						)
 					).Where(
-						s => 
+						s =>
 							!coverageConstraint.SatisfiesConstraint(s)
 					).ToList();
-				if(!(workspace.CanCoverEachSpace(grid, spacesThatMustBeFilled)))
-				{
-					yield break;
-				}
-				if (spacesThatMustBeFilled.Any())
-				{
-					spacesThatMustBeFilled = spacesThatMustBeFilled
-						.OrderBy(s => s.CountLocations())
-						.ToList();
-					if(spacesThatMustBeFilled.Last().CountLocations() > 21) // Don't know what the threshold should be!
-					{
-						// Too big to fill at this point
-						slotsToFill = GetAdjacentSlots(
-							workspace.Slots,
-							spacesThatMustBeFilled.Last()
-						).ToList();
-					}
-					else
-					{
-						IEnumerable<IEnumerable<Workspace>> generators = spacesThatMustBeFilled
-							.Select(
-								region =>
-									CoverRegion(
-										workspace,
-										coverageConstraint,
-										region,
-										ImmutableHashSet<Slot>.Empty
-									).Buffer()
-							).ToList();
-						foreach (var child in CombineGeneratedWorkspaces(generators))
-						{
-							yield return child.Normalise();
-						}
-						yield break;
-					}
-				}
-				else
-				{
-					slotsToFill = workspace.Slots.ToList();
-				}
+			}
 
-				while (slotsToFill.Any())
+
+
+			if(!(workspace.CanCoverEachSpace(grid, spacesThatMustBeFilled)))
+			{
+				yield break;
+			}
+			const int Threshold = 14; // Any larger and it runs out of memory
+			if (spacesThatMustBeFilled.Any())
+			{
+				spacesThatMustBeFilled = spacesThatMustBeFilled
+					.OrderBy(s => s.CountLocations())
+				.ToList();
+				IEnumerable<IEnumerable<Workspace>> generators = spacesThatMustBeFilled
+					.Where(s => s.CountLocations() <= Threshold)
+					.Select(
+						region =>
+							CoverRegion(
+								workspace,
+								coverageConstraint,
+								region,
+								ImmutableHashSet<Slot>.Empty
+							).Buffer()
+					).ToList();
+				if(generators.Any())
 				{
-					var slot = slotsToFill[0];
-					slotsToFill.RemoveAt(0);
-					workspace = workspace.RemoveSlot(slot);
-					foreach(var child in workspace.CoverSlot(grid, slot))
+					foreach (var child in CombineGeneratedWorkspaces(generators))
 					{
 						yield return child.Normalise();
 					}
-
-					grid.RemoveSlot(slot);
+					yield break;
 				}
+			}
+			slotsToFill = workspace.Slots.ToList();
+
+			while (slotsToFill.Any())
+			{
+				var slot = slotsToFill[0];
+				slotsToFill.RemoveAt(0);
+				workspace = workspace.RemoveSlot(slot);
+				foreach(var child in workspace.CoverSlot(grid, slot))
+				{
+					yield return child.Normalise();
+				}
+
+				grid.RemoveSlot(slot);
 			}
 		}
 

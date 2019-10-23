@@ -124,7 +124,7 @@ namespace crozzle_desktop
 					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
 						workspaces,
 						10000000, // Queue size
-						16, // Beam size
+						32, // Beam size
 						this._cancellationTokenSource.Token
 					))
 					{
