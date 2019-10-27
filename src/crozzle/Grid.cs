@@ -211,7 +211,7 @@ namespace crozzle
 					var node2 = nodes[j];
 					if (
 						(Math.Abs(node.RowIndex - node2.RowIndex) == 1)
-						&& (node.Range.Intersects(node2.Range))
+						&& (node.Range.Overlaps(node2.Range))
 					)
 					{
 						connections[i, j] = true;

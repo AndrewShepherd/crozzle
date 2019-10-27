@@ -31,7 +31,10 @@ namespace crozzle
 			if (_index < _buffer.Count)
 				return true;
 			if (!_source.MoveNext())
+			{
+				// We're done!
 				return false;
+			}
 			_buffer.Add(_source.Current);
 			return true;
 		}
@@ -46,12 +49,12 @@ namespace crozzle
 
 	public class BufferEnumerable<T> : IEnumerable<T>, IDisposable
 	{
-		IEnumerator<T> source;
-		List<T> buffer;
+		IEnumerator<T> _source;
+		List<T> _buffer;
 		public BufferEnumerable(IEnumerable<T> source)
 		{
-			this.source = source.GetEnumerator();
-			this.buffer = new List<T>();
+			this._source = source.GetEnumerator();
+			this._buffer = new List<T>();
 		}
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -61,20 +64,20 @@ namespace crozzle
 
 		public IEnumerator<T> GetEnumerator()
 		{
-			return new BufferEnumerator<T>(source, buffer);
+			return new BufferEnumerator<T>(_source, _buffer);
 		}
 		public void Dispose()
 		{
-			source.Dispose();
+			_buffer.Clear();
+			_source.Dispose();
 		}
 	}
 
-
 	public static class EnumerableExtensions
 	{
-		public static BufferEnumerable<T> Buffer<T>(this IEnumerable<T> source)
-		{
-			return new BufferEnumerable<T>(source);
-		}
+		public static BufferEnumerable<T> Buffer<T>(this IEnumerable<T> source) =>
+			(source is BufferEnumerable<T> bufferEnumerable)
+			? bufferEnumerable
+			: new BufferEnumerable<T>(source);
 	}
 }

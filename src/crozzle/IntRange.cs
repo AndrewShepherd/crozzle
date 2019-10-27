@@ -15,7 +15,7 @@ namespace crozzle
 
 	static class IntRangeExtensions
 	{
-		public static bool Intersects(this IntRange r1, IntRange r2)
+		public static bool Overlaps(this IntRange r1, IntRange r2)
 		{
 			if(r1.EndExclusive <= r2.Start)
 			{
@@ -28,6 +28,12 @@ namespace crozzle
 			return true;
 		}
 
+		public static bool IsAdjacentTo(this IntRange r1, IntRange r2) =>
+			(
+				(r1.EndExclusive == r2.Start)
+				|| (r2.EndExclusive == r1.Start)
+			);
+
 		public static IntRange Intersection(this IntRange r1, IntRange r2)
 		{
 			return new IntRange
@@ -36,6 +42,13 @@ namespace crozzle
 				EndExclusive = Math.Min(r1.EndExclusive, r2.EndExclusive),
 			};
 		}
+
+		public static IntRange Union(this IntRange r1, IntRange r2) =>
+			new IntRange
+			{
+				Start = Math.Min(r1.Start, r2.Start),
+				EndExclusive = Math.Max(r1.EndExclusive, r2.EndExclusive)
+			};
 	}
 }
 	

@@ -3,12 +3,25 @@
 	using System.Collections;
 	using System.Collections.Generic;
 	using System.Linq;
+
+	public class CandidateWord
+	{
+		public string Word { get; set; }
+		public int MatchIndex { get; set; }
+	}
+
+	internal class CandidateWordLookup
+	{
+		public int WordIndex { get; set; }
+		public int MatchIndex { get; set; }
+	}
+
 	public class WordDatabase
 	{
 		private string[] _wordArray;
 		private Dictionary<string, int> _wordArrayIndex;
 		private BitArray _wordAvailability;
-		private Dictionary<string, List<int>> WordLookup = new Dictionary<string, List<int>>();
+		private Dictionary<string, List<CandidateWordLookup>> WordLookup = new Dictionary<string, List<CandidateWordLookup>>();
 
 		internal static WordDatabase Empty = WordDatabase.Generate(Enumerable.Empty<string>());
 
@@ -78,14 +91,26 @@
 						var substring = word.Substring(i, j);
 						if (wordDatabase.WordLookup.TryGetValue(substring, out var existingList))
 						{
-							if (!existingList.Contains(arrayIndex))
-							{
-								existingList.Add(arrayIndex);
-							}
+							existingList.Add(
+								new CandidateWordLookup
+								{
+									MatchIndex = i,
+									WordIndex = arrayIndex,
+								}
+							);
 						}
 						else
 						{
-							wordDatabase.WordLookup[word.Substring(i, j)] = new List<int>(new[] { arrayIndex });
+							wordDatabase.WordLookup[word.Substring(i, j)] = new List<CandidateWordLookup>(
+								new[] 
+								{ 
+									new CandidateWordLookup
+									{
+										MatchIndex = i,
+										WordIndex = arrayIndex,
+									}
+								}
+							);
 						}
 					}
 				}
@@ -93,15 +118,20 @@
 			return wordDatabase;
 		}
 
-		public IEnumerable<string> ListAvailableMatchingWords(string word)
+		public IEnumerable<CandidateWord> ListAvailableMatchingWords(string fragment)
 		{
-			if (this.WordLookup.TryGetValue(word, out var wordIndexList))
+			if (this.WordLookup.TryGetValue(fragment, out var wordIndexList))
 			{
-				foreach(var wordIndex in wordIndexList)
+				foreach(var candidateWordLookup in wordIndexList)
 				{
-					if(this._wordAvailability[wordIndex])
+					if (this._wordAvailability[candidateWordLookup.WordIndex])
 					{
-						yield return this._wordArray[wordIndex];
+						var word = this._wordArray[candidateWordLookup.WordIndex];
+						yield return new CandidateWord
+						{
+							Word = word,
+							MatchIndex = candidateWordLookup.MatchIndex
+						};
 					}
 				}
 			}

@@ -15,10 +15,21 @@ namespace crozzle
 		internal static int CountLocations(this IEnumerable<RowIndexAndRange> e) =>
 			e.Select(rr => rr.Range).Sum(r => r.EndExclusive - r.Start);
 
+		internal static bool IsAdjacentTo(this RowIndexAndRange r1, RowIndexAndRange r2)
+		{
+			if(r1.RowIndex == r2.RowIndex)
+			{
+				return r1.Range.IsAdjacentTo(r2.Range);
+			}
+			if(Math.Abs(r1.RowIndex - r2.RowIndex) == 1)
+			{
+				return r1.Range.Overlaps(r2.Range);
+			}
+			return false;
+		}
+
 		internal static int CountLocations(this GridRegion gridRegion)
 			=> CountLocations(gridRegion.RowIndexAndRanges);
-
-
 
 		internal static GridRegion Intersection(this GridRegion r1, GridRegion r2)
 		{
@@ -29,7 +40,7 @@ namespace crozzle
 				{
 					if(rr1.RowIndex == rr2.RowIndex)
 					{
-						if(rr1.Range.Intersects(rr2.Range))
+						if(rr1.Range.Overlaps(rr2.Range))
 						{
 							list.Add(
 								new RowIndexAndRange
@@ -48,13 +59,68 @@ namespace crozzle
 			};
 		}
 
+		private static IEnumerable<IntRange> MergeAdjacentRanges(List<IntRange> ranges)
+		{
+			while(ranges.Count > 0)
+			{
+				var range = ranges.ElementAt(0);
+				ranges.RemoveAt(0);
+				for(int i = ranges.Count() - 1; i >= 0; --i)
+				{
+					if(ranges[i].IsAdjacentTo(range))
+					{
+						range = range.Union(ranges[i]);
+						ranges.RemoveAt(i);
+					}
+				}
+				yield return range;
+			}
+		}
+
+		internal static GridRegion Union(this GridRegion r1, GridRegion r2)
+		{
+			var groups = r1.RowIndexAndRanges
+				.Concat(r2.RowIndexAndRanges)
+				.GroupBy(r => r.RowIndex)
+				.ToList();
+			var merged = groups
+				.Select(
+					g =>
+					{
+						return new
+						{
+							RowIndex = g.Key,
+							Ranges = MergeAdjacentRanges(
+								g.Select(r3 => r3.Range).ToList()
+							),
+						};
+					}
+			);
+			return new GridRegion
+			{
+				RowIndexAndRanges = merged
+					.SelectMany(
+						m =>
+							m.Ranges.Select(r => new RowIndexAndRange { RowIndex = m.RowIndex, Range = r })
+					).ToList()
+			};
+		}
+
+		internal static bool IsAdjacentTo(this GridRegion gridRegion, GridRegion other) =>
+			gridRegion.RowIndexAndRanges.Any(
+				r =>
+					other
+						.RowIndexAndRanges
+						.Any(r2 => r.IsAdjacentTo(r2))
+			);
+
 		internal static bool OverlapsWith(this GridRegion gridRegion, GridRegion other) =>
 			gridRegion.RowIndexAndRanges.Any(
 				r =>
 					other
 						.RowIndexAndRanges
 						.Any(
-							r2 => ((r2.RowIndex == r.RowIndex) && (r2.Range.Intersects(r.Range)))
+							r2 => ((r2.RowIndex == r.RowIndex) && (r2.Range.Overlaps(r.Range)))
 						)
 			);
 

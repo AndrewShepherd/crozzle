@@ -88,6 +88,16 @@ namespace crozzle
 								childWorkspaces.Add(nsChild);
 							}
 						}
+						// A hack to get around the duplicates being generated
+						if (childWorkspaces.Count() > 300000)
+						{
+							childWorkspaces = childWorkspaces.Distinct().ToList();
+							if(childWorkspaces.Count() > 300000)
+							{
+								wpq.AddRange(childWorkspaces);
+								childWorkspaces.Clear();
+							}
+						}
 					}
 					if(!atLeastOneChild)
 					{
