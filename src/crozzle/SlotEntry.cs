@@ -56,9 +56,7 @@ namespace crozzle
 				return slotEntries;
 			}
 			var newEntry = entry.RemoveCandidateWords(candidateWords);
-			return newEntry.CandidateWords.Any()
-				? slotEntries.Replace(entry, newEntry)
-				: slotEntries.Remove(entry);
+			return slotEntries.Replace(entry, newEntry);
 		}
 
 		static ImmutableHashSet<CandidateWord> SafeIntersect(this ImmutableHashSet<CandidateWord> c1, ImmutableHashSet<CandidateWord> c2)
