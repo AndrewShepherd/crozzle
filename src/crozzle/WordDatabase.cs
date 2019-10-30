@@ -4,12 +4,6 @@
 	using System.Collections.Generic;
 	using System.Linq;
 
-	public class CandidateWord
-	{
-		public string Word { get; set; }
-		public int MatchIndex { get; set; }
-	}
-
 	internal class CandidateWordLookup
 	{
 		public int WordIndex { get; set; }
@@ -137,7 +131,14 @@
 			}
 		}
 
+		public bool ContainsWord(string word)
+		{
+			int index = this._wordArrayIndex[word];
+			return this._wordAvailability[index];
+		}
+
 		public bool CanMatchWord(string word) =>
 			ListAvailableMatchingWords(word).Any();
+
 	}
 }

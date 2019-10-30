@@ -20,7 +20,7 @@
 		public ImmutableList<Intersection> Intersections { get; set; }
 
 
-		public ImmutableList<Slot> Slots = ImmutableList<Slot>.Empty;
+		public ImmutableList<SlotEntry> SlotEntries = ImmutableList<SlotEntry>.Empty;
 		public WordDatabase WordDatabase = WordDatabase.Empty;
 
 		public Workspace()
@@ -51,8 +51,8 @@
 				return false;
 			}
 			if(!Enumerable.SequenceEqual(
-				this.Slots.OrderBy(_ => _), 
-				w.Slots.OrderBy(_ => _)
+				this.SlotEntries.OrderBy(_ => _), 
+				w.SlotEntries.OrderBy(_ => _)
 			))
 			{
 				return false;
@@ -67,7 +67,7 @@
 		private int GenerateHashCode() =>
 			Score.GetHashCode()
 				^ Board.GetHashCode().RotateLeft(1)
-				^ HashUtils.GenerateHash(Slots);
+				^ HashUtils.GenerateHash(SlotEntries);
 
 		private readonly Lazy<int> _lazyHashCode;
 		public override int GetHashCode() => _lazyHashCode.Value;
@@ -135,7 +135,7 @@
 					_potentialScore = this.Score
 						+ Math.Min(
 							0
-							+ this.Slots.Select(c => Scoring.Score(c.Letter)).Sum()
+							+ this.SlotEntries.Select(c => Scoring.Score(c.Slot.Letter)).Sum()
 //								+ (this.Intersections.Count())
 								/*- (this.IncludedWords.Select(w => w.Length).Sum())*/,
 							0);
@@ -162,9 +162,9 @@
 				IncludedWords = this.IncludedWords,
 				Intersections = this.Intersections,
 				Score = this.Score,
-				Slots = ImmutableList<Slot>
+				SlotEntries = ImmutableList<SlotEntry>
 					.Empty
-					.AddRange(this.Slots.Select(slot => slot.Move(diff))),
+					.AddRange(this.SlotEntries.Select(slot => slot.Move(diff))),
 				_potentialScore = this._potentialScore
 			};
 

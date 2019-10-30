@@ -67,12 +67,12 @@ namespace crozzle
 					wList.Add(poppedValue);
 				}
 				List<Workspace> childWorkspaces = new List<Workspace>();
-				foreach (var thisWorkspace in wList)
+				var workspaceEnumerator = wList.GetEnumerator();
+				while(workspaceEnumerator.MoveNext())
 				{
-					bool atLeastOneChild = false;
+					var thisWorkspace = workspaceEnumerator.Current;
 					foreach (var ns in thisWorkspace.GenerateNextSteps())
 					{
-						atLeastOneChild = true;
 						//childWorkspaces.Add(ns);
 						//continue;	
 						if (ns.IsValid)
@@ -88,23 +88,15 @@ namespace crozzle
 								childWorkspaces.Add(nsChild);
 							}
 						}
-						// A hack to get around the duplicates being generated
-						if (childWorkspaces.Count() > 300000)
-						{
-							childWorkspaces = childWorkspaces.Distinct().ToList();
-							if(childWorkspaces.Count() > 300000)
-							{
-								wpq.AddRange(childWorkspaces);
-								childWorkspaces.Clear();
-							}
-						}
 					}
-					if(!atLeastOneChild)
+					if(childWorkspaces.Count() > queueLength/10)
 					{
-						if (thisWorkspace.IsValid)
+						// Abort this iteration
+						while(workspaceEnumerator.MoveNext())
 						{
-							yield return thisWorkspace;
+							wpq.AddRange(new[] { workspaceEnumerator.Current });
 						}
+						break;
 					}
 				}
 				wpq.AddRange(childWorkspaces.Distinct());

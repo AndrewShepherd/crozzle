@@ -15,7 +15,9 @@ namespace crozzle
 	{
 		public override string ToString() => CellType.ToString();
 		public GridCellType CellType { get; set; } = GridCellType.Blank;
-		public Slot Slot { get; set; }
+
+		public SlotEntry SlotEntry { get; set; }
+		public Slot Slot => SlotEntry?.Slot;
 		public char Letter { get; internal set; }
 
 		internal static GridCell EnforcedBlank = new GridCell
@@ -28,11 +30,11 @@ namespace crozzle
 		internal PartialWord PartialWordToLeft { get; set; }
 		internal PartialWord PartialWordToRight { get; set; }
 
-		internal static GridCell FromSlot(Slot slot) =>
+		internal static GridCell FromSlot(SlotEntry slotEntry) =>
 			new GridCell
 			{
 				CellType = GridCellType.AvailableSlot,
-				Slot = slot
+				SlotEntry = slotEntry,
 			};
 
 		internal static GridCell Complete = new GridCell

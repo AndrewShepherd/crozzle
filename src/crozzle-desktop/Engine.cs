@@ -123,8 +123,8 @@ namespace crozzle_desktop
 					this.FireEngineStarted();
 					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
 						workspaces,
-						10000000, // Queue size
-						96, // Beam size
+						1000000, // Queue size
+						2048, // Beam size
 						this._cancellationTokenSource.Token
 					))
 					{

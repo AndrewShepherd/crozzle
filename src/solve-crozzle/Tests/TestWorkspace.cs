@@ -60,8 +60,8 @@ namespace solve_crozzle.Tests
 				Is.EqualTo(w2.WordDatabase.GetHashCode())
 			);
 			Assert.That(
-				HashUtils.GenerateHash(w1.Slots),
-				Is.EqualTo(HashUtils.GenerateHash(w2.Slots))
+				HashUtils.GenerateHash(w1.SlotEntries),
+				Is.EqualTo(HashUtils.GenerateHash(w2.SlotEntries))
 			);
 			Assert.That(w1.GetHashCode(), Is.EqualTo(w2.GetHashCode()));
 			Assert.That(w1, Is.EqualTo(w2));

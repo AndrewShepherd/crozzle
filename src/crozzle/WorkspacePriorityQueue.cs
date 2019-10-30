@@ -25,7 +25,7 @@
 		{
 			(w1, w2) => w2.PotentialScore.CompareTo(w1.PotentialScore), // Deliberately reversing them
 			CompareProperties(_ => _.IncludedWords.Count()),
-			CompareProperties(_ => _.Slots.Count()),
+			CompareProperties(_ => _.SlotEntries.Count()),
 			CompareProperties(_ => _.Board),
 			CompareProperties(_ => _.GetHashCode())
 		};

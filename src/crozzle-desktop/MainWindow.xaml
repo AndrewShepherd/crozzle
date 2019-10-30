@@ -95,7 +95,7 @@
                 FontSize="16"
                 />
             <local:WorkspaceView Grid.Row="2" Workspace="{Binding Path=BestSolution}" RefreshInterval="0" />
-            <local:WorkspaceView Grid.Row="3" Workspace="{Binding Path=Engine.LastSolution}" RefreshInterval="100" />
+            <local:WorkspaceView Grid.Row="3" Workspace="{Binding Path=Engine.LastSolution}" RefreshInterval="1000" />
         </Grid>
     </Grid>
 
