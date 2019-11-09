@@ -2,16 +2,44 @@
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
+    using System.Collections.Immutable;
+    using System.Linq;
+
+
+	public class WorkspaceNode
+	{
+		public Workspace Workspace { get; set; }
+		public ImmutableList<int> Ancestry = ImmutableList<int>.Empty;
+
+		public override bool Equals(object obj)
+		{
+			if(object.ReferenceEquals(this, obj))
+			{
+				return true;
+			}
+			if (
+				(obj is WorkspaceNode wn)
+				&& (wn.Workspace.Equals(this.Workspace))
+			)
+			{
+				return true;
+			}
+			return false;
+		}
+
+		public override int GetHashCode() => this.Workspace.GetHashCode();
+	}
 
 	public class WorkspacePriorityQueue
 	{
-		readonly Workspace[] _workspaces; 
+		readonly WorkspaceNode[] _workspaces; 
 		int _length = 0;
 		public WorkspacePriorityQueue(int queueLength)
 		{
-			_workspaces = new Workspace[queueLength];
+			_workspaces = new WorkspaceNode[queueLength];
 		}
+
+		public int Capacity => _workspaces.Length;
 
 		public override string ToString() =>
 			$"{_length} elements. TopElement:{_workspaces[0]?.ToString() ?? "None"}";
@@ -50,6 +78,9 @@
 			}
 			return 0;
 		}
+
+		public static int Compare(WorkspaceNode w1, WorkspaceNode w2) =>
+			Compare(w1?.Workspace, w2?.Workspace);
 
 		private void SwapUp(int i)
 		{
@@ -137,7 +168,7 @@
 			SwapDown(index);
 		}
 
-		public Workspace Pop()
+		public WorkspaceNode Pop()
 		{
 			var result = _workspaces[0];
 			RemoveElementAt(0);
@@ -146,7 +177,7 @@
 
 		private void PurgeDuplicates()
 		{
-			Array.Sort(_workspaces, new Comparison<Workspace>(Compare));
+			Array.Sort(_workspaces, new Comparison<WorkspaceNode>(Compare));
 			int i = 0;
 			for(int j=1; j < _workspaces.Length; ++j)
 			{
@@ -159,11 +190,22 @@
 			this._length = i+1;
 		}
 
-		public void Push(Workspace workspace)
+		internal void RemoveItems(Func<WorkspaceNode, bool> pred)
+		{
+			for(int i = this._length-1; i >= 0; --i)
+			{
+				if(pred(_workspaces[i]))
+				{
+					this.RemoveElementAt(i);
+				}
+			}
+		}
+
+		public void Push(WorkspaceNode workspace)
 		{
 			if (_length == _workspaces.Length)
 			{
-				PurgeDuplicates();
+				//PurgeDuplicates();
 			}
 			int i;
 			if(_length < _workspaces.Length)
@@ -183,7 +225,7 @@
 			SwapUp(i);		
 		}
 
-		public void AddRange(IEnumerable<Workspace> values)
+		public void AddRange(IEnumerable<WorkspaceNode> values)
 		{
 			foreach (var value in values)
 				Push(value);

@@ -135,7 +135,11 @@
 					_potentialScore = this.Score
 						+ Math.Min(
 							0
-							+ this.SlotEntries.Select(c => Scoring.Score(c.Slot.Letter)).Sum()
+							+ this
+								.SlotEntries
+								.Where(se => (se.CandidateWords == null) || (se.CandidateWords.Any()))
+								.Select(c => Scoring.Score(c.Slot.Letter))
+								.Sum() / 2
 //								+ (this.Intersections.Count())
 								/*- (this.IncludedWords.Select(w => w.Length).Sum())*/,
 							0);

@@ -38,8 +38,14 @@ namespace crozzle
 
 		public static ImmutableList<SlotEntry> Remove(this ImmutableList<SlotEntry> slotEntries, Slot slot)
 		{
-			var entry = slotEntries.FirstOrDefault(se => se.Slot.Equals(slot));
-			return entry == null ? slotEntries : slotEntries.Remove(entry);
+			for(int i = 0; i < slotEntries.Count; ++i)
+			{
+				if(slotEntries[i].Slot.Equals(slot))
+				{
+					return slotEntries.RemoveAt(i);
+				}
+			}
+			return slotEntries;
 		}
 
 		public static ImmutableList<SlotEntry> Replace(this ImmutableList<SlotEntry> slotEntries, SlotEntry slotEntry)
