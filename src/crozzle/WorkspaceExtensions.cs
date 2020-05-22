@@ -7,6 +7,8 @@
 
 	public static class WorkspaceExtensions
 	{
+		public const int MaxContiguousSpaces = 6;
+
 		public static Workspace Clone(this Workspace workspace) =>
 			new Workspace
 			{
@@ -193,6 +195,19 @@
 			return newWorkspace;
 		}
 
+		private static HashSet<Slot> GetSlotsToProcess(Workspace workspace)
+		{
+			var hashSet = new HashSet<Slot>(workspace.SlotEntries.Count);
+			foreach(var slotEntry in workspace.SlotEntries)
+			{
+				if((slotEntry.CandidateWords == null) || !slotEntry.CandidateWords.IsEmpty)
+				{
+					hashSet.Add(slotEntry.Slot);
+				}
+			}
+			return hashSet;
+		}
+
 		internal static Grid GenerateGrid(this Workspace workspace)
 		{
 			GridCell[] gridCells = new GridCell[workspace.Board.Rectangle.Area];
@@ -270,12 +285,9 @@
 				Rectangle = workspace.Board.Rectangle,
 				Cells = gridCells
 			};
-			HashSet<Slot> slotsToProcess = new HashSet<Slot>(
-				workspace
-					.SlotEntries
-					.Where(se => (se.CandidateWords == null) || (se.CandidateWords.Any()))
-					.Select(se => se.Slot));
-
+			HashSet<Slot> slotsToProcess =  GetSlotsToProcess(workspace);
+			
+			
 			while (slotsToProcess.Any())
 			{
 				var slot = slotsToProcess.First();
@@ -692,7 +704,29 @@
 			}
 		}
 
-		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(IEnumerable<Workspace> g1, IEnumerable<Workspace> g2)
+		public static IEnumerable<Workspace> GetValidChildren(this Workspace workspace, GenerationSettings generationSettings)
+		{
+			foreach (var nextStep in workspace.GenerateNextSteps(generationSettings))
+			{
+				if (nextStep.IsValid)
+				{
+					yield return nextStep;
+				}
+				else
+				{
+					foreach (var child in GetValidChildren(nextStep, generationSettings))
+					{
+						yield return child;
+					}
+				}
+			}
+		}
+
+		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(
+			IEnumerable<Workspace> g1,
+			IEnumerable<Workspace> g2,
+			GenerationSettings generationSettings
+		)
 		{
 			foreach (var w1 in g1)
 			{
@@ -702,12 +736,25 @@
 				)
 				)
 				{
-					yield return combined;
+					if(combined.IsValid)
+					{
+						yield return combined;
+					}
+					else
+					{
+						foreach(var validChild in combined.GetValidChildren(generationSettings))
+						{
+							yield return validChild;
+						}
+					}
 				}
 			}
 		}
 
-		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(IEnumerable<IEnumerable<Workspace>> generators)
+		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(
+			IEnumerable<IEnumerable<Workspace>> generators,
+			GenerationSettings generationSettings
+		)
 		{
 			if (generators.Count() == 0)
 			{
@@ -731,10 +778,11 @@
 							generators.First(),
 							generators.Skip(1)
 								.First()
-								.Distinct()
-								.Buffer()
+								.Buffer(),
+							generationSettings
 						)
-					}.Concat(generators.Skip(2))
+					}.Concat(generators.Skip(2)),
+					generationSettings
 				);
 			}
 		}
@@ -775,6 +823,7 @@
 			Grid grid,
 			CoverageConstraint coverageConstraint,
 			GridRegion focusedRegion,
+			GenerationSettings generationSettings,
 			int maxPlacements
 		)
 		{
@@ -823,6 +872,7 @@
 							foreach (var grandchild in child.CoverRegion(
 								coverageConstraint,
 								focusedRegion,
+								generationSettings,
 								maxPlacements-1
 								)
 							)
@@ -844,6 +894,7 @@
 			this Workspace workspace,
 			CoverageConstraint coverageConstraint,
 			GridRegion gridRegion,
+			GenerationSettings generationSettings,
 			int maxPlacements
 		)
 		{
@@ -857,6 +908,7 @@
 							child,
 							coverageConstraint,
 							gridRegion,
+							generationSettings,
 							maxPlacements-1
 						)
 					)
@@ -916,10 +968,17 @@
 					grid,
 					coverageConstraint,
 					i,
+					generationSettings,
 					maxPlacements
 				)
 			);
-			foreach(var child in CombineGeneratedWorkspaces(generators))
+			foreach(
+				var child in CombineGeneratedWorkspaces
+				(
+					generators,
+					generationSettings
+				)
+			)
 			{
 				yield return child;
 			}
@@ -991,7 +1050,7 @@
 			return regionsFirstRound.Concat(regionsSecondRound).ToList();
 		}
 
-		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace)
+		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace, GenerationSettings generationSettings)
 		{
 			var grid = workspace.GenerateGrid();
 			if (grid.PartialWords.Any())
@@ -1004,7 +1063,7 @@
 			}
 
 			List<Slot> slotsToFill = null;
-			CoverageConstraint coverageConstraint = new CoverageConstraint(4);
+			var coverageConstraint = new CoverageConstraint(generationSettings.MaxContiguousSpaces);
 
 			var spacesThatMustBeFilled = DetermineSpacesThatMustBeFilled(
 				workspace,
@@ -1036,6 +1095,7 @@
 								workspace,
 								coverageConstraint,
 								region,
+								generationSettings,
 								region.CountLocations() <= ThresholdWhereWeOnlyATryOne ? int.MaxValue : 1
 							)
 					);
@@ -1045,7 +1105,7 @@
 
 				if(generators.Any())
 				{
-					foreach (var child in CombineGeneratedWorkspaces(generators))
+					foreach (var child in CombineGeneratedWorkspaces(generators, generationSettings))
 					{
 						yield return child.Normalise();
 					}

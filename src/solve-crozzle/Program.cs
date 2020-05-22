@@ -39,6 +39,10 @@ namespace solve_crozzle
 				//))
 				foreach(var thisWorkspace in Runner.SolveUsingSimpleRecursion(
 					workspaces.First(),
+					new GenerationSettings
+					{
+						MaxContiguousSpaces = 6,
+					},
 					new CancellationTokenSource().Token)
 				)
 				{

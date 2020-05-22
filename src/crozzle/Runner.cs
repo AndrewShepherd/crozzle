@@ -11,10 +11,11 @@ namespace crozzle
 	{
 		public static IEnumerable<Workspace> SolveUsingSimpleRecursion(
 			Workspace startWorkspace,
+			GenerationSettings generationSettings,
 			CancellationToken cancellationToken
 		)
 		{
-			foreach(var child in startWorkspace.GenerateNextSteps())
+			foreach(var child in startWorkspace.GenerateNextSteps(generationSettings))
 			{
 				if(child.IsValid)
 				{
@@ -24,7 +25,7 @@ namespace crozzle
 				{
 					yield break;
 				}
-				foreach(var grandChild in SolveUsingSimpleRecursion(child, cancellationToken))
+				foreach(var grandChild in SolveUsingSimpleRecursion(child, generationSettings, cancellationToken))
 				{
 					yield return grandChild;
 					if (cancellationToken.IsCancellationRequested)
@@ -94,6 +95,7 @@ namespace crozzle
 			IEnumerable<Workspace> startWorkspaces,
 			int queueLength,
 			int batchSize,
+			GenerationSettings generationSettings,
 			CancellationToken cancellationToken
 		)
 		{
@@ -121,24 +123,14 @@ namespace crozzle
 				while(workspaceEnumerator.MoveNext())
 				{
 					var thisNode= workspaceEnumerator.Current;
-					foreach (var ns in thisNode.Workspace.GenerateNextSteps())
+					foreach (var ns in thisNode.Workspace.GenerateNextSteps(generationSettings))
 					{
 						if (ns.IsValid)
 						{
-							yield return ns; // Partially complete, but interesting
-							childWorkspaces.Add(
-								new WorkspaceNode
-								{
-									Workspace = ns,
-									Ancestry = thisNode.Ancestry.Add(++identifier),
-								}
-							);
-						}
-						else
-						{
-							foreach (var nsChild in GetValidChildren(ns))
+							var validChild = GetFirstValidChild(ns, generationSettings);
+							if(validChild != null)
 							{
-								yield return nsChild;
+								yield return validChild;
 								childWorkspaces.Add(
 									new WorkspaceNode
 									{
@@ -146,6 +138,33 @@ namespace crozzle
 										Ancestry = thisNode.Ancestry.Add(++identifier),
 									}
 								);
+							}
+							else
+							{
+								yield return ns;
+							}
+						}
+						else
+						{
+							foreach (var nsChild in ns.GetValidChildren(generationSettings))
+							{
+								var validGrandChild = GetFirstValidChild(nsChild, generationSettings);
+
+								if (validGrandChild == null)
+								{
+									yield return nsChild;
+								}
+								else
+								{
+									yield return validGrandChild;
+									childWorkspaces.Add(
+										new WorkspaceNode
+										{
+											Workspace = nsChild,
+											Ancestry = thisNode.Ancestry.Add(++identifier),
+										}
+									);
+								}
 							}
 						}
 					}
@@ -170,58 +189,31 @@ namespace crozzle
 				{
 					int dummy = 3;
 				}
-				if((wpq.Count + distinctWorkspaces.Count()) > wpq.Capacity)
-				{
-					PurgeQueue(wpq);
-				}
 				wpq.AddRange(childWorkspaces.Distinct());
 			}
 		}
 
-		private static void PurgeQueue(WorkspacePriorityQueue wpq)
+		private static Workspace GetFirstValidChild(Workspace workspace, GenerationSettings generationSettings)
 		{
-			wpq.RemoveItems(
-				node =>
-				{
-					foreach(var ns in node.Workspace.GenerateNextSteps())
-					{
-						if(ns.IsValid)
-						{
-							return false;
-						}
-						foreach(var nsChild in GetValidChildren(ns))
-						{
-							return false;
-						}
-					}
-					return true;
-				}
-			);
-		}
-
-		public static IEnumerable<Workspace> GetValidChildren(Workspace workspace)
-		{
-			foreach (var nextStep in workspace.GenerateNextSteps())
+			foreach (var ns in workspace.GenerateNextSteps(generationSettings))
 			{
-				if (nextStep.IsValid)
+				if (ns.IsValid)
 				{
-					yield return nextStep;
+					return ns;
 				}
-				else
+				foreach (var nsChild in ns.GetValidChildren(generationSettings))
 				{
-					foreach (var child in GetValidChildren(nextStep))
-					{
-						yield return child;
-					}
+					return ns;
 				}
 			}
+			return null;
 		}
 
-		public static IEnumerable<Workspace> SolveRecursively(IEnumerable<Workspace> workspaces)
+		public static IEnumerable<Workspace> SolveRecursively(IEnumerable<Workspace> workspaces, GenerationSettings generationSettings)
 		{
 			foreach (var w in workspaces)
 			{
-				var nextSteps = w.GenerateNextSteps()
+				var nextSteps = w.GenerateNextSteps(generationSettings)
 					.ToList();
 				if (!nextSteps.Any())
 				{
@@ -232,7 +224,8 @@ namespace crozzle
 				{
 					foreach (
 						var w2 in SolveRecursively(
-							nextSteps.OrderByDescending(ns => ns.PotentialScore)
+							nextSteps.OrderByDescending(ns => ns.PotentialScore),
+							generationSettings
 						)
 					)
 						yield return w2;

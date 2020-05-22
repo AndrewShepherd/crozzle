@@ -39,7 +39,7 @@ namespace solve_crozzle.Tests
 			var workspaceOne = workspace.PlaceWord(Direction.Across, "A", 3, 3);
 			var workspaceTwo = workspaceOne.PlaceWord(Direction.Across, "B", 3, 4);
 			Assert.That(workspaceTwo.IsValid, Is.False);
-			var nextSteps = workspaceTwo.GenerateNextSteps().ToList();
+			var nextSteps = workspaceTwo.GenerateNextSteps(new GenerationSettings { MaxContiguousSpaces = int.MaxValue }).ToList();
 			Assert.That(nextSteps, Has.Count.EqualTo(1));
 			Assert.That(nextSteps.First().IsValid, Is.True);
 		}

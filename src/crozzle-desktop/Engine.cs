@@ -124,7 +124,11 @@ namespace crozzle_desktop
 					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
 						workspaces,
 						2000000, // Queue size
-						1024, // Beam size
+						1028, // Beam size,
+						new GenerationSettings
+						{
+							MaxContiguousSpaces = 5
+						},
 						this._cancellationTokenSource.Token
 					))
 					{

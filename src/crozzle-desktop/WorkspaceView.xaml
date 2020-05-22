@@ -6,6 +6,9 @@
              xmlns:local="clr-namespace:crozzle_desktop"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <local:CopyToClipboardCommand x:Key="CopyToClipboardCommand" x:Name="CopyToClipboardCommand" />
+    </UserControl.Resources>
     <Grid Name="MainGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" />
@@ -36,6 +39,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -47,6 +51,15 @@
             <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Path=IncludedWords.Count}" />
             <Label Grid.Row="2">Intersection Count</Label>
             <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding Path=Intersections.Count}"/>
+            <Button
+                Grid.Row="3"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Command="{StaticResource CopyToClipboardCommand}"
+                CommandParameter="{Binding}"
+            >
+                Copy to Clipboard
+            </Button>
         </Grid>
 
         <TextBlock Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Top" Text="{Binding Path=BoardRepresentation}">
