@@ -496,7 +496,7 @@
 			}
 		}
 
-		private static IEnumerable<Workspace> CoverSlot(this Workspace workspace, Grid grid, Slot slot) =>
+		internal static IEnumerable<Workspace> CoverSlot(this Workspace workspace, Grid grid, Slot slot) =>
 			workspace.CoverFragment(
 				grid,
 				new string(new[] { slot.Letter }),
@@ -524,7 +524,7 @@
 					workspace.CoverSlotEntry(grid, adj)
 			).Any();
 
-		private static bool CanCoverEachSpace(
+		internal static bool CanCoverEachSpace(
 			this Workspace workspace,
 			Grid grid,
 			IEnumerable<GridRegion> regions
@@ -532,20 +532,7 @@
 			regions.All(region => workspace.CanCoverSpace(grid, region));
 
 
-		class CoverageConstraint
-		{
-			private readonly int _maxLocations = 4;
-
-			public CoverageConstraint(int maxLocations)
-			{
-				_maxLocations = maxLocations;
-			}
-
-			public bool SatisfiesConstraint(GridRegion gridRegion) =>
-				gridRegion.CountLocations() <= _maxLocations;
-		}
-
-		private static IEnumerable<Workspace> CoverOnePartialWord(Workspace workspace, Grid grid)
+		internal static IEnumerable<Workspace> CoverOnePartialWord(Workspace workspace, Grid grid)
 		{
 			var partialSlot = grid.PartialWords.First();
 			grid.PartialWords.Remove(partialSlot);
@@ -692,7 +679,7 @@
 			return true;
 		}
 
-		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(Workspace w1, IEnumerable<Workspace> g2)
+		internal static IEnumerable<Workspace> CombineGeneratedWorkspaces(Workspace w1, IEnumerable<Workspace> g2)
 		{
 			var w1Grid = w1.GenerateGrid();
 			foreach (var w2 in g2)
@@ -704,9 +691,9 @@
 			}
 		}
 
-		public static IEnumerable<Workspace> GetValidChildren(this Workspace workspace, GenerationSettings generationSettings)
+		public static IEnumerable<Workspace> GetValidChildren(this Workspace workspace, INextStepGenerator nextStepGenerator)
 		{
-			foreach (var nextStep in workspace.GenerateNextSteps(generationSettings))
+			foreach (var nextStep in nextStepGenerator.GenerateNextSteps(workspace))
 			{
 				if (nextStep.IsValid)
 				{
@@ -714,7 +701,7 @@
 				}
 				else
 				{
-					foreach (var child in GetValidChildren(nextStep, generationSettings))
+					foreach (var child in GetValidChildren(nextStep, nextStepGenerator))
 					{
 						yield return child;
 					}
@@ -722,10 +709,10 @@
 			}
 		}
 
-		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(
+		internal static IEnumerable<Workspace> CombineGeneratedWorkspaces(
 			IEnumerable<Workspace> g1,
 			IEnumerable<Workspace> g2,
-			GenerationSettings generationSettings
+			INextStepGenerator nextStepGenerator
 		)
 		{
 			foreach (var w1 in g1)
@@ -742,7 +729,7 @@
 					}
 					else
 					{
-						foreach(var validChild in combined.GetValidChildren(generationSettings))
+						foreach(var validChild in combined.GetValidChildren(nextStepGenerator))
 						{
 							yield return validChild;
 						}
@@ -751,9 +738,9 @@
 			}
 		}
 
-		private static IEnumerable<Workspace> CombineGeneratedWorkspaces(
+		internal static IEnumerable<Workspace> CombineGeneratedWorkspaces(
 			IEnumerable<IEnumerable<Workspace>> generators,
-			GenerationSettings generationSettings
+			INextStepGenerator nextStepGenerator
 		)
 		{
 			if (generators.Count() == 0)
@@ -779,10 +766,10 @@
 							generators.Skip(1)
 								.First()
 								.Buffer(),
-							generationSettings
+							nextStepGenerator
 						)
 					}.Concat(generators.Skip(2)),
-					generationSettings
+					nextStepGenerator
 				);
 			}
 		}
@@ -823,7 +810,7 @@
 			Grid grid,
 			CoverageConstraint coverageConstraint,
 			GridRegion focusedRegion,
-			GenerationSettings generationSettings,
+			INextStepGenerator nextStepGenerator,
 			int maxPlacements
 		)
 		{
@@ -872,7 +859,7 @@
 							foreach (var grandchild in child.CoverRegion(
 								coverageConstraint,
 								focusedRegion,
-								generationSettings,
+								nextStepGenerator,
 								maxPlacements-1
 								)
 							)
@@ -890,11 +877,11 @@
 
 		}
 
-		private static IEnumerable<Workspace> CoverRegion(
+		internal static IEnumerable<Workspace> CoverRegion(
 			this Workspace workspace,
 			CoverageConstraint coverageConstraint,
 			GridRegion gridRegion,
-			GenerationSettings generationSettings,
+			INextStepGenerator nextStepGenerator,
 			int maxPlacements
 		)
 		{
@@ -908,7 +895,7 @@
 							child,
 							coverageConstraint,
 							gridRegion,
-							generationSettings,
+							nextStepGenerator,
 							maxPlacements-1
 						)
 					)
@@ -968,7 +955,7 @@
 					grid,
 					coverageConstraint,
 					i,
-					generationSettings,
+					nextStepGenerator,
 					maxPlacements
 				)
 			);
@@ -976,155 +963,11 @@
 				var child in CombineGeneratedWorkspaces
 				(
 					generators,
-					generationSettings
+					nextStepGenerator
 				)
 			)
 			{
 				yield return child;
-			}
-		}
-
-		private static IEnumerable<GridRegion> DetermineSpacesThatMustBeFilled(
-			Workspace workspace,
-			Grid grid,
-			CoverageConstraint coverageConstraint
-		)
-		{
-			if(workspace.IncludedWords.Count() <= 2)
-			{
-				return Enumerable.Empty<GridRegion>();
-			}
-			var noManLands = grid.FindEnclosedSpaces(
-				c =>
-				(
-					(c.CellType == GridCellType.BlankNoAdjacentSlots)
-					|| (c.CellType == GridCellType.EndOfWordMarker)
-				)
-			).ToList();
-			var failingNoMansLand = noManLands
-				.Where(r => !coverageConstraint.SatisfiesConstraint(r))
-				.ToList();
-			if(failingNoMansLand.Any())
-			{
-				return failingNoMansLand;
-			}
-
-			var blanks = grid.FindEnclosedSpaces(
-				c => c.CellType == GridCellType.Blank
-			).ToList();
-
-			var regionsToExamine = blanks
-				.Select(b =>
-				{
-					foreach (var nml in noManLands)
-					{
-						if (b.IsAdjacentTo(nml))
-						{
-							b = b.Union(nml);
-						}
-					}
-					return b;
-				}
-			).ToList();
-
-			var regionsFirstRound = regionsToExamine
-				.Where(
-					r =>
-						!coverageConstraint.SatisfiesConstraint(r)
-				).ToList();
-
-			var regionsSecondRound = grid.FindEnclosedSpaces(
-				c =>
-				(
-					(c.CellType == GridCellType.BlankNoAdjacentSlots)
-					|| (c.CellType == GridCellType.EndOfWordMarker)
-					|| (c.CellType == GridCellType.Blank)
-				)
-			).Where(
-					r =>
-						!coverageConstraint.SatisfiesConstraint(r)
-			).Where(
-					r => !(regionsFirstRound.Any(r2 => r.OverlapsWith(r2)))
-			).ToList();
-
-			return regionsFirstRound.Concat(regionsSecondRound).ToList();
-		}
-
-		public static IEnumerable<Workspace> GenerateNextSteps(this Workspace workspace, GenerationSettings generationSettings)
-		{
-			var grid = workspace.GenerateGrid();
-			if (grid.PartialWords.Any())
-			{
-				foreach(var child in CoverOnePartialWord(workspace, grid))
-				{
-					yield return child.Normalise();
-				}
-				yield break;
-			}
-
-			List<Slot> slotsToFill = null;
-			var coverageConstraint = new CoverageConstraint(generationSettings.MaxContiguousSpaces);
-
-			var spacesThatMustBeFilled = DetermineSpacesThatMustBeFilled(
-				workspace,
-				grid,
-				coverageConstraint
-			);
-
-
-			if(!(workspace.CanCoverEachSpace(grid, spacesThatMustBeFilled)))
-			{
-				yield break;
-			}
-			const int ThresholdWhereWeDontTryAny = 99;
-			const int ThresholdWhereWeOnlyATryOne = 7; // Any larger and it runs out of memory
-
-			spacesThatMustBeFilled = spacesThatMustBeFilled.Where(
-				s => s.CountLocations() <= ThresholdWhereWeDontTryAny
-			);
-
-			if (spacesThatMustBeFilled.Any())
-			{
-				spacesThatMustBeFilled = spacesThatMustBeFilled
-					.OrderBy(s => s.CountLocations())
-				.ToList();
-				IEnumerable<IEnumerable<Workspace>> generators = spacesThatMustBeFilled
-					.Select(
-						region =>
-							CoverRegion(
-								workspace,
-								coverageConstraint,
-								region,
-								generationSettings,
-								region.CountLocations() <= ThresholdWhereWeOnlyATryOne ? int.MaxValue : 1
-							)
-					);
-				// Until I've solved the duplicate generation problem
-				// Have to keep the numbers down
-				//generators = generators.Take(3);
-
-				if(generators.Any())
-				{
-					foreach (var child in CombineGeneratedWorkspaces(generators, generationSettings))
-					{
-						yield return child.Normalise();
-					}
-					yield break;
-				}
-			}
-			slotsToFill = workspace.SlotEntries.Select(se => se.Slot).ToList();
-
-			while (slotsToFill.Any())
-			{
-				var slot = slotsToFill[0];
-				slotsToFill.RemoveAt(0);
-				workspace = workspace.RemoveSlot(slot);
-				foreach(var child in workspace.CoverSlot(grid, slot))
-				{
-					yield return child.Normalise();
-				}
-
-				grid.RemoveSlot(slot);
 			}
 		}
 

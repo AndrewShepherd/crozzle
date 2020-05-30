@@ -5,7 +5,7 @@ using System.Text;
 namespace crozzle
 {
 
-	public class GenerationSettings
+	public class SpaceFillingGenerationSettings
 	{
 		public int MaxContiguousSpaces { get; set; }
 	}

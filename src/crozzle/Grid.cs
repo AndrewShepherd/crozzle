@@ -41,6 +41,8 @@ namespace crozzle
 		{
 			if (!(grid.Rectangle.Contains(location)))
 			{
+				// This is incomplete information
+				// It does not mention partial words
 				return new GridCell
 				{
 					CellType = GridCellType.Blank

@@ -60,6 +60,10 @@
 
 		public static int Compare(Workspace w1, Workspace w2)
 		{
+			if(object.ReferenceEquals(w1, w2))
+			{
+				return 0;
+			}
 			if((w1 != null) && (w2 == null))
 			{
 				return -1;

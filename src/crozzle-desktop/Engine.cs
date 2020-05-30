@@ -112,23 +112,37 @@ namespace crozzle_desktop
 			await this.Reset();
 			this._state = EngineState.Running;
 			Workspace workspace = Workspace.Generate(this.Words);
+			bool fixedLocations = true;
+			if(fixedLocations)
+			{
+				workspace = workspace.ExpandSize(
+					new Rectangle(
+						new Location(-1, -1),
+						Board.MaxWidth,
+						Board.MaxHeight)
+					);
+			}
 			this._cancellationTokenSource = new CancellationTokenSource();
 			var workspaces = this.Words
-				.Select(w => workspace.PlaceWord(Direction.Across, w, 0, 0))
+				.Select(word => workspace.PlaceWord(Direction.Across, word, 0, 0))
 				.ToArray();
 
 			_currentlyRunningTask = Task.Factory.StartNew(
 				() =>
 				{
 					this.FireEngineStarted();
+					INextStepGenerator generator = new SpaceFillingNextStepGenerator(
+						new SpaceFillingGenerationSettings
+						{
+							MaxContiguousSpaces = 4
+						}
+					);
+					generator = new SlotFillingNextStepGenerator();
 					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
 						workspaces,
 						2000000, // Queue size
-						1028, // Beam size,
-						new GenerationSettings
-						{
-							MaxContiguousSpaces = 5
-						},
+						256, // 1028, // Beam size,
+						generator,
 						this._cancellationTokenSource.Token
 					))
 					{

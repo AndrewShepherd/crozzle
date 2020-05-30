@@ -15,6 +15,53 @@ namespace crozzle
 		{
 			return this.Slot.CompareTo(other.Slot);
 		}
+
+		public override int GetHashCode()
+		{
+			return this.Slot.GetHashCode()
+				^ (
+					(CandidateWords == null)
+						? 0
+						: HashUtils.GenerateHash(CandidateWords)
+				);
+		}
+
+		public override bool Equals(object obj)
+		{
+			if(object.ReferenceEquals(this, obj))
+			{
+				return true;
+			}
+			if(!(obj is SlotEntry other))
+			{
+				return false;
+			}
+			if(!(this.Slot.Equals(other.Slot)))
+			{
+				return false;
+			}
+			if(object.ReferenceEquals(this.CandidateWords, other.CandidateWords))
+			{
+				return true;
+			}
+			if(object.ReferenceEquals(this.CandidateWords, null))
+			{
+				return false;
+			}
+			if(object.ReferenceEquals(other.CandidateWords, null))
+			{
+				return false;
+			}
+			if(!(this.CandidateWords.Count.Equals(other.CandidateWords.Count)))
+			{
+				return false;
+			}
+			if(!Enumerable.SequenceEqual(this.CandidateWords, other.CandidateWords))
+			{
+				return false;
+			}
+			return true;
+		}
 	}
 
 	public static class SlotEntryExtensions
