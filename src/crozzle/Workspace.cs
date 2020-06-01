@@ -50,6 +50,15 @@
 			{
 				return false;
 			}
+			if(
+				!Enumerable.SequenceEqual(
+					this.Board.WordPlacements,
+					w.Board.WordPlacements
+				)
+			)
+			{
+				return false;
+			}
 			if(!Enumerable.SequenceEqual(
 				this.SlotEntries.OrderBy(_ => _), 
 				w.SlotEntries.OrderBy(_ => _)

@@ -18,7 +18,19 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <local:WordsSelector Grid.Column="0" Words="{Binding Path=Words, Mode=OneWayToSource}" />
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <ContentPresenter Content="{Binding Path=AlgorithmSettings}" />
+            <local:WordsSelector
+                Grid.Column="0"
+                Grid.Row="1"
+                Words="{Binding Path=Words, Mode=OneWayToSource}"
+            />
+
+        </Grid>
         <GridSplitter Grid.Column="1" Background="Gray" Width="10" HorizontalAlignment="Stretch" />
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>

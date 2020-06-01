@@ -107,13 +107,13 @@ namespace crozzle_desktop
 
 		Task _currentlyRunningTask = Task.FromResult(0);
 
-		private async Task Restart()
+		public INextStepGenerator NextStepGenerator { get; set; }
+		public PositioningBehavior PositioningBehavior { get; internal set; }
+
+		private IEnumerable<Workspace> GenerateSeedWorkspaces()
 		{
-			await this.Reset();
-			this._state = EngineState.Running;
 			Workspace workspace = Workspace.Generate(this.Words);
-			bool fixedLocations = true;
-			if(fixedLocations)
+			if (this.PositioningBehavior == PositioningBehavior.Fixed)
 			{
 				workspace = workspace.ExpandSize(
 					new Rectangle(
@@ -122,27 +122,30 @@ namespace crozzle_desktop
 						Board.MaxHeight)
 					);
 			}
-			this._cancellationTokenSource = new CancellationTokenSource();
 			var workspaces = this.Words
 				.Select(word => workspace.PlaceWord(Direction.Across, word, 0, 0))
 				.ToArray();
+			return workspaces;
+		}
 
+		private async Task Restart()
+		{
+			await this.Reset();
+			this._state = EngineState.Running;
+
+
+			this._cancellationTokenSource = new CancellationTokenSource();
+
+			var workspaces = GenerateSeedWorkspaces();
 			_currentlyRunningTask = Task.Factory.StartNew(
 				() =>
 				{
 					this.FireEngineStarted();
-					INextStepGenerator generator = new SpaceFillingNextStepGenerator(
-						new SpaceFillingGenerationSettings
-						{
-							MaxContiguousSpaces = 4
-						}
-					);
-					generator = new SlotFillingNextStepGenerator();
 					foreach (var thisWorkspace in crozzle.Runner.SolveUsingQueue(
 						workspaces,
 						2000000, // Queue size
-						256, // 1028, // Beam size,
-						generator,
+						1028, // 1028, // Beam size,
+						this.NextStepGenerator,
 						this._cancellationTokenSource.Token
 					))
 					{

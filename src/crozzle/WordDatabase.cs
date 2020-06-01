@@ -36,6 +36,19 @@
 			};
 		}
 
+		public WordDatabase ResetWordAvailability()
+		{
+			var wordAvailability = new BitArray(this._wordArray.Length);
+			wordAvailability.SetAll(true);
+			return new WordDatabase()
+			{
+				_wordArray = this._wordArray,
+				_wordArrayIndex = this._wordArrayIndex,
+				WordLookup = this.WordLookup,
+				_wordAvailability = wordAvailability,
+			};
+		}
+
 		public override int GetHashCode()
 		{
 			int hash = 0;
@@ -65,6 +78,8 @@
 			}
 			return true;
 		}
+
+
 
 		public static WordDatabase Generate(IEnumerable<string> words)
 		{

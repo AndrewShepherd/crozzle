@@ -208,6 +208,30 @@
 			return hashSet;
 		}
 
+		internal static Workspace ResetAllSlots(this Workspace workspace)
+		{
+			var result = new Workspace
+			{
+				WordDatabase = workspace.WordDatabase.ResetWordAvailability(),
+				IncludedWords = ImmutableList<string>.Empty,
+				Intersections = ImmutableList<Intersection>.Empty,
+				Board = new Board
+				{
+					Rectangle = workspace.Board.Rectangle,
+				}
+			};
+			foreach(var wordplacement in workspace.Board.WordPlacements)
+			{
+				result = result.PlaceWord(
+					wordplacement.Direction,
+					wordplacement.Word,
+					wordplacement.Location.X,
+					wordplacement.Location.Y
+				);
+			}
+			return result;
+		}
+
 		internal static Grid GenerateGrid(this Workspace workspace)
 		{
 			GridCell[] gridCells = new GridCell[workspace.Board.Rectangle.Area];

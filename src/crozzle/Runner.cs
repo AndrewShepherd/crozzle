@@ -90,6 +90,35 @@ namespace crozzle
 			return wList;
 		}
 
+		public static WorkspaceNode AsOneWorkspace(IEnumerable<WorkspaceNode> workspaceNodes)
+		{
+			var firstNode = workspaceNodes.First();
+			if(workspaceNodes.Count() == 1)
+			{
+				return firstNode;
+			}
+			else
+			{
+				return new WorkspaceNode
+				{
+					Ancestry = firstNode.Ancestry,
+					Workspace = firstNode.Workspace.ResetAllSlots(),
+				};
+			}
+		}
+
+		public static WorkspaceNode[] MakeDistinct(IEnumerable<WorkspaceNode> workspaceNodes)
+		{
+			var groupedByBoard = workspaceNodes
+				.GroupBy(w => w.Workspace.Board)
+				.ToArray();
+			var result = new WorkspaceNode[groupedByBoard.Length];
+			for(int i = 0; i < groupedByBoard.Length; ++i)
+			{
+				result[i] = AsOneWorkspace(groupedByBoard[i]);
+			}
+			return result;
+		}
 
 		public static IEnumerable<Workspace> SolveUsingQueue(
 			IEnumerable<Workspace> startWorkspaces,
@@ -167,7 +196,8 @@ namespace crozzle
 					}
 				}
 				int countBefore = childWorkspaces.Count();
-				var distinctWorkspaces = childWorkspaces.Distinct().ToList();
+
+				var distinctWorkspaces = MakeDistinct(childWorkspaces);
 				if(countBefore != distinctWorkspaces.Count())
 				{
 					int dummy = 3;

@@ -158,21 +158,25 @@ namespace crozzle
 					_ => _,
 					comparer
 				).ToList();
+			const int minAdjacentGroupSize = 1;
 			foreach(var adjacentGroup in adjacentGroups)
 			{
-				if(adjacentGroup.Count() == 1)
+				if(adjacentGroup.Count() <= minAdjacentGroupSize)
 				{
-					var slot = adjacentGroup.First().Slot;
-					workspace = workspace.RemoveSlot(slot);
-					foreach (var child in workspace.CoverSlot(grid, slot))
+					foreach(var slotEntry in adjacentGroup)
 					{
-						yield return child.Normalise();
+						var slot = slotEntry.Slot;
+						workspace = workspace.RemoveSlot(slot);
+						foreach (var child in workspace.CoverSlot(grid, slot))
+						{
+							yield return child.Normalise();
+						}
+						grid.RemoveSlot(slot);
 					}
-					grid.RemoveSlot(slot);
 				}
 				else
 				{
-					foreach(var slotEntry in adjacentGroup.Take(2))
+					foreach(var slotEntry in adjacentGroup.Take(minAdjacentGroupSize+1))
 					{
 						var slot = slotEntry.Slot;
 						workspace = workspace.RemoveSlot(slot);

@@ -5,5 +5,8 @@
              xmlns:crozzle="clr-namespace:crozzle;assembly=crozzle"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <DataTemplate DataType="{x:Type local:AlgorithmSettingsViewModel}">
+            <local:AlgorithmSettingsView />
+        </DataTemplate>
     </Application.Resources>
 </Application>

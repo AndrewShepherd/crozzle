@@ -30,7 +30,7 @@ namespace crozzle_desktop
 				);
 				if(value != null)
 				{
-					StartEngine();
+					var task = StartEngine();
 				}
 			}
 		}
@@ -150,10 +150,18 @@ namespace crozzle_desktop
 
 		private async Task StartEngine()
 		{
+			Engine.NextStepGenerator = AlgorithmSettings.CreateGenerator();
+			Engine.PositioningBehavior = AlgorithmSettings.PositioningBehavior;
 			Speedometer.Measure(Engine);
 			_stopWatch.Start();
 			await Engine.Start();
 		}
+
+		public AlgorithmSettingsViewModel AlgorithmSettings
+		{
+			get;
+			set;
+		} = new AlgorithmSettingsViewModel();
 
 
 	}
