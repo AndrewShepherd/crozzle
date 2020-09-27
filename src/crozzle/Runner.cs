@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace crozzle
 {
@@ -36,7 +39,27 @@ namespace crozzle
 			}
 		}
 
-		private static List<WorkspaceNode> FetchFromQueue(WorkspacePriorityQueue wpq, int batchSize)
+		private static List<WorkspaceNode> FetchFromQueue(
+			IWorkspaceQueue wpq,
+			int batchSize)
+		{
+			List<WorkspaceNode> rv = new List<WorkspaceNode>(batchSize);
+			for(int i = 0; i < batchSize; ++i)
+			{
+				var n = wpq.Pop();
+				if(n == null)
+				{
+					return rv;
+				}
+				rv.Add(n);
+			}
+			return rv;
+		}
+
+		private static List<WorkspaceNode> FetchFromQueueWithDiverseAncestry(
+			IWorkspaceQueue wpq,
+			int batchSize
+		)
 		{
 			Dictionary<int, int> nodeCounts = new Dictionary<int, int>();
 
@@ -83,10 +106,7 @@ namespace crozzle
 					rejects.Add(candidate);
 				}
 			}
-			foreach(var r in rejects)
-			{
-				wpq.Push(r);
-			}
+			wpq.AddRange(rejects);
 			return wList;
 		}
 
@@ -120,38 +140,29 @@ namespace crozzle
 			return result;
 		}
 
-		public static IEnumerable<Workspace> SolveUsingQueue(
-			IEnumerable<Workspace> startWorkspaces,
-			int queueLength,
-			int batchSize,
-			INextStepGenerator nextStepGenerator,
-			CancellationToken cancellationToken
-		)
-		{
-			int identifier = 0;
-			WorkspacePriorityQueue wpq = new WorkspacePriorityQueue(queueLength);
-			foreach (
-				var workspace in startWorkspaces
+		static int identifier = 0;
+
+
+		private static void SolveUsingQueue(
+				IWorkspaceQueue wpq,
+				int batchSize,
+				INextStepGenerator nextStepGenerator,
+				CancellationToken cancellationToken,
+				BlockingCollection<Workspace> blockingCollection
 			)
-			{
-				wpq.Push(
-					new WorkspaceNode
-					{
-						Workspace = workspace,
-						Ancestry = ImmutableList<int>.Empty.Add(identifier++)
-					}
-				);
-			}
+		{
 			int queueIteration = 0;
 			while ((!wpq.IsEmpty) && (!cancellationToken.IsCancellationRequested))
 			{
 				++queueIteration;
+				//List<WorkspaceNode> wList = FetchFromQueueWithDiverseAncestry(wpq, batchSize);
 				List<WorkspaceNode> wList = FetchFromQueue(wpq, batchSize);
+
 				List<WorkspaceNode> childWorkspaces = new List<WorkspaceNode>();
 				var workspaceEnumerator = wList.GetEnumerator();
-				while(workspaceEnumerator.MoveNext())
+				while (workspaceEnumerator.MoveNext())
 				{
-					var thisNode= workspaceEnumerator.Current;
+					var thisNode = workspaceEnumerator.Current;
 					foreach (var ns in nextStepGenerator.GenerateNextSteps(thisNode.Workspace))
 					{
 						if (ns.IsValid)
@@ -163,7 +174,7 @@ namespace crozzle
 									Ancestry = thisNode.Ancestry.Add(++identifier),
 								}
 							);
-							yield return ns;
+							blockingCollection.Add(ns);
 						}
 						else
 						{
@@ -176,14 +187,14 @@ namespace crozzle
 										Ancestry = thisNode.Ancestry.Add(++identifier),
 									}
 								);
-								yield return nsChild;
+								blockingCollection.Add(nsChild);
 							}
 						}
 					}
-					if(childWorkspaces.Count() > queueLength/10)
+					if (childWorkspaces.Count() > wpq.Capacity / 10)
 					{
 						// Abort this iteration
-						while(workspaceEnumerator.MoveNext())
+						while (workspaceEnumerator.MoveNext())
 						{
 							wpq.AddRange(
 								new[]
@@ -198,12 +209,47 @@ namespace crozzle
 				int countBefore = childWorkspaces.Count();
 
 				var distinctWorkspaces = MakeDistinct(childWorkspaces);
-				if(countBefore != distinctWorkspaces.Count())
+				if (countBefore != distinctWorkspaces.Count())
 				{
 					int dummy = 3;
 				}
 				wpq.AddRange(childWorkspaces.Distinct());
 			}
+		}
+
+		public static IEnumerable<Workspace> SolveUsingQueue(
+			IEnumerable<Workspace> startWorkspaces,
+			int queueLength,
+			int batchSize,
+			INextStepGenerator nextStepGenerator,
+			CancellationToken cancellationToken
+		)
+		{
+			//IWorkspaceQueue wpq = new WorkspacePriorityQueue(queueLength);
+			IWorkspaceQueue wpq = new CountBalancedQueue();
+			foreach (
+				var workspace in startWorkspaces
+			)
+			{
+				wpq.AddRange(
+					new[]
+					{
+						new WorkspaceNode
+						{
+							Workspace = workspace,
+							Ancestry = ImmutableList<int>.Empty.Add(identifier++)
+						}
+					}
+				);
+			}
+			var blockingCollection = new BlockingCollection<Workspace>();
+			for(int i = 0; i < 2; ++i)
+			{
+				Task.Run(
+					() => SolveUsingQueue(wpq, batchSize, nextStepGenerator, cancellationToken, blockingCollection)
+				);
+			}
+			return new BlockingCollectionEnumerable<Workspace>(blockingCollection, cancellationToken);
 		}
 
 		private static Workspace GetFirstValidChild(Workspace workspace, INextStepGenerator nextStepGenerator)

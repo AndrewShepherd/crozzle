@@ -7,7 +7,7 @@ namespace crozzle
 	using System.Linq;
 	using System.Text;
 
-	public class Board : IComparable<Board>
+	public class Board: IComparable<Board>
 	{
 		public static int MaxWidth = 17;
 		public static int MaxHeight = 12;

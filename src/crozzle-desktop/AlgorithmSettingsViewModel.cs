@@ -65,7 +65,7 @@ namespace crozzle_desktop
 				return new SpaceFillingNextStepGenerator(
 					new SpaceFillingGenerationSettings
 					{
-						MaxContiguousSpaces = 2
+						MaxContiguousSpaces = 3
 					}
 				);
 			}

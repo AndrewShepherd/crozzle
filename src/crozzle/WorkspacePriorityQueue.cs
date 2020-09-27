@@ -30,7 +30,8 @@
 		public override int GetHashCode() => this.Workspace.GetHashCode();
 	}
 
-	public class WorkspacePriorityQueue
+
+	public class WorkspacePriorityQueue : IWorkspaceQueue
 	{
 		readonly WorkspaceNode[] _workspaces; 
 		int _length = 0;
@@ -51,11 +52,9 @@
 
 		private static Func<Workspace, Workspace, int>[] ComparisonFunctions = new[]
 		{
-			(w1, w2) => w2.PotentialScore.CompareTo(w1.PotentialScore), // Deliberately reversing them
+			(w1, w2) => w2.Score.CompareTo(w1.Score), // Deliberately reversing them
 			CompareProperties(_ => _.IncludedWords.Count()),
-			CompareProperties(_ => _.SlotEntries.Count()),
-			CompareProperties(_ => _.Board),
-			CompareProperties(_ => _.GetHashCode())
+			CompareProperties(_ => _.Board)
 		};
 
 		public static int Compare(Workspace w1, Workspace w2)
@@ -93,20 +92,25 @@
 			var j = (i - 1) / 2;
 			switch(Compare(_workspaces[j], _workspaces[i]))
 			{
-				case 1:
+				case int n when n > 0:
 					(_workspaces[i], _workspaces[j]) = (_workspaces[j], _workspaces[i]);
 					SwapUp(j);
 					break;
-				case -1:
+				case int n when n < 0:
 					break;
 				default:
-					if(_workspaces[i].Equals(_workspaces[j]))
-					{
-						RemoveElementAt(i);
-					}
+					RemoveElementAt(i);
+					_workspaces[j] = ResetSlots(_workspaces[j]);
 					break;
 			}
 		}
+
+		private static WorkspaceNode ResetSlots(WorkspaceNode workspaceNode) =>
+			new WorkspaceNode
+			{
+				Ancestry = workspaceNode.Ancestry,
+				Workspace = workspaceNode.Workspace.ResetAllSlots(),
+			};
 
 		private void SwapDown(int i)
 		{
@@ -114,32 +118,31 @@
 			{
 				return;
 			}
-			(int j, int k) = ((i * 2) + 1, (i * 2) + 2);
+			(
+				int j,
+				int k
+			) = (
+				(i * 2) + 1,
+				(i * 2) + 2
+			);
 			int l;
 			switch (Compare(_workspaces[j], _workspaces[k]))
 			{
-				case -1:
+				case int n when n < 0:
 					l = j;
 					break;
-				case 1:
+				case int n when n > 0:
 					l = k;
 					break;
 				default:
-					if(_workspaces[j].Equals(_workspaces[k]))
-					{
-						RemoveElementAt(k);
-						SwapDown(i);
-						return;
-					}
-					else
-					{
-						l = k;
-					}
-					break;
+					RemoveElementAt(k);
+					_workspaces[i] = ResetSlots(_workspaces[i]);
+					SwapDown(i);
+					return;
 			}
 			switch (Compare(_workspaces[l], _workspaces[i]))
 			{
-				case -1:
+				case int n when n < 0:
 					(_workspaces[i], _workspaces[l], i) = (_workspaces[l], _workspaces[i], l);
 					SwapDown(l);
 					break;
@@ -149,6 +152,7 @@
 					{
 						// They are equal! what do we do?
 						RemoveElementAt(l);
+						_workspaces[i] = ResetSlots(_workspaces[i]);
 						return;
 					}
 					break;
@@ -205,7 +209,7 @@
 			}
 		}
 
-		public void Push(WorkspaceNode workspace)
+		private void Push(WorkspaceNode workspace)
 		{
 			if (_length == _workspaces.Length)
 			{

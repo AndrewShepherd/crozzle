@@ -128,6 +128,46 @@ namespace crozzle
 			}
 		}
 
+		private class LastAddedSlotEntry : IComparer<IEnumerable<SlotEntry>>
+		{
+			readonly IEnumerable<SlotEntry> _slotEntriesInOrder;
+
+			public LastAddedSlotEntry(IEnumerable<SlotEntry> orderedSlotEntries)
+			{
+				_slotEntriesInOrder = orderedSlotEntries;
+			}
+			int IComparer<IEnumerable<SlotEntry>>.Compare(IEnumerable<SlotEntry> x, IEnumerable<SlotEntry> y)
+			{
+				foreach (var slotEntry in _slotEntriesInOrder)
+				{
+					if (slotEntry.Slot.Equals(x.First().Slot))
+					{
+						return 1;
+					}
+					if (slotEntry.Slot.Equals(y.First().Slot))
+					{
+						return -1;
+					}
+				}
+				return 0;
+			}
+		}
+
+		private WordPlacement GetWordPlacement(Workspace workspace, SlotEntry slotEntry)
+		{
+			foreach(var wordPlacement in workspace.Board.WordPlacements)
+			{
+				if(slotEntry.Slot.Direction == wordPlacement.Direction)
+				{
+					continue;
+				}
+				if(wordPlacement.GetRectangle().Contains(slotEntry.Slot.Location))
+				{
+					return wordPlacement;
+				}
+			}
+			return null;
+		}
 
 		IEnumerable<Workspace> INextStepGenerator.GenerateNextSteps(Workspace workspace)
 		{
@@ -149,10 +189,28 @@ namespace crozzle
 				yield break;
 			}
 			var slotEntries = workspace.SlotEntries;
+			if (workspace.Board.WordPlacements.Count == 1)
+			{
+				var maxScore = slotEntries
+					.Select(se => Scoring.Score(se.Slot.Letter))
+					.Max();
+				var valuableSlotes = slotEntries
+					.Where(se => Scoring.Score(se.Slot.Letter) == maxScore)
+					.ToList();
+				foreach(var slotEntry in valuableSlotes)
+				{
+					foreach (var child in workspace.CoverSlot(grid, slotEntry.Slot))
+					{
+						yield return child.Normalise();
+					}
+					grid.RemoveSlot(slotEntry.Slot);
+				}
+				yield break;
+			}
 
 			IComparer<IEnumerable<SlotEntry>> comparer = new CompareBasedOnProximityToCorner();
 			comparer = new FirstAddedSlotEntry(slotEntries);
-
+			//comparer = new LastAddedSlotEntry(slotEntries);
 			var adjacentGroups = GetAdjacentGroups(slotEntries)
 				.OrderBy(
 					_ => _,
@@ -176,7 +234,19 @@ namespace crozzle
 				}
 				else
 				{
-					foreach(var slotEntry in adjacentGroup.Take(minAdjacentGroupSize+1))
+					// We want to start as close to an intersection
+					var firstEntry = adjacentGroup.First();
+					var wordPlacement = GetWordPlacement(workspace, firstEntry);
+					var a = adjacentGroup;
+					if(wordPlacement.Location.Equals(firstEntry.Slot.Location))
+					{
+						a = adjacentGroup.Reverse();
+					}
+					else
+					{
+						int dummy = 3;
+					}
+					foreach(var slotEntry in a.Take(minAdjacentGroupSize+1))
 					{
 						var slot = slotEntry.Slot;
 						workspace = workspace.RemoveSlot(slot);
