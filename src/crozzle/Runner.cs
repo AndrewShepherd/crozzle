@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,71 +44,7 @@ namespace crozzle
 			IWorkspaceQueue wpq,
 			int batchSize)
 		{
-			List<WorkspaceNode> rv = new List<WorkspaceNode>(batchSize);
-			for(int i = 0; i < batchSize; ++i)
-			{
-				var n = wpq.Pop();
-				if(n == null)
-				{
-					return rv;
-				}
-				rv.Add(n);
-			}
-			return rv;
-		}
-
-		private static List<WorkspaceNode> FetchFromQueueWithDiverseAncestry(
-			IWorkspaceQueue wpq,
-			int batchSize
-		)
-		{
-			Dictionary<int, int> nodeCounts = new Dictionary<int, int>();
-
-			List<WorkspaceNode> rejects = new List<WorkspaceNode>();
-
-			var wList = new List<WorkspaceNode>(batchSize);
-			int maxSizeForLevel2 = (wpq.Count < (wpq.Capacity / 2))
-				? batchSize / 2
-				: int.MaxValue;
-			maxSizeForLevel2 = batchSize / 2;
-			while (wList.Count < batchSize && !wpq.IsEmpty)
-			{
-				var candidate = wpq.Pop();
-				bool passes = true;
-				if (candidate.Ancestry.Count > 2)
-				{
-					var wId = candidate.Ancestry[2];
-					if (nodeCounts.TryGetValue(wId, out var thisCount))
-					{
-						if (thisCount >= maxSizeForLevel2)
-						{
-							passes = false;
-						}
-						else
-						{
-							nodeCounts[wId] = ++thisCount;
-							if(thisCount == maxSizeForLevel2)
-							{
-								maxSizeForLevel2 = Math.Max(2, maxSizeForLevel2 / 2);
-							}
-						}
-					}
-					else
-					{
-						nodeCounts[wId] = 1;
-					}
-				}
-				if (passes)
-				{
-					wList.Add(candidate);
-				}
-				else
-				{
-					rejects.Add(candidate);
-				}
-			}
-			wpq.AddRange(rejects);
-			return wList;
+			return wpq.Swap(Enumerable.Empty<WorkspaceNode>(), batchSize).ToList();
 		}
 
 		public static WorkspaceNode AsOneWorkspace(IEnumerable<WorkspaceNode> workspaceNodes)
@@ -196,12 +133,7 @@ namespace crozzle
 						// Abort this iteration
 						while (workspaceEnumerator.MoveNext())
 						{
-							wpq.AddRange(
-								new[]
-								{
-									workspaceEnumerator.Current
-								}
-							);
+							wpq.Swap(new[] { workspaceEnumerator.Current }, 0);
 						}
 						break;
 					}
@@ -213,7 +145,7 @@ namespace crozzle
 				{
 					int dummy = 3;
 				}
-				wpq.AddRange(childWorkspaces.Distinct());
+				wpq.Swap(childWorkspaces.Distinct(), 0);
 			}
 		}
 
@@ -227,26 +159,28 @@ namespace crozzle
 		{
 			//IWorkspaceQueue wpq = new WorkspacePriorityQueue(queueLength);
 			IWorkspaceQueue wpq = new CountBalancedQueue();
-			foreach (
-				var workspace in startWorkspaces
-			)
-			{
-				wpq.AddRange(
-					new[]
-					{
+			wpq.Swap(
+				startWorkspaces.Select(
+					w => 
 						new WorkspaceNode
-						{
-							Workspace = workspace,
-							Ancestry = ImmutableList<int>.Empty.Add(identifier++)
+						{ 
+							Workspace = w,
+							Ancestry = ImmutableList<int>.Empty.Add(identifier++), 
 						}
-					}
-				);
-			}
+				).ToList(),
+				0
+			);
 			var blockingCollection = new BlockingCollection<Workspace>();
-			for(int i = 0; i < 2; ++i)
+			for(int i = 0; i < 8; ++i)
 			{
 				Task.Run(
-					() => SolveUsingQueue(wpq, batchSize, nextStepGenerator, cancellationToken, blockingCollection)
+					() =>
+					{
+						while(!cancellationToken.IsCancellationRequested)
+						{
+							SolveUsingQueue(wpq, batchSize, nextStepGenerator, cancellationToken, blockingCollection);
+						}
+					}
 				);
 			}
 			return new BlockingCollectionEnumerable<Workspace>(blockingCollection, cancellationToken);

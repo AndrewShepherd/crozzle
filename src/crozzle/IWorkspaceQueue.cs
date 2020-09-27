@@ -6,9 +6,7 @@ namespace crozzle
 {
 	interface IWorkspaceQueue
 	{
-		void AddRange(IEnumerable<WorkspaceNode> workspaceNodes);
-
-		WorkspaceNode Pop();
+		IEnumerable<WorkspaceNode> Swap(IEnumerable<WorkspaceNode> workspaceNodes, int maxReturnCount);
 
 		int Capacity { get; }
 

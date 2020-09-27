@@ -176,7 +176,7 @@
 			SwapDown(index);
 		}
 
-		public WorkspaceNode Pop()
+		private WorkspaceNode Pop()
 		{
 			var result = _workspaces[0];
 			RemoveElementAt(0);
@@ -233,12 +233,44 @@
 			SwapUp(i);		
 		}
 
-		public void AddRange(IEnumerable<WorkspaceNode> values)
+		private void AddRange(IEnumerable<WorkspaceNode> values)
 		{
 			foreach (var value in values)
 				Push(value);
 		}
 
+		public IEnumerable<WorkspaceNode> Swap(IEnumerable<WorkspaceNode> workspaceNodes, int maxReturnCount)
+		{
+			this.AddRange(workspaceNodes);
+			List<WorkspaceNode> rv = new List<WorkspaceNode>();
+			if(maxReturnCount >= this._length)
+			{
+				for(int i = 0; i < this._length; ++i)
+				{
+					rv.Add(this._workspaces[i]);
+				}
+				this._length = 0;
+			}
+			else
+			{
+				for (int i = 0; i < maxReturnCount && !this.IsEmpty; ++i)
+				{
+					var value = this.Pop();
+					if (value != null)
+					{
+						rv.Add(value);
+					}
+					else
+					{
+						return rv;
+					}
+				}
+			}
+			return rv;
+		}
+
 		public bool IsEmpty => _length == 0;
+
+
 	}
 }

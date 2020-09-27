@@ -15,67 +15,96 @@ namespace crozzle
 
 		int IWorkspaceQueue.Count => _queues.Select(kvp => kvp.Value.Count).Sum();
 
-		bool IWorkspaceQueue.IsEmpty => !(_queues.Any(kvp => !kvp.Value.IsEmpty));
+		bool IWorkspaceQueue.IsEmpty
+		{
+			get
+			{
+				lock(mutex)
+				{
+					return !(_queues.Any(kvp => !kvp.Value.IsEmpty));
+				}
+			}
+		}
 
 		private readonly object mutex = new object();
 
-		void IWorkspaceQueue.AddRange(IEnumerable<WorkspaceNode> workspaceNodes)
+		IEnumerable<WorkspaceNode> IWorkspaceQueue.Swap(IEnumerable<WorkspaceNode> workspaceNodes, int maxReturnCount)
 		{
-			lock(mutex)
+			foreach(var workspaceNode in workspaceNodes)
 			{
-				foreach (var n in workspaceNodes)
-				{
-					this.Push(n);
-				}
+				Push(workspaceNode);
 			}
+			return this.Pop(maxReturnCount);
 		}
 
 		void Push(WorkspaceNode workspaceNode)
 		{
 			var key = workspaceNode.Workspace.Board.WordPlacements.Count;
-			if (
-				_queues.TryGetValue(
-					key,
-					out WorkspacePriorityQueue wpq
+			lock(mutex)
+			{
+				if (
+					_queues.TryGetValue(
+						key,
+						out WorkspacePriorityQueue wpq
+					)
 				)
-			)
-			{
-				wpq.AddRange(new[] { workspaceNode });
-			}
-			else
-			{
-				wpq = new WorkspacePriorityQueue(EachQueueLength);
-				wpq.AddRange(new[] { workspaceNode });
-				_queues.Add(key, wpq);
+				{
+					wpq.Swap(new[] { workspaceNode }, 0);
+				}
+				else
+				{
+					wpq = new WorkspacePriorityQueue(EachQueueLength);
+					wpq.Swap(new[] { workspaceNode }, 0);
+					_queues.Add(key, wpq);
+				}
 			}
 		}
 
-		WorkspaceNode IWorkspaceQueue.Pop()
+		IEnumerable<WorkspaceNode> Pop(int maxCount)
 		{
+			List<WorkspaceNode> rv = new List<WorkspaceNode>();
 			lock(mutex)
 			{
-				foreach (var kvp in _queues.Reverse())
+				foreach(var kvp in _queues.Reverse())
 				{
 					var wpq = kvp.Value;
-					if ((kvp.Key >= 22) && (!wpq.IsEmpty))
+					if (kvp.Key >= 22)
 					{
-						return wpq.Pop();
+						rv.AddRange(wpq.Swap(Enumerable.Empty<WorkspaceNode>(), maxCount - rv.Count));
 					}
-
+					if(rv.Count >= maxCount)
+					{
+						return rv;
+					}
 					if (wpq.Count > EachQueueLength * 2 / 3)
 					{
-						return wpq.Pop();
+						rv.AddRange(
+							wpq.Swap(
+								Enumerable.Empty<WorkspaceNode>(),
+								maxCount - rv.Count
+							)
+						);
+					}
+					if (rv.Count >= maxCount)
+					{
+						return rv;
 					}
 				}
 				foreach (var kvp in _queues)
 				{
 					var wpq = kvp.Value;
-					if (!wpq.IsEmpty)
+					rv.AddRange(
+						wpq.Swap(
+							Enumerable.Empty<WorkspaceNode>(),
+							maxCount - rv.Count
+						)
+					);
+					if (rv.Count >= maxCount)
 					{
-						return wpq.Pop();
+						return rv;
 					}
 				}
-				return null;
+				return rv;
 			}
 		}
 
