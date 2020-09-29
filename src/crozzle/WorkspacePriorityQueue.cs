@@ -123,7 +123,7 @@
 				int k
 			) = (
 				(i * 2) + 1,
-				(i * 2) + 2
+				Math.Min((i * 2) + 2, _length-1)
 			);
 			int l;
 			switch (Compare(_workspaces[j], _workspaces[k]))
@@ -230,20 +230,39 @@
 				}
 			}
 			_workspaces[i] = workspace;
-			SwapUp(i);		
+			SwapUp(i);
 		}
 
-		private void AddRange(IEnumerable<WorkspaceNode> values)
+		private WorkspaceNode SwapElement(WorkspaceNode workspaceNode)
 		{
-			foreach (var value in values)
-				Push(value);
+			if(this.IsEmpty || Compare(workspaceNode, _workspaces[0]) < 0)
+			{
+				return workspaceNode;
+			}
+			else
+			{
+				var rv = _workspaces[0];
+				_workspaces[0] = workspaceNode;
+				SwapDown(0);
+				return rv;
+			}
 		}
 
 		public IEnumerable<WorkspaceNode> Swap(IEnumerable<WorkspaceNode> workspaceNodes, int maxReturnCount)
 		{
-			this.AddRange(workspaceNodes);
 			List<WorkspaceNode> rv = new List<WorkspaceNode>();
-			if(maxReturnCount >= this._length)
+			foreach(var workspaceNode in workspaceNodes)
+			{
+				if(rv.Count < maxReturnCount)
+				{
+					rv.Add(this.SwapElement(workspaceNode));
+				}
+				else
+				{
+					Push(workspaceNode);
+				}
+			}
+			if(maxReturnCount - rv.Count >= this._length)
 			{
 				for(int i = 0; i < this._length; ++i)
 				{
@@ -253,7 +272,7 @@
 			}
 			else
 			{
-				for (int i = 0; i < maxReturnCount && !this.IsEmpty; ++i)
+				while(!IsEmpty && (rv.Count < maxReturnCount))
 				{
 					var value = this.Pop();
 					if (value != null)
@@ -270,7 +289,5 @@
 		}
 
 		public bool IsEmpty => _length == 0;
-
-
 	}
 }

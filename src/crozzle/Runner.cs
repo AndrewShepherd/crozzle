@@ -40,13 +40,6 @@ namespace crozzle
 			}
 		}
 
-		private static List<WorkspaceNode> FetchFromQueue(
-			IWorkspaceQueue wpq,
-			int batchSize)
-		{
-			return wpq.Swap(Enumerable.Empty<WorkspaceNode>(), batchSize).ToList();
-		}
-
 		public static WorkspaceNode AsOneWorkspace(IEnumerable<WorkspaceNode> workspaceNodes)
 		{
 			var firstNode = workspaceNodes.First();
@@ -89,11 +82,12 @@ namespace crozzle
 			)
 		{
 			int queueIteration = 0;
-			while ((!wpq.IsEmpty) && (!cancellationToken.IsCancellationRequested))
+			IEnumerable<WorkspaceNode> wList = wpq.Swap(Enumerable.Empty<WorkspaceNode>(), batchSize);
+			while (wList.Any() && (!cancellationToken.IsCancellationRequested))
 			{
 				++queueIteration;
 				//List<WorkspaceNode> wList = FetchFromQueueWithDiverseAncestry(wpq, batchSize);
-				List<WorkspaceNode> wList = FetchFromQueue(wpq, batchSize);
+
 
 				List<WorkspaceNode> childWorkspaces = new List<WorkspaceNode>();
 				var workspaceEnumerator = wList.GetEnumerator();
@@ -145,7 +139,7 @@ namespace crozzle
 				{
 					int dummy = 3;
 				}
-				wpq.Swap(childWorkspaces.Distinct(), 0);
+				wList = wpq.Swap(childWorkspaces.Distinct(), batchSize);
 			}
 		}
 
@@ -171,7 +165,7 @@ namespace crozzle
 				0
 			);
 			var blockingCollection = new BlockingCollection<Workspace>();
-			for(int i = 0; i < 8; ++i)
+			for(int i = 0; i < 4; ++i)
 			{
 				Task.Run(
 					() =>

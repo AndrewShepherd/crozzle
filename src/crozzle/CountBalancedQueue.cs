@@ -30,34 +30,42 @@ namespace crozzle
 
 		IEnumerable<WorkspaceNode> IWorkspaceQueue.Swap(IEnumerable<WorkspaceNode> workspaceNodes, int maxReturnCount)
 		{
-			foreach(var workspaceNode in workspaceNodes)
+			var grouped = workspaceNodes.GroupBy(n => n.Workspace.Board.WordPlacements.Count).ToList();
+			List<WorkspaceNode> rv = new List<WorkspaceNode>();
+			foreach(var g in grouped)
 			{
-				Push(workspaceNode);
+				lock(mutex)
+				{
+					WorkspacePriorityQueue wpq = null;
+					if (!(
+						_queues.TryGetValue(
+							g.Key,
+							out wpq
+						)
+					))
+					{
+						wpq = new WorkspacePriorityQueue(EachQueueLength);
+						_queues.Add(g.Key, wpq);
+					}
+					
+					rv.AddRange(
+						wpq.Swap(
+							g,
+							g.Key switch
+							{
+								int n when n >= 22 => maxReturnCount - rv.Count,
+								_ when wpq.Count > EachQueueLength * 2 / 3 => maxReturnCount - rv.Count,
+								_ => 0
+							}
+						)
+					);
+				}
 			}
-			return this.Pop(maxReturnCount);
-		}
-
-		void Push(WorkspaceNode workspaceNode)
-		{
-			var key = workspaceNode.Workspace.Board.WordPlacements.Count;
-			lock(mutex)
+			if(rv.Count < maxReturnCount)
 			{
-				if (
-					_queues.TryGetValue(
-						key,
-						out WorkspacePriorityQueue wpq
-					)
-				)
-				{
-					wpq.Swap(new[] { workspaceNode }, 0);
-				}
-				else
-				{
-					wpq = new WorkspacePriorityQueue(EachQueueLength);
-					wpq.Swap(new[] { workspaceNode }, 0);
-					_queues.Add(key, wpq);
-				}
+				rv.AddRange(this.Pop(maxReturnCount - rv.Count));
 			}
+			return rv;
 		}
 
 		IEnumerable<WorkspaceNode> Pop(int maxCount)
@@ -68,6 +76,10 @@ namespace crozzle
 				foreach(var kvp in _queues.Reverse())
 				{
 					var wpq = kvp.Value;
+					if(wpq.IsEmpty)
+					{
+						continue;
+					}
 					if (kvp.Key >= 22)
 					{
 						rv.AddRange(wpq.Swap(Enumerable.Empty<WorkspaceNode>(), maxCount - rv.Count));
@@ -90,7 +102,7 @@ namespace crozzle
 						return rv;
 					}
 				}
-				foreach (var kvp in _queues)
+				foreach (var kvp in _queues.Reverse())
 				{
 					var wpq = kvp.Value;
 					rv.AddRange(
