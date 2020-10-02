@@ -10,6 +10,7 @@ namespace crozzle
 		private readonly SortedDictionary<int, WorkspacePriorityQueue> _queues = new SortedDictionary<int, WorkspacePriorityQueue>();
 
 		const int EachQueueLength = 40000;
+		const int LengthWhereYouJustEmptyIt = 15;
 		
 		int IWorkspaceQueue.Capacity => 31*EachQueueLength;
 
@@ -80,7 +81,7 @@ namespace crozzle
 					{
 						continue;
 					}
-					if (kvp.Key >= 22)
+					if (kvp.Key >= LengthWhereYouJustEmptyIt)
 					{
 						rv.AddRange(wpq.Swap(Enumerable.Empty<WorkspaceNode>(), maxCount - rv.Count));
 					}
