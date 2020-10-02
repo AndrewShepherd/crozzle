@@ -216,7 +216,8 @@ namespace crozzle
 					_ => _,
 					comparer
 				).ToList();
-			const int minAdjacentGroupSize = 1;
+			// This should be a parameter!
+			const int minAdjacentGroupSize = 3;
 			foreach(var adjacentGroup in adjacentGroups)
 			{
 				if(adjacentGroup.Count() <= minAdjacentGroupSize)
