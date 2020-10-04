@@ -1,11 +1,25 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>crozzle_tests</RootNamespace>
 
     <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="TestData\Michael-Solution.txt" />
+    <None Remove="TestData\Michael-Words.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="TestData\Michael-Solution.txt" />
+    <EmbeddedResource Include="TestData\Michael-Words.txt" />
+  </ItemGroup>
+
+
+
 
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.12.0" />
@@ -15,6 +29,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\crozzle\crozzle.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="TestData\Michael-Solution.txt" />
+    <Resource Include="TestData\Michael-Words.txt" />
   </ItemGroup>
 
 </Project>

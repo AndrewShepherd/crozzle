@@ -54,13 +54,17 @@ namespace crozzle_tests
 		public void TwoWordEquals()
 		{
 			var workspace = Workspace.Generate(new[] { "A", "B", "CAB" });
-			var w1 = workspace.PlaceWord(Direction.Across, "A", 3, 3)
-				.PlaceWord(Direction.Across, "B", 3, 4)
-				.Normalise();
+			var w1 = workspace.PlaceWord(Direction.Across, "A", 3, 3);
+			Assert.That(w1.IsValid, Is.True);
+			w1 = w1.PlaceWord(Direction.Across, "B", 3, 4);
+			Assert.That(w1.IsValid, Is.False);
+
+			w1 = w1.Normalise();
 			var w2 = workspace
 				.PlaceWord(Direction.Across, "B", 3, 4)
 				.PlaceWord(Direction.Across, "A", 3, 3)
 				.Normalise();
+			Assert.That(w2.IsValid, Is.False);
 			Assert.That(
 				w1.WordDatabase.GetHashCode(),
 				Is.EqualTo(w2.WordDatabase.GetHashCode())
@@ -101,7 +105,7 @@ namespace crozzle_tests
 		[Test]
 		public void TestDetectAdjacenciesAcross()
 		{
-			var workspace = Workspace.Generate(new[] { "SUEZ", "ZURICH", "QUITO" });
+			var workspace = Workspace.Generate(new[] { "SUEZ", "ZURICH", "QUITO", "EQUADOR" });
 			workspace = workspace.PlaceWord(Direction.Down, "SUEZ", 0, 0);
 			workspace = workspace.PlaceWord(Direction.Across, "ZURICH", 0, 3);
 			workspace = workspace.PlaceWord(Direction.Down, "QUITO", 1, 2);

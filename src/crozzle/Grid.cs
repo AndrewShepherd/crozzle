@@ -39,17 +39,46 @@ namespace crozzle
 
 		internal static GridCell CellAt(this Grid grid, Location location)
 		{
-			if (!(grid.Rectangle.Contains(location)))
+			if(grid.Rectangle.Contains(location))
 			{
+				int index = grid.Rectangle.IndexOf(location);
+				return grid.Cells[index];
+			}
+			else
+			{
+				PartialWord partialWordAbove = null;
+				PartialWord partialWordBelow = null;
+				PartialWord partialWordToLeft = null;
+				PartialWord partialWordToRight = null;
+
+				Location locationAbove = new Location(location.X, location.Y - 1);
+				if(grid.Rectangle.Contains(locationAbove))
+				{
+					var cellAbove = grid.CellAt(locationAbove);
+					if(cellAbove.CellType == GridCellType.Complete || cellAbove.CellType == GridCellType.AvailableSlot)
+					{
+						var furtherPartialWord = cellAbove.PartialWordAbove;
+						partialWordAbove = new PartialWord
+						{
+							Direction = Direction.Down,
+							Rectangle = new Rectangle(
+								furtherPartialWord?.Rectangle?.TopLeft ?? locationAbove,
+								locationAbove
+							),
+							Value = $"{furtherPartialWord?.Value ?? string.Empty}{cellAbove.Letter}"
+						};
+					}
+				}
+				
 				// This is incomplete information
 				// It does not mention partial words
 				return new GridCell
 				{
-					CellType = GridCellType.Blank
+					CellType = GridCellType.Blank,
+					PartialWordAbove = partialWordAbove
 				};
 			}
-			int index = grid.Rectangle.IndexOf(location);
-			return grid.Cells[index];
+
 		}
 
 		internal static GridCell CellAt(this GridCell[] gridCellArray, int index)

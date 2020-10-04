@@ -1,0 +1,47 @@
+<games minLetterScore=2 count=3 Minutes=0 Seconds=0 Microseconds=3640 depth=23 minScoreLimit=632 searchSpaceSize=3588>
+   <game score = 672 width = 15 height = 10 id=0 gridId=1456 key="0 8 14 29 42 52 55 57 62 84 98 109 117 151 184 188 200 221 222 233 264 348 424 462" parent="0 8 14 29 42 52 55 57 62 84 98 109 117 184 188 200 221 222 233 264 348 424 462" gridScore=672 placements="Placement(0,0,'.FITZROY.',8,6,1),Placement(1,6,'.BREEZA.',12,1,0),Placement(2,2,'.SYDNEY.',15,0,0),Placement(3,10,'.BUNBURY.',8,2,1),Placement(4,19,'.QUILPIE.',10,0,0),Placement(5,7,'.OUYEN.',14,5,0),Placement(6,4,'.AYR.',12,8,1),Placement(7,5,'.YOUNG.',10,10,1),Placement(8,9,'.HAY.',11,7,0),Placement(9,24,'.EDEN.',11,4,1),Placement(10,22,'.NHILL.',5,4,1),Placement(11,21,'.LORNE.',6,0,0),Placement(12,15,'.EXETER.',0,3,1),Placement(13,11,'.TEXAS.',2,0,0),Placement(14,16,'.SCONE.',1,5,1),Placement(15,12,'.STAWELL.',0,1,1),Placement(16,13,'.NOWRA.',5,4,0),Placement(17,8,'.WYEE.',4,7,1),Placement(18,17,'.CAIRNS.',3,4,0),Placement(19,1,'.YASS.',0,10,1),Placement(20,3,'.TULLY.',1,5,0),Placement(21,25,'.BEGA.',7,5,0),Placement(22,20,'.AVOCA.',6,9,1),Placement(23,14,'.UKI.',0,7,1),Placement(24,23,'.MOE.',9,7,0),">
+  .   .   .    . 
+.StAWElL. Q .  S 
+  E   O .BuNbURy.
+.ExETEr.  I R  D 
+  A. .nHILl.eDEn.
+ .scOne.  P E .E 
+ T.A O.B.FiTzRoy.
+.uKi.wYeE.E.A U. 
+ L R R G M.H.AyR.
+ L N A.aVoCa. E  
+.yAsS. . E.yOUnG.
+ . .     . .  .  
+    </game>
+
+   <game score = 672 width = 15 height = 10 id=1 gridId=1456 key="0 8 14 29 42 52 55 57 62 84 98 109 117 151 184 188 200 221 222 233 264 424 435 462" parent="0 8 14 29 42 52 55 57 62 84 98 109 117 184 188 200 221 222 233 264 424 435 462" gridScore=672 placements="Placement(0,0,'.FITZROY.',8,6,1),Placement(1,6,'.BREEZA.',12,1,0),Placement(2,2,'.SYDNEY.',15,0,0),Placement(3,10,'.BUNBURY.',8,2,1),Placement(4,19,'.QUILPIE.',10,0,0),Placement(5,7,'.OUYEN.',14,5,0),Placement(6,4,'.AYR.',12,8,1),Placement(7,5,'.YOUNG.',10,10,1),Placement(8,9,'.HAY.',11,7,0),Placement(9,24,'.EDEN.',11,4,1),Placement(10,22,'.NHILL.',5,4,1),Placement(11,21,'.LORNE.',6,0,0),Placement(12,15,'.EXETER.',0,3,1),Placement(13,11,'.TEXAS.',2,0,0),Placement(14,16,'.SCONE.',1,5,1),Placement(15,12,'.STAWELL.',0,1,1),Placement(16,13,'.NOWRA.',5,4,0),Placement(17,8,'.WYEE.',4,7,1),Placement(18,17,'.CAIRNS.',3,4,0),Placement(19,1,'.YASS.',0,10,1),Placement(20,3,'.TULLY.',1,5,0),Placement(21,20,'.AVOCA.',6,9,1),Placement(22,25,'.BEGA.',7,5,0),Placement(23,14,'.UKI.',0,7,1),Placement(24,23,'.MOE.',9,7,0),">
+  .   .   .    . 
+.StAWElL. Q .  S 
+  E   O .BuNbURy.
+.ExETEr.  I R  D 
+  A. .nHILl.eDEn.
+ .scOne.  P E .E 
+ T.A O.B.FiTzRoy.
+.uKi.wYeE.E.A U. 
+ L R R G M.H.AyR.
+ L N A.aVoCa. E  
+.yAsS. . E.yOUnG.
+ . .     . .  .  
+    </game>
+
+   <game score = 672 width = 15 height = 10 id=2 gridId=1232 key="0 8 14 29 42 52 55 57 62 84 98 109 117 151 184 188 200 221 222 233 264 348 424 435" parent="0 8 14 29 42 52 55 57 62 84 98 109 117 184 188 200 221 222 233 264 348 424 435" gridScore=672 placements="Placement(0,0,'.FITZROY.',8,6,1),Placement(1,6,'.BREEZA.',12,1,0),Placement(2,2,'.SYDNEY.',15,0,0),Placement(3,10,'.BUNBURY.',8,2,1),Placement(4,19,'.QUILPIE.',10,0,0),Placement(5,7,'.OUYEN.',14,5,0),Placement(6,4,'.AYR.',12,8,1),Placement(7,5,'.YOUNG.',10,10,1),Placement(8,9,'.HAY.',11,7,0),Placement(9,24,'.EDEN.',11,4,1),Placement(10,22,'.NHILL.',5,4,1),Placement(11,21,'.LORNE.',6,0,0),Placement(12,15,'.EXETER.',0,3,1),Placement(13,11,'.TEXAS.',2,0,0),Placement(14,16,'.SCONE.',1,5,1),Placement(15,12,'.STAWELL.',0,1,1),Placement(16,13,'.NOWRA.',5,4,0),Placement(17,8,'.WYEE.',4,7,1),Placement(18,17,'.CAIRNS.',3,4,0),Placement(19,1,'.YASS.',0,10,1),Placement(20,3,'.TULLY.',1,5,0),Placement(21,25,'.BEGA.',7,5,0),Placement(22,20,'.AVOCA.',6,9,1),Placement(23,14,'.UKI.',0,7,1),Placement(24,23,'.MOE.',9,7,0),">
+  .   .   .    . 
+.StAWElL. Q .  S 
+  E   O .BuNbURy.
+.ExETEr.  I R  D 
+  A. .nHILl.eDEn.
+ .scOne.  P E .E 
+ T.A O.B.FiTzRoy.
+.uKi.wYeE.E.A U. 
+ L R R G M.H.AyR.
+ L N A.aVoCa. E  
+.yAsS. . E.yOUnG.
+ . .     . .  .  
+    </game>
+
+</games>

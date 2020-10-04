@@ -9,7 +9,7 @@ namespace crozzle
 	{
 		private readonly SortedDictionary<int, WorkspacePriorityQueue> _queues = new SortedDictionary<int, WorkspacePriorityQueue>();
 
-		const int EachQueueLength = 40000;
+		const int EachQueueLength = 80000;
 		const int LengthWhereYouJustEmptyIt = 15;
 		
 		int IWorkspaceQueue.Capacity => 31*EachQueueLength;
@@ -55,8 +55,8 @@ namespace crozzle
 							g.Key switch
 							{
 								int n when n >= 22 => maxReturnCount - rv.Count,
-								_ when wpq.Count > EachQueueLength * 2 / 3 => maxReturnCount - rv.Count,
-								_ => 0
+								// _ when wpq.Count > EachQueueLength * 2 / 3 => maxReturnCount - rv.Count,
+								_ => Math.Min(maxReturnCount - rv.Count, g.Count())
 							}
 						)
 					);
