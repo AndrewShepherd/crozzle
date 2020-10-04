@@ -105,28 +105,104 @@ namespace crozzle_tests
 			}
 		}
 
+		bool IsWorkspaceSubsetOf(Workspace workspace, Workspace target)
+		{
+			var workspaceWordPlacements = workspace.Board.WordPlacements;
+			var targetWordPlacements = target.Board.WordPlacements;
+			if(!workspaceWordPlacements.Any())
+			{
+				return true;
+			}
+			// Get the offset
+			var first = workspaceWordPlacements.First();
+			var matchingFirst = targetWordPlacements.Where(twp => twp.Word == first.Word).FirstOrDefault();
+			if(matchingFirst == null)
+			{
+				return false;
+			}
+			if(matchingFirst.Direction != first.Direction)
+			{
+				return false;
+			}
+			Vector offset = matchingFirst.Location - first.Location;
+			foreach(var wp in workspaceWordPlacements.Skip(1))
+			{
+				var matching = targetWordPlacements.Where(twp => twp.Word == wp.Word).FirstOrDefault();
+				if(matching == null)
+				{
+					return false;
+				}
+				if (!(wp.Move(offset).Equals(matching)))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
 		[Test]
 		public async Task MatchTarget()
 		{
 			string[] resourceNames = Assembly.GetExecutingAssembly().GetManifestResourceNames();
 			var wordList = await ReadStringList("crozzle_tests.TestData.Michael-Words.txt");
 			Assert.That(wordList, Has.Count.GreaterThan(0));
-			var workspace = Workspace.Generate(wordList);
+
 
 			var solutionGrid = await ReadStringList("crozzle_tests.TestData.Michael-Solution.txt");
 			var solutionWordPlacements = ReadWordPlacements(solutionGrid).ToList();
 			Assert.That(solutionWordPlacements, Has.Count.GreaterThan(0));
 
-			foreach(var wordPlacement in solutionWordPlacements)
+			var targetWorkspace = Workspace.Generate(wordList);
+			foreach (var wordPlacement in solutionWordPlacements)
 			{
-				workspace = workspace.PlaceWord(
+				targetWorkspace = targetWorkspace.PlaceWord(
 					wordPlacement.Direction,
 					wordPlacement.Word,
 					wordPlacement.Location.X,
 					wordPlacement.Location.Y
 				);
 			}
-			Assert.That(workspace.IsValid);
+			targetWorkspace = targetWorkspace.Normalise();
+			Assert.That(targetWorkspace.IsValid);
+
+
+			var sourceWorkspace = Workspace.Generate(wordList);
+			IEnumerable<Workspace> steps = solutionWordPlacements
+				.Select(
+					wp =>
+						sourceWorkspace
+							.PlaceWord(
+								wp.Direction,
+								wp.Word,
+								0,
+								0
+							)
+				).ToArray();
+
+			INextStepGenerator nextStepGenerator = new SlotFillingNextStepGenerator();
+			bool found = false;
+			Workspace perfectMatch = null;
+			while (!found)
+			{
+				var candidates = steps.Select(
+					s =>
+						nextStepGenerator
+							.GenerateNextSteps(s)
+				).SelectMany(_ => _)
+				.ToList()
+				.AsEnumerable();
+
+				int countBefore = candidates.Count();
+				candidates = candidates.Distinct().ToList();
+				int countAfter = candidates.Count();
+				//Assert.That(countBefore, Is.EqualTo(countAfter));
+				steps = candidates.Where(ns => IsWorkspaceSubsetOf(ns, targetWorkspace))
+					.ToList();
+				perfectMatch = steps.Where(s => s.Board.WordPlacements.Count == targetWorkspace.Board.WordPlacements.Count)
+					.FirstOrDefault();
+				found = perfectMatch != null;
+			}
+			Assert.That(found, Is.True);
 		}
 	}
 }

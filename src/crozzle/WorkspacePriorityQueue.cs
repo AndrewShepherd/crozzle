@@ -55,7 +55,7 @@
 			(w1, w2) => w2.Score.CompareTo(w1.Score), // Deliberately reversing them
 			CompareProperties(_ => _.IncludedWords.Count()),
 			CompareProperties(_ => _.Board),
-			// CompareProperties(_ => _.GetHashCode())
+			CompareProperties(_ => _.GetHashCode())
 		};
 
 		public static int Compare(Workspace w1, Workspace w2)
