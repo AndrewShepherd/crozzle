@@ -15,7 +15,7 @@
 		public override string ToString() =>
 			$"({X}, {Y})";
 
-		public override bool Equals(object obj) =>
+		public override bool Equals(object? obj) =>
 			object.ReferenceEquals(this, obj)
 			||
 			(
@@ -25,7 +25,7 @@
 		public override int GetHashCode() =>
 			(X * 23 + Y) | (X * 27 + Y) << 17;
 
-		public int CompareTo(Location other) =>
+		public int CompareTo(Location? other) =>
 			X == other.X
 			? Y.CompareTo(other.Y)
 			: X.CompareTo(other.X);

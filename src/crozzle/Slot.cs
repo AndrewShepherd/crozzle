@@ -22,7 +22,7 @@
 			_location = location;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if (!(obj is Slot s))
 			{
@@ -46,7 +46,7 @@
 				this.Location + v
 			);
 
-		public int CompareTo(Slot other)
+		public int CompareTo(Slot? other)
 		{
 			int locationComparison = this.Location.CompareTo(other.Location);
 			if (locationComparison != 0)

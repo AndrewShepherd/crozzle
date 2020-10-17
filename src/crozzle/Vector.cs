@@ -11,7 +11,7 @@
 			Dy = dy;
 		}
 
-		public override bool Equals(object obj) =>
+		public override bool Equals(object? obj) =>
 			(obj is Vector v)
 			&& v.Dx == this.Dx
 			&& v.Dy == this.Dy;

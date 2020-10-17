@@ -27,6 +27,10 @@
 			Height = bottomRight.Y - topLeft.Y + 1;
 		}
 
+		private static Rectangle _empty = new Rectangle(new Location(0, 0), 0, 0);
+
+		public static Rectangle Empty => _empty;
+
 		public bool Contains(Location location)
 		{
 			if (location.X < this.TopLeft.X)
@@ -62,7 +66,7 @@
 		public override string ToString() =>
 			$"({TopLeft}), {Width}x{Height}";
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if (object.ReferenceEquals(this, obj))
 				return true;

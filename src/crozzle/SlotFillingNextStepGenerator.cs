@@ -12,7 +12,7 @@ namespace crozzle
 			public int Index { get; set; }
 			public Direction Direction { get; set; }
 
-			public override bool Equals(object obj) =>
+			public override bool Equals(object? obj) =>
 				object.ReferenceEquals(this, obj)
 				|| (
 					(obj is IndexAndDirection other)
@@ -22,6 +22,13 @@ namespace crozzle
 
 			public override int GetHashCode() =>
 				Index << 8 ^ Direction.GetHashCode();
+		}
+
+		private readonly int _minAdjacentGroupSize;
+
+		public SlotFillingNextStepGenerator(int minAdjacentGroupSize)
+		{
+			_minAdjacentGroupSize = minAdjacentGroupSize;
 		}
 
 		Dictionary<IndexAndDirection, List<SlotEntry>> CategorizeSlotEntries(IEnumerable<SlotEntry> slotEntries)
@@ -99,7 +106,7 @@ namespace crozzle
 
 			private static int CalculateProximity(IEnumerable<SlotEntry> sle) =>
 				CalculateProximity(sle.First().Slot.Location);
-			int IComparer<IEnumerable<SlotEntry>>.Compare(IEnumerable<SlotEntry> x, IEnumerable<SlotEntry> y) =>
+			int IComparer<IEnumerable<SlotEntry>>.Compare(IEnumerable<SlotEntry>? x, IEnumerable<SlotEntry>? y) =>
 				CalculateProximity(x).CompareTo(CalculateProximity(y));
 		}
 
@@ -111,7 +118,7 @@ namespace crozzle
 			{
 				_slotEntriesInOrder = orderedSlotEntries;
 			}
-			int IComparer<IEnumerable<SlotEntry>>.Compare(IEnumerable<SlotEntry> x, IEnumerable<SlotEntry> y)
+			int IComparer<IEnumerable<SlotEntry>>.Compare(IEnumerable<SlotEntry>? x, IEnumerable<SlotEntry>? y)
 			{
 				foreach(var slotEntry in _slotEntriesInOrder)
 				{
@@ -136,7 +143,7 @@ namespace crozzle
 			{
 				_slotEntriesInOrder = orderedSlotEntries;
 			}
-			int IComparer<IEnumerable<SlotEntry>>.Compare(IEnumerable<SlotEntry> x, IEnumerable<SlotEntry> y)
+			int IComparer<IEnumerable<SlotEntry>>.Compare(IEnumerable<SlotEntry>? x, IEnumerable<SlotEntry>? y)
 			{
 				foreach (var slotEntry in _slotEntriesInOrder)
 				{
@@ -217,10 +224,10 @@ namespace crozzle
 					comparer
 				).ToList();
 			// This should be a parameter!
-			const int minAdjacentGroupSize = 3;
-			foreach(var adjacentGroup in adjacentGroups)
+
+			foreach (var adjacentGroup in adjacentGroups)
 			{
-				if(adjacentGroup.Count() <= minAdjacentGroupSize)
+				if(adjacentGroup.Count() <= _minAdjacentGroupSize)
 				{
 					foreach(var slotEntry in adjacentGroup)
 					{
@@ -247,7 +254,7 @@ namespace crozzle
 					{
 						int dummy = 3;
 					}
-					foreach(var slotEntry in a.Take(minAdjacentGroupSize+1))
+					foreach(var slotEntry in a.Take(_minAdjacentGroupSize + 1))
 					{
 						var slot = slotEntry.Slot;
 						workspace = workspace.RemoveSlot(slot);

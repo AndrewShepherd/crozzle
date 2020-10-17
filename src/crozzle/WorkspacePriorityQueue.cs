@@ -8,10 +8,10 @@
 
 	public class WorkspaceNode
 	{
-		public Workspace Workspace { get; set; }
+		public Workspace Workspace { get; set; } = Workspace.Empty;
 		public ImmutableList<int> Ancestry = ImmutableList<int>.Empty;
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if(object.ReferenceEquals(this, obj))
 			{
@@ -33,7 +33,7 @@
 
 	public class WorkspacePriorityQueue : IWorkspaceQueue
 	{
-		readonly WorkspaceNode[] _workspaces; 
+		readonly WorkspaceNode?[] _workspaces; 
 		int _length = 0;
 		public WorkspacePriorityQueue(int queueLength)
 		{
@@ -58,17 +58,17 @@
 			CompareProperties(_ => _.GetHashCode())
 		};
 
-		public static int Compare(Workspace w1, Workspace w2)
+		public static int Compare(Workspace? w1, Workspace? w2)
 		{
 			if(object.ReferenceEquals(w1, w2))
 			{
 				return 0;
 			}
-			if((w1 != null) && (w2 == null))
+			if(w2 == null)
 			{
 				return -1;
 			}
-			if((w2 != null) && (w1 == null))
+			if(w1 == null)
 			{
 				return 1;
 			}
@@ -83,7 +83,7 @@
 			return 0;
 		}
 
-		public static int Compare(WorkspaceNode w1, WorkspaceNode w2) =>
+		public static int Compare(WorkspaceNode? w1, WorkspaceNode? w2) =>
 			Compare(w1?.Workspace, w2?.Workspace);
 
 		private void SwapUp(int i)
@@ -106,11 +106,11 @@
 			}
 		}
 
-		private static WorkspaceNode ResetSlots(WorkspaceNode workspaceNode) =>
+		private static WorkspaceNode ResetSlots(WorkspaceNode? workspaceNode) =>
 			new WorkspaceNode
 			{
-				Ancestry = workspaceNode.Ancestry,
-				Workspace = workspaceNode.Workspace.ResetAllSlots(),
+				Ancestry = workspaceNode?.Ancestry ?? ImmutableList<int>.Empty,
+				Workspace = (workspaceNode?.Workspace ?? Workspace.Empty).ResetAllSlots(),
 			};
 
 		private void SwapDown(int i)
@@ -148,7 +148,7 @@
 					SwapDown(l);
 					break;
 				case 0:
-					bool areEqual = (_workspaces[i].Equals(_workspaces[l]));
+					bool areEqual = (_workspaces[i]!.Equals(_workspaces[l]));
 					if (areEqual)
 					{
 						// They are equal! what do we do?

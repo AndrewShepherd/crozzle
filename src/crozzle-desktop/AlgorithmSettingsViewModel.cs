@@ -58,7 +58,8 @@ namespace crozzle_desktop
 		{
 			if(_currentGenerator == GeneratorNames.CoverSlots)
 			{
-				return new SlotFillingNextStepGenerator(); 
+				int minAdjacentGroupSize = 2; // Should be set by control
+				return new SlotFillingNextStepGenerator(minAdjacentGroupSize); 
 			}
 			else
 			{

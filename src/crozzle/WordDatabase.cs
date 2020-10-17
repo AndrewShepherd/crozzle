@@ -59,7 +59,7 @@
 			return hash;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if(object.ReferenceEquals(this, obj))
 			{

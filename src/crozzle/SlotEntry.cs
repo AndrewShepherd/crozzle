@@ -11,7 +11,7 @@ namespace crozzle
 		public Slot Slot { get; set; }
 		public ImmutableHashSet<CandidateWord> CandidateWords = ImmutableHashSet<CandidateWord>.Empty;
 
-		public int CompareTo(SlotEntry other)
+		public int CompareTo(SlotEntry? other)
 		{
 			return this.Slot.CompareTo(other.Slot);
 		}
@@ -26,7 +26,7 @@ namespace crozzle
 				);
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if(object.ReferenceEquals(this, obj))
 			{

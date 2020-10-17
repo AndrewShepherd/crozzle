@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading.Tasks;
 using crozzle;
 using System.Linq;
+using System.Collections.Immutable;
 
 namespace crozzle_tests
 {
@@ -179,9 +180,11 @@ namespace crozzle_tests
 							)
 				).ToArray();
 
-			INextStepGenerator nextStepGenerator = new SlotFillingNextStepGenerator();
+			INextStepGenerator nextStepGenerator = new SlotFillingNextStepGenerator(3);
 			bool found = false;
 			Workspace perfectMatch = null;
+
+			WorkspacePriorityQueue queue = new WorkspacePriorityQueue(100000);
 			while (!found)
 			{
 				var candidates = steps.Select(
@@ -189,12 +192,28 @@ namespace crozzle_tests
 						nextStepGenerator
 							.GenerateNextSteps(s)
 				).SelectMany(_ => _)
-				.ToList()
-				.AsEnumerable();
+				.ToList();
 
 				int countBefore = candidates.Count();
 				candidates = candidates.Distinct().ToList();
-				int countAfter = candidates.Count();
+				int countBeforeQueuing = candidates.Count();
+				queue.Swap(
+					candidates.Select(c => new WorkspaceNode { Ancestry = ImmutableList.Create<int>(), Workspace = c}),
+					0
+				);
+
+				candidates = new List<Workspace>();
+				while(queue.Count > 0)
+				{
+					candidates.AddRange(
+						queue.Swap(
+							Enumerable.Empty<WorkspaceNode>(),
+							1
+						).Select(wn => wn.Workspace)
+					);
+				}
+				int countAfterQueuing = candidates.Count();
+				//Assert.That(countBeforeQueuing, Is.EqualTo(countAfterQueuing));
 				//Assert.That(countBefore, Is.EqualTo(countAfter));
 				steps = candidates.Where(ns => IsWorkspaceSubsetOf(ns, targetWorkspace))
 					.ToList();

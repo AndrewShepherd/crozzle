@@ -5,7 +5,7 @@
 		public Direction Direction;
 		public string Value;
 		public Rectangle Rectangle;
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if (!(obj is PartialWord pw))
 			{

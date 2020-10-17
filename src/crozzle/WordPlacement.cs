@@ -18,7 +18,7 @@
 			this.Word = Word;
 		}
 
-		public override bool Equals(object obj) =>
+		public override bool Equals(object? obj) =>
 			object.ReferenceEquals(this, obj)
 			|| (
 				(obj is WordPlacement w)
@@ -41,7 +41,7 @@
 				}
 			}
 
-		public int CompareTo(WordPlacement other)
+		public int CompareTo(WordPlacement? other)
 		{
 			if(object.ReferenceEquals(this, other))
 			{

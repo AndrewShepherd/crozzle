@@ -2,10 +2,10 @@
 {
 	public class CandidateWord
 	{
-		public string Word { get; set; }
+		public string Word { get; set; } = string.Empty;
 		public int MatchIndex { get; set; }
 
-		public override bool Equals(object obj) =>
+		public override bool Equals(object? obj) =>
 			(obj is CandidateWord other)
 			&& other.Word.Equals(Word)
 			&& other.MatchIndex.Equals(MatchIndex);

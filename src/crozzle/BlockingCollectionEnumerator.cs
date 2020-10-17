@@ -23,19 +23,37 @@ namespace crozzle
 		{
 		}
 
-		public T Current { get; set; } = default(T);
+		bool _currentIsSet = false;
+		T _currentValue = default!;
 
-		object IEnumerator.Current => this.Current;
+		public T Current
+		{
+			get
+			{
+				if(_currentIsSet)
+				{
+					return _currentValue;
+				}
+				else
+				{
+					throw new InvalidOperationException("Cannot call current right now");
+				}
+			}
+		}
+
+		object? IEnumerator.Current => this.Current;
 
 		public bool MoveNext()
 		{
 			if(_cancellationToken.IsCancellationRequested)
 			{
+				_currentIsSet = false;
 				return false;
 			}
 			try
 			{
-				this.Current = (_collection.Take());
+				this._currentValue = (_collection.Take());
+				_currentIsSet = true;
 				return true;
 			}
 			catch (TaskCanceledException)

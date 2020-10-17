@@ -15,7 +15,7 @@
 	public class Workspace
 	{
 		public int Score { get; set; } = 0;
-		public Board Board;
+		public Board Board = Board.Empty();
 		public ImmutableList<string> IncludedWords { get; set; }
 		public ImmutableList<Intersection> Intersections { get; set; }
 
@@ -28,7 +28,12 @@
 			_lazyHashCode = new Lazy<int>(() => this.GenerateHashCode());
 		}
 
-		public override bool Equals(object obj)
+		private static Workspace _empty = new Workspace();
+
+		public static Workspace Empty =>
+			_empty;
+
+		public override bool Equals(object? obj)
 		{
 			if(object.ReferenceEquals(this, obj))
 			{

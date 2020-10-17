@@ -11,12 +11,17 @@ namespace crozzle
 	{
 		public static int MaxWidth = 17;
 		public static int MaxHeight = 12;
-		public Rectangle Rectangle;
+		public Rectangle Rectangle = Rectangle.Empty;
 		public ImmutableSortedSet<WordPlacement> WordPlacements = ImmutableSortedSet<WordPlacement>.Empty;
 
 		public Board()
 		{
 			 this._values = new Lazy<char[]>(GenerateValues);
+		}
+
+		public static Board Empty()
+		{
+			return new Board();
 		}
 
 		private char[] GenerateValues()
@@ -65,7 +70,7 @@ namespace crozzle
 			return sb.ToString();
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return (obj is Board b)
 				&& b.Rectangle.Equals(this.Rectangle)
@@ -94,7 +99,7 @@ namespace crozzle
 				)
 			};
 
-		public int CompareTo(Board other)
+		public int CompareTo(Board? other)
 		{
 			var c1 = this.WordPlacements.Count().CompareTo(other.WordPlacements.Count());
 			if (c1 != 0)
