@@ -17,7 +17,7 @@
 		private BitArray _wordAvailability;
 		private Dictionary<string, List<CandidateWordLookup>> WordLookup = new Dictionary<string, List<CandidateWordLookup>>();
 
-		internal static WordDatabase Empty = WordDatabase.Generate(Enumerable.Empty<string>());
+		public static WordDatabase Empty = WordDatabase.Generate(Enumerable.Empty<string>());
 
 		private WordDatabase()
 		{
