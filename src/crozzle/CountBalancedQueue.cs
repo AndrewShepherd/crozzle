@@ -10,7 +10,8 @@ namespace crozzle
 		private readonly SortedDictionary<int, WorkspacePriorityQueue> _queues = new SortedDictionary<int, WorkspacePriorityQueue>();
 
 		const int EachQueueLength = 80000;
-		const int LengthWhereYouJustEmptyIt = 15;
+		const int OverflowThreshold = EachQueueLength * 2 / 3;
+		const int LengthWhereYouJustEmptyIt = 35;
 		
 		int IWorkspaceQueue.Capacity => 31*EachQueueLength;
 
@@ -54,9 +55,12 @@ namespace crozzle
 							g,
 							g.Key switch
 							{
-								int n when n >= 22 => maxReturnCount - rv.Count,
-								// _ when wpq.Count > EachQueueLength * 2 / 3 => maxReturnCount - rv.Count,
-								_ => Math.Min(maxReturnCount - rv.Count, g.Count())
+								int n when n >= LengthWhereYouJustEmptyIt => maxReturnCount - rv.Count,
+								_ =>
+									Math.Min(
+										maxReturnCount - rv.Count,
+										Math.Max(wpq.Count + g.Count() - OverflowThreshold, 0)
+									)
 							}
 						)
 					);
@@ -83,7 +87,12 @@ namespace crozzle
 					}
 					if (kvp.Key >= LengthWhereYouJustEmptyIt)
 					{
-						rv.AddRange(wpq.Swap(Enumerable.Empty<WorkspaceNode>(), maxCount - rv.Count));
+						rv.AddRange(
+							wpq.Swap(
+								Enumerable.Empty<WorkspaceNode>(), 
+								maxCount - rv.Count
+							)
+						);
 					}
 					if(rv.Count >= maxCount)
 					{
@@ -103,7 +112,7 @@ namespace crozzle
 						return rv;
 					}
 				}
-				foreach (var kvp in _queues.Reverse())
+				foreach (var kvp in _queues)
 				{
 					var wpq = kvp.Value;
 					rv.AddRange(
