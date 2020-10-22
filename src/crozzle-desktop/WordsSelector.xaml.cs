@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using crozzle;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -60,19 +61,10 @@ namespace crozzle_desktop
 			OpenFileDialog ofd = new OpenFileDialog();
 			if (ofd.ShowDialog() == true)
 			{
-				List<string> words = new List<string>();
-				using (StreamReader sr = new StreamReader(ofd.FileName))
+				using(var stream = File.OpenRead(ofd.FileName))
 				{
-					while (!sr.EndOfStream)
-					{
-						var line = await sr.ReadLineAsync();
-						if (!String.IsNullOrWhiteSpace(line))
-						{
-							words.Add(line.Trim());
-						}
-					}
+					this.Words = await WordStreamReader.Read(stream);
 				}
-				this.Words = words;
 				this.ViewModel.FileName = System.IO.Path.GetFileName(ofd.FileName);
 			}
 		}
