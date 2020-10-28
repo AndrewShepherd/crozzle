@@ -85,7 +85,7 @@
 				)
 			);
 
-		private static bool RectangleIsTooBig(Rectangle rectangle)
+		public static bool RectangleIsTooBig(Rectangle rectangle)
 		{
 			if (rectangle.Width > Board.MaxWidth)
 			{
@@ -102,7 +102,7 @@
 		//  - Different wordplacements
 		//  - Different available words
 		//  - Different Score
-		internal static Workspace TryPlaceWord(this Workspace workspace, Grid grid, WordPlacement wordPlacement)
+		internal static Workspace? TryPlaceWord(this Workspace workspace, Grid grid, WordPlacement wordPlacement)
 		{
 			var rectangle = wordPlacement.GetRectangle();
 			var newWorkspace = workspace.ExpandSize(
@@ -323,7 +323,7 @@
 					throw new Exception("Invalid grid state");
 				}
 
-				PartialWord partialWord = null;
+				PartialWord? partialWord = null;
 				if (gridCell.Slot.Direction == Direction.Across)
 				{
 					while (gridCells[moveRight(probe)].HasLetter)
@@ -454,10 +454,6 @@
 					)
 					{
 						success = false;
-					}
-					else
-					{
-						int dummy = 3;
 					}
 				}
 			}
@@ -618,7 +614,7 @@
 			//	slotEntry.Slot.Direction
 			//);
 
-		private static bool TryCombineWorkspaces(Workspace w1, Grid w1Grid, Workspace w2, out Workspace combined)
+		private static bool TryCombineWorkspaces(Workspace w1, Grid w1Grid, Workspace w2, out Workspace? combined)
 		{
 			var newRectangle = w2.GetCurrentRectangle().Union(w1.GetCurrentRectangle());
 			if (RectangleIsTooBig(newRectangle))
@@ -659,7 +655,7 @@
 			{
 				return false;
 			}
-			var grid = w1Grid;
+			Grid? grid = w1Grid;
 			foreach (var w2Placement in justInW2)
 			{
 				grid = grid ?? w1.GenerateGrid();
@@ -669,10 +665,14 @@
 				{
 					return false;
 				}
-				w1 = w1.TryPlaceWord(grid, w2Placement);
-				if (w1 == null)
+				Workspace? w1Attempt = w1.TryPlaceWord(grid, w2Placement);
+				if (w1Attempt == null)
 				{
 					return false;
+				}
+				else
+				{
+					w1 = w1Attempt;
 				}
 				grid = null;
 			}

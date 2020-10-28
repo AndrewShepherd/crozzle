@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\crozzle-graph\crozzle-graph.csproj" />
     <ProjectReference Include="..\crozzle\crozzle.csproj" />
   </ItemGroup>
 

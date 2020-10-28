@@ -12,9 +12,10 @@
 
 	public class WordDatabase
 	{
-		private string[] _wordArray;
-		private Dictionary<string, int> _wordArrayIndex;
-		private BitArray _wordAvailability;
+		static BitArray EmptyBitArray = new BitArray(0);
+		private string[] _wordArray = new string[0];
+		private Dictionary<string, int> _wordArrayIndex = new Dictionary<string, int>();
+		private BitArray _wordAvailability = EmptyBitArray;
 		private Dictionary<string, List<CandidateWordLookup>> WordLookup = new Dictionary<string, List<CandidateWordLookup>>();
 
 		public static WordDatabase Empty = WordDatabase.Generate(Enumerable.Empty<string>());
@@ -48,6 +49,8 @@
 				_wordAvailability = wordAvailability,
 			};
 		}
+
+		public IEnumerable<string> AllWords => _wordArray;
 
 		public override int GetHashCode()
 		{

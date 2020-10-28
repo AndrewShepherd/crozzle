@@ -49,5 +49,13 @@
 				l.X + v.Dx,
 				l.Y + v.Dy
 			);
+
+		public Location Offset(Direction d, int magnitude) =>
+			d == Direction.Across
+			? new Location(this.X + magnitude, this.Y)
+			: new Location(this.X, this.Y + magnitude);
+
+		public Location Transpose() =>
+			new Location(Y, X);
 	}
 }

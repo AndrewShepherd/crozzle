@@ -8,7 +8,7 @@
 
 	public class Intersection
 	{
-		public string Word;
+		public string Word = string.Empty;
 		public int Index;
 	}
 
@@ -16,8 +16,8 @@
 	{
 		public int Score { get; set; } = 0;
 		public Board Board = Board.Empty();
-		public ImmutableList<string> IncludedWords { get; set; }
-		public ImmutableList<Intersection> Intersections { get; set; }
+		public ImmutableList<string> IncludedWords { get; set; } = ImmutableList<string>.Empty;
+		public ImmutableList<Intersection> Intersections { get; set; } = ImmutableList<Intersection>.Empty;
 
 
 		public ImmutableList<SlotEntry> SlotEntries = ImmutableList<SlotEntry>.Empty;
@@ -28,10 +28,7 @@
 			_lazyHashCode = new Lazy<int>(() => this.GenerateHashCode());
 		}
 
-		private static Workspace _empty = new Workspace();
-
-		public static Workspace Empty =>
-			_empty;
+		public static Workspace Empty { get; } = new Workspace();
 
 		public override bool Equals(object? obj)
 		{
@@ -87,20 +84,20 @@
 		public override int GetHashCode() => _lazyHashCode.Value;
 
 
-		public static Workspace Generate(IEnumerable<string> words)
-		{
-			var workspace = new Workspace()
+		public static Workspace Generate(WordDatabase wordDatabase) =>
+			new Workspace()
 			{
-				WordDatabase = WordDatabase.Generate(words),
+				WordDatabase = wordDatabase,
 				IncludedWords = ImmutableList<string>.Empty,
 				Intersections = ImmutableList<Intersection>.Empty,
 				Board = new Board
 				{
-					Rectangle = new Rectangle(new Location(0, 0), 0, 0)
+					Rectangle = Rectangle.Empty,
 				},
 			};
-			return workspace;
-		}
+
+		public static Workspace Generate(IEnumerable<string> words) =>
+			Generate(WordDatabase.Generate(words));
 
 
 		public bool IsValid { get; internal set; }

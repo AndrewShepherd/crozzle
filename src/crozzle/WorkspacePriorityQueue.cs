@@ -177,8 +177,9 @@
 			SwapDown(index);
 		}
 
-		private WorkspaceNode Pop()
+		private WorkspaceNode? Pop()
 		{
+
 			var result = _workspaces[0];
 			RemoveElementAt(0);
 			return result;
@@ -186,7 +187,7 @@
 
 		private void PurgeDuplicates()
 		{
-			Array.Sort(_workspaces, new Comparison<WorkspaceNode>(Compare));
+			Array.Sort(_workspaces, new Comparison<WorkspaceNode?>(Compare));
 			int i = 0;
 			for(int j=1; j < _workspaces.Length; ++j)
 			{

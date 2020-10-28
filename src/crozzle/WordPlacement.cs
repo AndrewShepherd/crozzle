@@ -75,6 +75,17 @@
 		public static WordPlacement Move(this WordPlacement wp, Vector v) =>
 			new WordPlacement(wp.Direction, wp.Location + v, wp.Word);
 
+		public static Direction Transpose(this Direction d) =>
+			d == Direction.Across
+			? Direction.Down
+			: Direction.Across;
+
+		public static WordPlacement Transpose(this WordPlacement wp) =>
+			new WordPlacement(
+				wp.Direction.Transpose(),
+				wp.Location.Transpose(),
+				wp.Word
+			);
 
 		public static Rectangle GetRectangleExcludingEndMarkers(this WordPlacement wp) =>
 			new Rectangle(

@@ -101,6 +101,10 @@ namespace crozzle
 
 		public int CompareTo(Board? other)
 		{
+			if(other == null)
+			{
+				return -1;
+			}
 			var c1 = this.WordPlacements.Count().CompareTo(other.WordPlacements.Count());
 			if (c1 != 0)
 			{
