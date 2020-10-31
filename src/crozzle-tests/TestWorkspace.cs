@@ -105,11 +105,25 @@ namespace crozzle_tests
 		[Test]
 		public void TestDetectAdjacenciesAcross()
 		{
-			var workspace = Workspace.Generate(new[] { "SUEZ", "ZURICH", "QUITO", "EQUADOR" });
+			Workspace? workspace = Workspace.Generate(new[] { "SUEZ", "ZURICH", "QUITO", "EQUADOR" });
 			workspace = workspace.PlaceWord(Direction.Down, "SUEZ", 0, 0);
 			workspace = workspace.PlaceWord(Direction.Across, "ZURICH", 0, 3);
 			workspace = workspace.PlaceWord(Direction.Down, "QUITO", 1, 2);
 			Assert.That(workspace.IsValid, Is.False);
+		}
+
+		[Test]
+		public void CompareLocations()
+		{
+			Assert.That(new Location(0, 0).CompareTo(null), Is.EqualTo(1));
+			Assert.That(
+				new Location(0, 0).CompareTo(new Location(1, 0)),
+				Is.EqualTo(-1)
+			);
+			Assert.That(
+				new Location(0, 0).CompareTo(new Location(0, 1)),
+				Is.EqualTo(-1)
+			);
 		}
 
 		[Test]

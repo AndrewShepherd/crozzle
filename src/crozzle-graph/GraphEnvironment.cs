@@ -7,21 +7,111 @@ using System.Text;
 
 namespace crozzle_graph
 {
+	public class IntersectionRelationships
+	{
+		public ImmutableHashSet<Intersection> Enabled
+		{
+			get;
+			internal set;
+		} = ImmutableHashSet<Intersection>.Empty;
+		public ImmutableHashSet<Intersection> Excluded
+		{
+			get;
+			internal set;
+		} = ImmutableHashSet<Intersection>.Empty;
+
+		public void Exclude(Intersection intersection)
+		{
+			this.Excluded = this.Excluded.Add(intersection);
+			this.Enabled = this.Enabled.Remove(intersection);
+		}
+
+		public void Enable(Intersection intersection)
+		{
+			this.Enabled = this.Enabled.Add(intersection);
+		}
+	}
+
 	public class GraphEnvironment
 	{
+
+		public HashSet<Intersection> Intersections
+		{ 
+			get;
+			private set;
+		} = new HashSet<Intersection>();
+
+		public Dictionary<Intersection, IntersectionRelationships> Relationships = new Dictionary<Intersection, IntersectionRelationships>();
+
+		private WordDatabase WordDatabase { get; set; } = WordDatabase.Empty;
+
+
 		public static GraphEnvironment Generate(WordDatabase wordDatabase)
 		{
 			var intersections = IntersectionBuilder.GetIntersections(wordDatabase);
+
+			var intersectionRelationships = new Dictionary<Intersection, IntersectionRelationships>();
+			foreach (var intersection in intersections)
+			{
+				intersectionRelationships.Add(
+					intersection,
+					new IntersectionRelationships()
+				);
+			}
+			var array = intersections.ToArray();
+			for (int i = 1; i < array.Length; ++i)
+			{
+				for (int j = 0; j < i; ++j)
+				{
+					var i1 = array[i];
+					var i2 = array[j];
+					var comparisonResult = Compare(
+						i1,
+						i2
+					);
+					if(comparisonResult.Relationship == IntersectionRelationship.Excludes)
+					{
+						intersectionRelationships[i1].Exclude(i2);
+						intersectionRelationships[i2].Exclude(i1);
+					}
+					else if (comparisonResult.Relationship == IntersectionRelationship.Allows)
+					{
+						var theseWords = new[]
+						{ 
+							i1.First.Word,
+							i1.Second.Word,
+							i2.First.Word,
+							i2.Second.Word 
+						}.Distinct();
+						var allCanMatch = comparisonResult
+							.WordFragmentsCreated
+							.Select(
+								f =>
+									wordDatabase
+										.ListAvailableMatchingWords(f)
+										.Where(w => !theseWords.Contains(w.Word))
+										.Any()
+							).All(_ => _);
+						if(allCanMatch)
+						{
+							intersectionRelationships[i1].Enable(i2);
+							intersectionRelationships[i2].Enable(i1);
+						}
+						else
+						{
+							intersectionRelationships[i1].Exclude(i2);
+							intersectionRelationships[i2].Exclude(i1);
+						}
+					}
+				}
+			}
 			return new GraphEnvironment
 			{
 				Intersections = new HashSet<Intersection>(intersections),
+				Relationships = intersectionRelationships,
 				WordDatabase = wordDatabase,
 			};
 		}
-
-		private HashSet<Intersection> Intersections { get; set; } = new HashSet<Intersection>();
-
-		private WordDatabase WordDatabase { get; set; } = WordDatabase.Empty;
 
 
 		private static IEnumerable<Intersection> GetAllIntersections(Workspace w)
@@ -33,9 +123,7 @@ namespace crozzle_graph
 					(int i, Location l) = (0, wordPlacement.Location);
 					i < wordPlacement.Word.Length;
 					++i,
-					l = wordPlacement.Direction == Direction.Across
-					? new Location(l.X + 1, l.Y)
-					: new Location(l.X, l.Y + 1)
+					l = l.Offset(wordPlacement.Direction, 1)
 				)
 				{
 					int index = w.Board.Rectangle.IndexOf(l);
@@ -58,6 +146,192 @@ namespace crozzle_graph
 			}
 		}
 
+		public enum IntersectionRelationship
+		{
+			Orthoganal,
+			Excludes,
+			Allows
+		};
+
+		public class IntersectionComparisonResult
+		{
+			public IntersectionRelationship Relationship
+			{
+				get;
+				set;
+			} = IntersectionRelationship.Orthoganal;
+
+			public IEnumerable<string> WordFragmentsCreated
+			{
+				get;
+				set;
+			} = Enumerable.Empty<string>();
+
+			public static IntersectionComparisonResult Excludes =
+				new IntersectionComparisonResult
+				{
+					Relationship = IntersectionRelationship.Excludes
+				};
+
+			public static IntersectionComparisonResult Orthogonal =
+				new IntersectionComparisonResult
+				{
+					Relationship = IntersectionRelationship.Orthoganal
+				};
+
+			public static IntersectionComparisonResult Allows(
+				IEnumerable<string> fragments = null
+			) =>
+				new IntersectionComparisonResult
+				{
+					Relationship = IntersectionRelationship.Allows,
+					WordFragmentsCreated = fragments ?? Enumerable.Empty<string>()
+				};
+		}
+
+		public static IntersectionComparisonResult Compare(Intersection i1, Intersection i2)
+		{
+			bool atLeastOneWordMatches = (i1.First.Word == i2.First.Word)
+				|| (i1.First.Word == i2.Second.Word)
+				|| (i1.Second.Word == i2.First.Word)
+				|| (i1.Second.Word == i2.Second.Word);
+			if (!atLeastOneWordMatches)
+			{
+				return IntersectionComparisonResult.Orthogonal;
+			}
+			if (
+				(i1.First.Word, i1.Second.Word) == (i2.First.Word, i2.Second.Word)
+			)
+			{
+				return IntersectionComparisonResult.Excludes;
+			}
+			var i1Placements = new[] { i1.First, i1.Second };
+			var i2Placements = new[] { i2.First, i2.Second };
+			foreach (var p1 in i1Placements)
+			{
+				foreach (var p2 in i2Placements)
+				{
+					if (p1.Equals(p2))
+					{
+						return IntersectionComparisonResult.Excludes;
+					}
+				}
+			}
+			var joinedByWord = i1Placements
+				.Join(
+					i2Placements,
+					p => p.Word,
+					p => p.Word,
+					(p1, p2) => Tuple.Create(p1, p2)
+				).ToArray();
+			if(joinedByWord.Length == 2)
+			{
+				return IntersectionComparisonResult.Excludes;
+			}
+			if(joinedByWord.Length == 0)
+			{
+				return IntersectionComparisonResult.Orthogonal;
+			}
+			List<string> fragments = new List<string>();
+			var matchingPlacements = joinedByWord[0];
+			if(
+				Math.Abs(
+					matchingPlacements.Item1.Index - matchingPlacements.Item2.Index
+				) > 1
+			)
+			{
+				return IntersectionComparisonResult.Allows();
+			}
+			string sharedWord = matchingPlacements.Item1.Word;
+			var other1 = i1.First == matchingPlacements.Item1 ? i1.Second : i1.First;
+			var other2 = i2.First == matchingPlacements.Item2 ? i2.Second : i2.First;
+			(other1, other2) = matchingPlacements.Item1.Index < matchingPlacements.Item2.Index
+				? (other1, other2)
+				: (other2, other1);
+			int other2Offset = other2.Index - other1.Index;
+
+			int index1 = (other2Offset > 0 ? 0 : 0 - other2Offset);
+			int index2 = index1 + other2Offset;
+			for (
+				;
+				index1 < other1.Word.Length && index2 < other2.Word.Length;
+				++index1,
+				++index2
+			)
+			{
+				if(index1 != other1.Index)
+				{
+					try
+					{
+						string fragment = new string(
+							new[]
+							{
+							other1.Word[index1],
+							other2.Word[index2]
+							}
+						);
+						fragments.Add(fragment);
+					}
+					catch(IndexOutOfRangeException ex)
+					{
+					}
+				}
+			}
+			return IntersectionComparisonResult.Allows(fragments);
+		}
+
+		public IEnumerable<Intersection> GetAvailableIntersections(
+			IntersectionSolution intersectionSolution
+		)
+		{
+			var excludedIntersections = intersectionSolution.ExcludedIntersections;
+			HashSet<Intersection> availableIntersections = new HashSet<Intersection>();
+			foreach(var i1 in intersectionSolution.Intersections)
+			{
+				foreach (var i2 in this.Intersections)
+				{
+					if (excludedIntersections.Contains(i2))
+					{
+						continue;
+					}
+					if ((
+						(i1.First.Word, i1.Second.Word)
+					) == (
+						i2.First.Word, i2.Second.Word
+					)
+					)
+					{
+						excludedIntersections = excludedIntersections.Add(i2);
+						continue;
+					}
+					if (new[] { i1.First, i1.Second }
+						.Join(
+							new[] { i2.First, i2.Second },
+							_ => _,
+							_ => _,
+							(l, r) => true
+						).Any()
+					)
+					{
+						excludedIntersections = excludedIntersections.Add(i2);
+						continue;
+					}
+					if (
+						new[] { i1.First.Word, i1.Second.Word }
+						.Join(
+							new[] { i2.First.Word, i2.Second.Word },
+							_ => _,
+							_ => _,
+							(l, r) => true
+					).Any())
+					{
+						availableIntersections.Add(i2);
+					}
+				}
+			}
+			return availableIntersections;
+		}
+
 		public IntersectionSolution Convert(Workspace w)
 		{
 			var intersections = GetAllIntersections(w)
@@ -75,11 +349,9 @@ namespace crozzle_graph
 						}
 					}
 				).ToImmutableHashSet();
-
 			return new IntersectionSolution
 			{ 
-				Workspace = w,
-				Intersections = intersections
+				Intersections = intersections,
 			};
 		}
 
@@ -92,7 +364,7 @@ namespace crozzle_graph
 			public Location Location;
 		}
 
-		public Workspace Convert(IntersectionSolution s)
+		private static IEnumerable<WordPlacement> ConvertToWordPlacements(IntersectionSolution s)
 		{
 			var adjacencyNodes = s
 				.Intersections
@@ -106,24 +378,29 @@ namespace crozzle_graph
 							Visited = false
 						}
 				).ToArray();
+			if(adjacencyNodes.Length == 0)
+			{
+				return Enumerable.Empty<WordPlacement>();
+			}
 			var wordIndexLookup = new Dictionary<string, int>();
-			for(int i = 0; i < adjacencyNodes.Length; ++i)
+			for (int i = 0; i < adjacencyNodes.Length; ++i)
 			{
 				wordIndexLookup[adjacencyNodes[i].Word] = i;
 			}
 			var adajcencyMatrix = new Intersection[adjacencyNodes.Length, adjacencyNodes.Length];
-			foreach(var intersection in s.Intersections)
+			foreach (var intersection in s.Intersections)
 			{
 				var i1 = wordIndexLookup[intersection.First.Word];
 				var i2 = wordIndexLookup[intersection.Second.Word];
 				adajcencyMatrix[i1, i2] = intersection;
 				adajcencyMatrix[i2, i1] = intersection;
 			}
+			
 
 			adjacencyNodes[0].Direction = Direction.Across;
 			adjacencyNodes[0].Location = new Location(0, 0);
 			AdjacencyNode nextUnvisited = null;
-			while ( (
+			while ((
 						nextUnvisited = adjacencyNodes.FirstOrDefault(
 							n => n.Direction.HasValue && !n.Visited
 						)
@@ -131,7 +408,7 @@ namespace crozzle_graph
 				)
 			{
 				int i = wordIndexLookup[nextUnvisited.Word];
-				for(int j = 0; j < adjacencyNodes.Length; ++j)
+				for (int j = 0; j < adjacencyNodes.Length; ++j)
 				{
 					var intersection = adajcencyMatrix[i, j];
 					if (intersection == null)
@@ -147,12 +424,12 @@ namespace crozzle_graph
 						: (intersection.Second, intersection.First)
 					);
 					var otherNode = adjacencyNodes[wordIndexLookup[otherWordAndIndex.Word]];
-					if(otherNode.Direction.HasValue)
+					if (otherNode.Direction.HasValue)
 					{
 						continue;
 					}
 					otherNode.Direction = nextUnvisited.Direction == Direction.Across
-						? Direction.Down 
+						? Direction.Down
 						: Direction.Across;
 					var intersectionLocation = nextUnvisited.Location.Offset(
 						nextUnvisited.Direction.Value,
@@ -176,30 +453,34 @@ namespace crozzle_graph
 						)
 				).ToArray();
 			var rectangle = Rectangle.Empty;
-			foreach(var wp in wordPlacements)
+			foreach (var wp in wordPlacements)
 			{
 				rectangle = Rectangle.Union(
 					rectangle,
 					wp.GetRectangle()
 				);
 			}
-			if(WorkspaceExtensions.RectangleIsTooBig(rectangle))
+			if (WorkspaceExtensions.RectangleIsTooBig(rectangle))
 			{
 				wordPlacements = wordPlacements
 					.Select(wp => wp.Transpose())
 					.ToArray();
 			}
+			return wordPlacements;
+		}
+
+		public Workspace Convert(IntersectionSolution s)
+		{
 			var workspace = Workspace.Generate(this.WordDatabase.AllWords);
-			foreach (var n in adjacencyNodes)
+			foreach(var n in ConvertToWordPlacements(s))
 			{
 				workspace = workspace.PlaceWord(
-					n.Direction.Value,
+					n.Direction,
 					n.Word,
 					n.Location.X,
 					n.Location.Y
 				);
-			}
-
+			};
 			return workspace.Normalise();
 		}
 	}

@@ -74,7 +74,7 @@
 
 		public static Rectangle GetCurrentRectangle(this Workspace workspace) => workspace.Board.Rectangle;
 
-		public static Workspace PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y) =>
+		public static Workspace? PlaceWord(this Workspace workspace, Direction direction, string word, int x, int y) =>
 			TryPlaceWord(
 				workspace,
 				workspace.GenerateGrid(),
@@ -136,11 +136,10 @@
 				{
 					newWorkspace.Score += Scoring.Score(gridCell.Slot.Letter);
 					newWorkspace.Intersections = newWorkspace.Intersections.Add(
-						new Intersection
-						{
-							Word = wordPlacement.Word,
-							Index = stringIndex
-						}
+						new Intersection(
+							new WordAndIndex(wordPlacement.Word, stringIndex),
+							gridCell.WordAndIndex
+						)
 					);
 					newWorkspace.SlotEntries = newWorkspace
 						.SlotEntries
@@ -275,7 +274,7 @@
 				)
 				{
 					var gridCell = gridCells[gridLocation];
-					gridCell.Letter = wordPlacement.Word[i];
+					gridCell.WordAndIndex= new WordAndIndex(wordPlacement.Word, i);
 					if (gridCell.CellType != GridCellType.AvailableSlot)
 					{
 						gridCell.CellType = GridCellType.Complete;

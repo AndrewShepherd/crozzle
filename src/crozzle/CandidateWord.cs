@@ -1,5 +1,8 @@
-﻿namespace crozzle
+﻿using System;
+
+namespace crozzle
 {
+	[Obsolete("Should replace this with Word And Index")]
 	public class CandidateWord
 	{
 		public string Word { get; set; } = string.Empty;

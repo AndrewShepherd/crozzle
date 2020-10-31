@@ -26,9 +26,12 @@
 			(X * 23 + Y) | (X * 27 + Y) << 17;
 
 		public int CompareTo(Location? other) =>
-			X == other.X
-			? Y.CompareTo(other.Y)
-			: X.CompareTo(other.X);
+			(other?.X) switch
+			{
+				null => 1,
+				int x when x == X => Y.CompareTo(other.Y),
+				_ => X.CompareTo(other.X)
+			};
 
 		public static bool operator !=(Location l, Location r) =>
 			!(l.Equals(r));

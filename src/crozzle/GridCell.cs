@@ -16,19 +16,21 @@ namespace crozzle
 		public override string ToString() => CellType.ToString();
 		public GridCellType CellType { get; set; } = GridCellType.Blank;
 
-		public SlotEntry SlotEntry { get; set; }
-		public Slot Slot => SlotEntry?.Slot;
-		public char Letter { get; internal set; }
+		public SlotEntry? SlotEntry { get; set; }
+		public Slot? Slot => SlotEntry?.Slot;
+		public char? Letter => WordAndIndex?.Word[WordAndIndex?.Index ?? 0];
+
+		public WordAndIndex? WordAndIndex { get; internal set; }
 
 		internal static GridCell EnforcedBlank = new GridCell
 		{ 
 			CellType = GridCellType.EndOfWordMarker
 		};
 
-		internal PartialWord PartialWordAbove { get; set; }
-		internal PartialWord PartialWordBelow { get; set; }
-		internal PartialWord PartialWordToLeft { get; set; }
-		internal PartialWord PartialWordToRight { get; set; }
+		internal PartialWord? PartialWordAbove { get; set; }
+		internal PartialWord? PartialWordBelow { get; set; }
+		internal PartialWord? PartialWordToLeft { get; set; }
+		internal PartialWord? PartialWordToRight { get; set; }
 
 		internal static GridCell FromSlot(SlotEntry slotEntry) =>
 			new GridCell

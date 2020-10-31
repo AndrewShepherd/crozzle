@@ -1,5 +1,4 @@
-﻿
-namespace crozzle_graph
+﻿namespace crozzle
 {
 	using System;
 	using System.Diagnostics.CodeAnalysis;
@@ -26,7 +25,7 @@ namespace crozzle_graph
 		public override int GetHashCode() =>
 			this.Word.GetHashCode() ^ this.Index.GetHashCode();
 
-		public override bool Equals(object obj) =>
+		public override bool Equals(object? obj) =>
 			object.ReferenceEquals(this, obj)
 			|| (
 				obj is WordAndIndex other

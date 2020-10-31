@@ -6,12 +6,6 @@
 	using System.Linq;
 	using System.Text;
 
-	public class Intersection
-	{
-		public string Word = string.Empty;
-		public int Index;
-	}
-
 	public class Workspace
 	{
 		public int Score { get; set; } = 0;
@@ -125,9 +119,9 @@
 			var cumulativeScore = 0;
 			foreach(var intersection in Intersections)
 			{
-				var score = Scoring.Score(intersection.Word[intersection.Index]);
+				var score = Scoring.Score(intersection.First.Word[intersection.First.Index]);
 				cumulativeScore += score;
-				sb.AppendLine($"{ c++}\t{intersection.Word[intersection.Index]}\t{score}\t{cumulativeScore}\t{intersection.Word}[{intersection.Index}]");
+				sb.AppendLine($"{ c++}\t{intersection.First.Word[intersection.First.Index]}\t{score}\t{cumulativeScore}\t{intersection.First.Word}[{intersection.First.Index}]");
 			}
 			sb.AppendLine();
 			sb.AppendLine($"{IncludedWords.Count}*10 + {cumulativeScore} = {IncludedWords.Count * 10 + cumulativeScore}");

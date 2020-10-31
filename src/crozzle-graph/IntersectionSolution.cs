@@ -5,9 +5,14 @@
 
 	public class IntersectionSolution
 	{
-		internal Workspace Workspace { get; set; } = Workspace.Empty;
-		internal ImmutableHashSet<Intersection> Intersections
+		public ImmutableHashSet<Intersection> Intersections
 		{ 
+			get;
+			set;
+		} = ImmutableHashSet<Intersection>.Empty;
+
+		public ImmutableHashSet<Intersection> ExcludedIntersections
+		{
 			get;
 			set;
 		} = ImmutableHashSet<Intersection>.Empty;
