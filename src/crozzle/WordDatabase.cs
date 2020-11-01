@@ -130,7 +130,7 @@
 			return wordDatabase;
 		}
 
-		public IEnumerable<CandidateWord> ListAvailableMatchingWords(string fragment)
+		public IEnumerable<WordAndIndex> ListAvailableMatchingWords(string fragment)
 		{
 			if (this.WordLookup.TryGetValue(fragment, out var wordIndexList))
 			{
@@ -139,11 +139,10 @@
 					if (this._wordAvailability[candidateWordLookup.WordIndex])
 					{
 						var word = this._wordArray[candidateWordLookup.WordIndex];
-						yield return new CandidateWord
-						{
-							Word = word,
-							MatchIndex = candidateWordLookup.MatchIndex
-						};
+						yield return new WordAndIndex(
+							word,
+							candidateWordLookup.MatchIndex
+						);
 					}
 				}
 			}

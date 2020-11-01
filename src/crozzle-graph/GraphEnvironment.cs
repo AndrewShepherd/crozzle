@@ -284,52 +284,25 @@ namespace crozzle_graph
 			IntersectionSolution intersectionSolution
 		)
 		{
-			var excludedIntersections = intersectionSolution.ExcludedIntersections;
-			HashSet<Intersection> availableIntersections = new HashSet<Intersection>();
-			foreach(var i1 in intersectionSolution.Intersections)
-			{
-				foreach (var i2 in this.Intersections)
-				{
-					if (excludedIntersections.Contains(i2))
-					{
-						continue;
-					}
-					if ((
-						(i1.First.Word, i1.Second.Word)
-					) == (
-						i2.First.Word, i2.Second.Word
-					)
-					)
-					{
-						excludedIntersections = excludedIntersections.Add(i2);
-						continue;
-					}
-					if (new[] { i1.First, i1.Second }
-						.Join(
-							new[] { i2.First, i2.Second },
-							_ => _,
-							_ => _,
-							(l, r) => true
-						).Any()
-					)
-					{
-						excludedIntersections = excludedIntersections.Add(i2);
-						continue;
-					}
-					if (
-						new[] { i1.First.Word, i1.Second.Word }
-						.Join(
-							new[] { i2.First.Word, i2.Second.Word },
-							_ => _,
-							_ => _,
-							(l, r) => true
-					).Any())
-					{
-						availableIntersections.Add(i2);
-					}
-				}
-			}
-			return availableIntersections;
+			var relationships = intersectionSolution
+				.Intersections
+				.Select(i => this.Relationships[i])
+				.ToList();
+
+			var exclusions = relationships
+				.Select(r => r.Excluded)
+				.Aggregate(
+					intersectionSolution.ExcludedIntersections,
+					(l, r) => l.Union(r)
+				);
+			var inclusions = relationships
+				.Select(r => r.Enabled.Except(exclusions))
+				.Aggregate(
+					ImmutableHashSet<Intersection>.Empty,
+					(l, r) => l.Union(r)
+				);
+			return inclusions;
+					
 		}
 
 		public IntersectionSolution Convert(Workspace w)
@@ -344,6 +317,10 @@ namespace crozzle_graph
 						}
 						else
 						{
+							if(i.First.Word[i.First.Index] != i.Second.Word[i.Second.Index])
+							{
+								throw new InvalidOperationException("Invalid index created");
+							}
 							this.Intersections.Add(i);
 							return i;
 						}
@@ -471,7 +448,7 @@ namespace crozzle_graph
 
 		public Workspace Convert(IntersectionSolution s)
 		{
-			var workspace = Workspace.Generate(this.WordDatabase.AllWords);
+			var workspace = Workspace.Generate(this.WordDatabase);
 			foreach(var n in ConvertToWordPlacements(s))
 			{
 				workspace = workspace.PlaceWord(

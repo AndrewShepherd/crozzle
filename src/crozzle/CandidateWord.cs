@@ -23,14 +23,14 @@ namespace crozzle
 	internal static class CandidateWordExtensions
 	{
 		internal static WordPlacement CreateWordPlacement(
-			this CandidateWord candidateWord,
+			this WordAndIndex candidateWord,
 			Location location,
 			Direction direction
 		)
 		{
 			Location l = direction == Direction.Across
-				? new Location(location.X - candidateWord.MatchIndex, location.Y)
-				: new Location(location.X, location.Y - candidateWord.MatchIndex);
+				? new Location(location.X - candidateWord.Index, location.Y)
+				: new Location(location.X, location.Y - candidateWord.Index);
 			return new WordPlacement
 			(
 				direction,

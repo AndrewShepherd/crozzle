@@ -12,13 +12,7 @@
 			for (var letter = 'A'; letter <= 'Z'; ++letter)
 			{
 				var candidateWords = wordDatabase.ListAvailableMatchingWords($"{letter}")
-					.Select(
-						cw =>
-							new WordAndIndex(
-								cw.Word,
-								cw.MatchIndex
-							)
-					).ToArray();
+					.ToArray();
 				for (int i = 0; i < candidateWords.Length; ++i)
 				{
 					for (int j = i + 1; j < candidateWords.Length; ++j)

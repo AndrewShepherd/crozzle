@@ -8,13 +8,25 @@ namespace crozzle
 {
 	public class SlotEntry : IComparable<SlotEntry>
 	{
-		public Slot Slot { get; set; }
-		public ImmutableHashSet<CandidateWord> CandidateWords = ImmutableHashSet<CandidateWord>.Empty;
-
-		public int CompareTo(SlotEntry? other)
+		public Slot Slot { get; private set; }
+		public ImmutableHashSet<WordAndIndex>? CandidateWords
 		{
-			return this.Slot.CompareTo(other.Slot);
+			get;
+			private set;
 		}
+
+		public SlotEntry(Slot slot, ImmutableHashSet<WordAndIndex>? candidateWords)
+		{
+			this.Slot = slot;
+			this.CandidateWords = candidateWords;
+		}
+
+		public int CompareTo(SlotEntry? other) =>
+			other switch
+			{
+				null => 1,
+				_ => this.Slot.CompareTo(other.Slot)
+			};
 
 		public override int GetHashCode()
 		{
@@ -68,20 +80,20 @@ namespace crozzle
 	{
 		public static SlotEntry Move(this SlotEntry slotEntry, Vector diff) =>
 			new SlotEntry
-			{
-				Slot = slotEntry.Slot.Move(diff),
-				CandidateWords = slotEntry.CandidateWords
-			};
+			(
+				slotEntry.Slot.Move(diff),
+				slotEntry.CandidateWords
+			);
 
 		public static SlotEntry RemoveCandidateWords(
 			this SlotEntry slotEntry,
-			IEnumerable<CandidateWord> candidateWords
+			IEnumerable<WordAndIndex> candidateWords
 		) =>
 			new SlotEntry
-			{
-				Slot = slotEntry.Slot,
-				CandidateWords = slotEntry.CandidateWords.Except(candidateWords),
-			};
+			(
+				slotEntry.Slot,
+				slotEntry.CandidateWords?.Except(candidateWords)
+			);
 
 		public static ImmutableList<SlotEntry> Remove(this ImmutableList<SlotEntry> slotEntries, Slot slot)
 		{
@@ -101,7 +113,7 @@ namespace crozzle
 			return oldEntry == null ? slotEntries : slotEntries.Replace(oldEntry, slotEntry);
 		}
 
-		public static ImmutableList<SlotEntry> RemoveCandidateWords(this ImmutableList<SlotEntry> slotEntries, SlotEntry slotEntry, IEnumerable<CandidateWord> candidateWords)
+		public static ImmutableList<SlotEntry> RemoveCandidateWords(this ImmutableList<SlotEntry> slotEntries, SlotEntry slotEntry, IEnumerable<WordAndIndex> candidateWords)
 		{
 			var entry = slotEntries.FirstOrDefault(se => se.Slot.Equals(slotEntry.Slot));
 			if(entry == null)
@@ -112,7 +124,7 @@ namespace crozzle
 			return slotEntries.Replace(entry, newEntry);
 		}
 
-		static ImmutableHashSet<CandidateWord> SafeIntersect(this ImmutableHashSet<CandidateWord> c1, ImmutableHashSet<CandidateWord> c2)
+		static ImmutableHashSet<WordAndIndex>? SafeIntersect(this ImmutableHashSet<WordAndIndex>? c1, ImmutableHashSet<WordAndIndex>? c2)
 		{
 			if(c1 == null)
 			{
@@ -137,10 +149,11 @@ namespace crozzle
 				slotEntries = slotEntries.Replace(
 					matching,
 					new SlotEntry
-					{
-						Slot = matching.Slot,
-						CandidateWords = matching.CandidateWords.SafeIntersect(se2.CandidateWords)
-					}
+					(
+						matching.Slot,
+						matching.CandidateWords
+							.SafeIntersect(se2.CandidateWords)
+					)
 				);
 			}
 			return slotEntries;
