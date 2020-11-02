@@ -20,9 +20,9 @@ namespace crozzle
 			$"{Word}[{MatchIndex}]";
 	}
 
-	internal static class CandidateWordExtensions
+	public static class WordAndIndexExtensions
 	{
-		internal static WordPlacement CreateWordPlacement(
+		public static WordPlacement CreateWordPlacement(
 			this WordAndIndex candidateWord,
 			Location location,
 			Direction direction

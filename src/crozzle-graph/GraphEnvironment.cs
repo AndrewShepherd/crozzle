@@ -43,7 +43,7 @@ namespace crozzle_graph
 
 		public Dictionary<Intersection, IntersectionRelationships> Relationships = new Dictionary<Intersection, IntersectionRelationships>();
 
-		private WordDatabase WordDatabase { get; set; } = WordDatabase.Empty;
+		public WordDatabase WordDatabase { get; private set; } = WordDatabase.Empty;
 
 
 		public static GraphEnvironment Generate(WordDatabase wordDatabase)
@@ -457,6 +457,10 @@ namespace crozzle_graph
 					n.Location.X,
 					n.Location.Y
 				);
+				if(workspace == null)
+				{
+					return null;
+				}
 			};
 			return workspace.Normalise();
 		}

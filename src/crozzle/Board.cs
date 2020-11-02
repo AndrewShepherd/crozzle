@@ -148,45 +148,7 @@ namespace crozzle
 		public static Func<Location, Location> Move(int dx, int dy) =>
 			l => new Location(l.X + dx, l.Y + dy);
 
-		public static Func<Location, Location> MoveLeft =>
-			Move(-1, 0);
-
-		public static Func<Location, Location> MoveRight =>
-			Move(1, 0);
-
-		public static Func<Location, Location> MoveUp =>
-			Move(0, -1);
-
-		public static Func<Location, Location> MoveDown =>
-			Move(0, 1);
-
-		public static PartialWord GetContiguousTextAt(this Board board, Direction direction, Location location)
-		{
-			(var back, var forward) = direction == Direction.Across
-				? (MoveLeft, MoveRight)
-				: (MoveUp, MoveDown);
-			Location start = location;
-			while (Char.IsLetter(board.CharAt(back(start))))
-			{
-				start = back(start);
-			}
-			List<char> list = new List<char>();
-			list.Add(board.CharAt(start));
-			Location end = start;
-
-			while (Char.IsLetter(board.CharAt(forward(end))))
-			{
-				end = forward(end);
-				list.Add(board.CharAt(end));
-			}
-			return new PartialWord
-			{
-				Direction = direction,
-				Value = new string(list.ToArray()),
-				Rectangle = new Rectangle(start, end)
-			};
-		}
-
+	
 		public static Board PlaceWord(this Board board, WordPlacement wordPlacement) =>
 			new Board
 			{
@@ -195,49 +157,6 @@ namespace crozzle
 					wordPlacement
 				)
 			};
-
-		public static bool CanPlaceWord(this Board board, Direction direction, string word, Location location)
-		{
-			var wordPlacement = new WordPlacement(direction, location, word);
-			var r = wordPlacement.GetRectangle()
-				.Union(board.Rectangle);
-			if ((r.Width > Board.MaxWidth) || (r.Height > Board.MaxHeight))
-				return false;
-
-			(
-				var startMarkerLocation,
-				var endMarkerLocation
-			) = direction == Direction.Across
-			? (new Location(location.X - 1, location.Y), new Location(location.X + word.Length, location.Y))
-			: (new Location(location.X, location.Y - 1), new Location(location.X, location.Y + word.Length));
-
-			var startMarker = board.CharAt(startMarkerLocation);
-			var endMarker = board.CharAt(endMarkerLocation);
-
-			if (!((startMarker == '*') || (startMarker == (char)0)))
-				return false;
-			if (!((endMarker == '*') || (endMarker == (char)0)))
-				return false;
-
-			for (int i = 0; i < word.Length; ++i)
-			{
-				
-				var l = direction == Direction.Down
-					? new Location(location.X, location.Y + i)
-					: new Location(location.X + i, location.Y);
-				var c = board.CharAt(l);
-				if (c != (char)0)
-				{
-					if (word[i] != c)
-					{
-						return false;
-					}
-
-
-				}
-			}
-			return true;
-		}
 
 		public static Board ExpandSize(this Board board, Rectangle newRectangle) =>
 			new Board

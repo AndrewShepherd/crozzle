@@ -35,8 +35,39 @@ namespace crozzle_graph_desktop
 				yield break;
 			}
 			var workspace = graphEnvironment.Convert(intersectionSolution);
+			if(workspace == null)
+			{
+				yield break;
+			}
 
-			var nextIntersection = availableIntersections.First();
+			var grid = workspace.GenerateGrid();
+			Intersection nextIntersection = null;
+			if(!workspace.IsValid)
+			{
+				var partialWord = grid.PartialWords.First();
+				// TODO: Get the cell word and index
+				var cell = grid.CellAt(partialWord.Rectangle.TopLeft);
+				var item1 = cell.WordAndIndex;
+				var matchingWords = graphEnvironment.WordDatabase.ListAvailableMatchingWords(partialWord.Value);
+				foreach(var wordAndIndex in matchingWords)
+				{
+					var newIntersection = new Intersection(
+						item1,
+						wordAndIndex
+					);
+					if(availableIntersections.Contains(newIntersection))
+					{
+						nextIntersection = newIntersection;
+						break;
+					}
+				}
+				if (nextIntersection == null)
+				{
+					yield break;
+				}
+			}
+
+			nextIntersection = nextIntersection ?? availableIntersections.First();
 
 			WordPlacement newWordPlacement = null;
 			// How do I convert this into a wordPlacement
@@ -85,8 +116,28 @@ namespace crozzle_graph_desktop
 				var newWorkspace = workspace.PlaceWord(newWordPlacement);
 				if (newWorkspace != null)
 				{
-					var newSolution = graphEnvironment.Convert(newWorkspace);
+					IntersectionSolution newSolution = null;
+					try
+					{
+						newSolution = graphEnvironment.Convert(newWorkspace);
+					}
+					catch(Exception ex)
+					{
+						var testWorkspace = workspace.PlaceWord(newWordPlacement);
+						yield break;
+					}
 					newSolution.ExcludedIntersections = intersectionSolution.ExcludedIntersections;
+					// One final test
+					var c = graphEnvironment.Convert(newSolution);
+					if(c == null)
+					{
+						throw new InvalidOperationException();
+					}
+					var c2 = graphEnvironment.Convert(c);
+					if(c2 == null)
+					{
+						throw new InvalidOperationException();
+					}
 					yield return newSolution;
 					var newlyAddedIntersections = newSolution.Intersections
 						.Except(intersectionSolution.Intersections);
@@ -128,14 +179,15 @@ namespace crozzle_graph_desktop
 			stack.Push(solution);
 			while(stack.TryPop(out IntersectionSolution s))
 			{
+				if(stack.Count == 0)
+				{
+					int dummy = 3;
+				}
 				foreach(var splitSolution in Split(s, graphEnvironment))
 				{
 					stack.Push(splitSolution);
 				}
 			}
-			
-			var intersections = IntersectionBuilder.GetIntersections(wordDatabase).ToArray();
-			int l = intersections.Length;
 		}
 
 		public MainWindowViewModel()

@@ -4,14 +4,14 @@ using System.Text;
 
 namespace crozzle
 {
-	enum GridCellType {
+	public enum GridCellType {
 		Blank, // Currently Blank, can be filled
 		EndOfWordMarker, // Currently Blank, must remain blank
 		BlankNoAdjacentSlots, // Currently blank because there is an adjacent cell that is not a slot
 		AvailableSlot, // Has a letter, can be intersected with
 		Complete // Has a letter, but cannot be intersected with
 	};
-	class GridCell
+	public class GridCell
 	{
 		public override string ToString() => CellType.ToString();
 		public GridCellType CellType { get; set; } = GridCellType.Blank;

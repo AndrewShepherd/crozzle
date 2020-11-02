@@ -5,12 +5,12 @@ using System.Text;
 
 namespace crozzle
 {
-	 class Grid
+	public class Grid
 	{
 		internal Rectangle Rectangle { get; set; }
 		internal GridCell[] Cells { get; set; }
 
-		internal HashSet<PartialWord> PartialWords = new HashSet<PartialWord>();
+		public HashSet<PartialWord> PartialWords = new HashSet<PartialWord>();
 	}
 
 	class RowIndexAndRange
@@ -29,7 +29,7 @@ namespace crozzle
 		public override string ToString() => $"{RowIndex}: {Range?.ToString()}";
 	}
 
-	internal static class GridExtensions
+	public static class GridExtensions
 	{
 		internal static void RemoveSlot(this Grid grid, Slot slot)
 		{
@@ -37,7 +37,7 @@ namespace crozzle
 			grid.Cells[index] = GridCell.Complete;
 		}
 
-		internal static GridCell CellAt(this Grid grid, Location location)
+		public static GridCell CellAt(this Grid grid, Location location)
 		{
 			if(grid.Rectangle.Contains(location))
 			{

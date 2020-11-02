@@ -122,11 +122,27 @@
 			newWorkspace.WordDatabase = newWorkspace.WordDatabase.Remove(wordPlacement.Word);
 			newWorkspace.IncludedWords = newWorkspace.IncludedWords.Add(wordPlacement.Word);
 			newWorkspace.Score = workspace.Score + Scoring.ScorePerWord;
-			int advanceIncrement = wordPlacement.Direction == Direction.Across
-				? 1
-				: newWorkspace.Board.Rectangle.Width;
-			int x = wordPlacement.Location.X;
-			int y = wordPlacement.Location.Y;
+
+			var beforeStart = grid.CellAt(
+				wordPlacement.Location.Offset(
+					wordPlacement.Direction,
+					-1
+				)
+			);
+			if(!beforeStart.CanPlaceEndOfWordMarker)
+			{
+				return null;
+			}
+			var afterEnd = grid.CellAt(
+				wordPlacement.Location.Offset(
+					wordPlacement.Direction,
+					wordPlacement.Word.Length
+				)
+			);
+			if(!afterEnd.CanPlaceEndOfWordMarker)
+			{
+				return null;
+			}
 
 			Vector locationIncrement = wordPlacement.Direction == Direction.Across
 				? new Vector(1, 0)
@@ -144,6 +160,10 @@
 					&& (gridCell.WordAndIndex != null)
 				)
 				{
+					if(gridCell.Letter != wordPlacement.Word[stringIndex])
+					{
+						return null;
+					}
 					newWorkspace.Score += Scoring.Score(gridCell.Slot.Letter);
 					newWorkspace.Intersections = newWorkspace.Intersections.Add(
 						new Intersection(
@@ -241,7 +261,7 @@
 			return result;
 		}
 
-		internal static Grid GenerateGrid(this Workspace workspace)
+		public static Grid GenerateGrid(this Workspace workspace)
 		{
 			GridCell[] gridCells = new GridCell[workspace.Board.Rectangle.Area];
 			Func<int, int> moveUp = n => n - workspace.Board.Rectangle.Width,
@@ -584,7 +604,7 @@
 			}
 		}
 
-		internal static IEnumerable<WordPlacement> GetCandidateWordPlacements(
+		public static IEnumerable<WordPlacement> GetCandidateWordPlacements(
 			this Workspace workspace,
 			string fragment,
 			Location location,
