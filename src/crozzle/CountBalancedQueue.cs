@@ -11,7 +11,11 @@ namespace crozzle
 
 		const int EachQueueLength = 80000;
 		const int OverflowThreshold = EachQueueLength * 2 / 3;
+<<<<<<< Updated upstream
 		const int LengthWhereYouJustEmptyIt = 32;
+=======
+		const int LengthWhereYouJustEmptyIt = 30;
+>>>>>>> Stashed changes
 		
 		int IWorkspaceQueue.Capacity => 31*EachQueueLength;
 

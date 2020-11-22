@@ -67,6 +67,7 @@
 
 		private static Func<Workspace, Workspace, int>[] ScoreFirstComparisonFunctions = new[]
 		{
+			(w1, w2) => w2.Intersections.Count.CompareTo(w1.Intersections.Count()),
 			(w1, w2) => w2.Score.CompareTo(w1.Score), // Deliberately reversing them
 			(w1, w2) => w2.Intersections.Count().CompareTo(w1.Intersections.Count()),
 			CompareProperties(_ => _.IncludedWords.Count()),

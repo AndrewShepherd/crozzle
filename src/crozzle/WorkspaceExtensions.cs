@@ -108,7 +108,7 @@
 		//  - Different wordplacements
 		//  - Different available words
 		//  - Different Score
-		internal static Workspace? TryPlaceWord(this Workspace workspace, Grid grid, WordPlacement wordPlacement)
+		public static Workspace? TryPlaceWord(this Workspace workspace, Grid grid, WordPlacement wordPlacement)
 		{
 			var rectangle = wordPlacement.GetRectangle();
 			var newWorkspace = workspace.ExpandSize(

@@ -113,7 +113,7 @@ namespace crozzle_graph_desktop
 			}
 			if (newWordPlacement != null)
 			{
-				var newWorkspace = workspace.PlaceWord(newWordPlacement);
+				var newWorkspace = workspace.TryPlaceWord(grid, newWordPlacement);
 				if (newWorkspace != null)
 				{
 					IntersectionSolution newSolution = null;

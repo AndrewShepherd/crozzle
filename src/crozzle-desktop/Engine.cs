@@ -122,6 +122,14 @@ namespace crozzle_desktop
 						Board.MaxHeight)
 					);
 			}
+			var bestWord = this.Words
+				.OrderByDescending(w => Scoring.Score(w))
+				.First();
+			return new[]
+			{
+				workspace.PlaceWord(Direction.Across, bestWord, 0, 0),
+				workspace.PlaceWord(Direction.Down, bestWord, 0, 0)
+			};
 			var workspaces = this.Words
 				.Select(word => workspace.PlaceWord(Direction.Across, word, 0, 0))
 				.ToArray();
