@@ -30,14 +30,20 @@
 		public override int GetHashCode() => this.Workspace.GetHashCode();
 	}
 
+	public enum Preference { IntersectionCount, WordCount };
 
 	public class WorkspacePriorityQueue : IWorkspaceQueue
 	{
 		readonly WorkspaceNode?[] _workspaces; 
 		int _length = 0;
-		public WorkspacePriorityQueue(int queueLength)
+		public WorkspacePriorityQueue(int queueLength, Preference preference = Preference.WordCount)
 		{
 			_workspaces = new WorkspaceNode[queueLength];
+			this.ComparisonFunctionsToUse = preference switch
+			{
+				Preference.IntersectionCount => IntersectionsFirstComparisonFunctions,
+				_ => ScoreFirstComparisonFunctions
+			};
 		}
 
 		public int Capacity => _workspaces.Length;
@@ -50,15 +56,27 @@
 		private static Func<Workspace, Workspace, int> CompareProperties<T>(Func<Workspace, T> f) where T : IComparable<T> =>
 			(w1, w2) => f(w1).CompareTo(f(w2));
 
-		private static Func<Workspace, Workspace, int>[] ComparisonFunctions = new[]
+		private static Func<Workspace, Workspace, int>[] IntersectionsFirstComparisonFunctions = new[]
 		{
+			(w1, w2) => w2.Intersections.Count().CompareTo(w1.Intersections.Count()), 
 			(w1, w2) => w2.Score.CompareTo(w1.Score), // Deliberately reversing them
 			CompareProperties(_ => _.IncludedWords.Count()),
 			CompareProperties(_ => _.Board),
 			CompareProperties(_ => _.GetHashCode())
 		};
 
-		public static int Compare(Workspace? w1, Workspace? w2)
+		private static Func<Workspace, Workspace, int>[] ScoreFirstComparisonFunctions = new[]
+		{
+			(w1, w2) => w2.Score.CompareTo(w1.Score), // Deliberately reversing them
+			(w1, w2) => w2.Intersections.Count().CompareTo(w1.Intersections.Count()),
+			CompareProperties(_ => _.IncludedWords.Count()),
+			CompareProperties(_ => _.Board),
+			CompareProperties(_ => _.GetHashCode())
+		};
+
+		private readonly Func<Workspace, Workspace, int>[] ComparisonFunctionsToUse;
+
+		public int Compare(Workspace? w1, Workspace? w2)
 		{
 			if(object.ReferenceEquals(w1, w2))
 			{
@@ -72,7 +90,7 @@
 			{
 				return 1;
 			}
-			foreach(var f in ComparisonFunctions)
+			foreach(var f in ComparisonFunctionsToUse)
 			{
 				var c = f(w1, w2);
 				if(c != 0)
@@ -83,7 +101,7 @@
 			return 0;
 		}
 
-		public static int Compare(WorkspaceNode? w1, WorkspaceNode? w2) =>
+		public int Compare(WorkspaceNode? w1, WorkspaceNode? w2) =>
 			Compare(w1?.Workspace, w2?.Workspace);
 
 		private void SwapUp(int i)
