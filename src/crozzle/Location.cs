@@ -2,42 +2,20 @@
 {
 	using System;
 
-	public class Location : IComparable<Location>
+	public sealed record Location(int X, int Y) : IComparable<Location>
 	{
-		public readonly int X;
-		public readonly int Y;
-		public Location(int x, int y)
+		public int CompareTo(Location? other)
 		{
-			this.X = x;
-			this.Y = y;
+			return other switch
+			{
+				null => 1,
+				Location l when l.X == this.X  => this.Y.CompareTo(l.Y),
+				_ => this.X.CompareTo(other.X),
+			};
 		}
 
 		public override string ToString() =>
 			$"({X}, {Y})";
-
-		public override bool Equals(object? obj) =>
-			object.ReferenceEquals(this, obj)
-			||
-			(
-				(obj is Location l) && (l.X == X) && (l.Y == Y)
-			);
-
-		public override int GetHashCode() =>
-			(X * 23 + Y) | (X * 27 + Y) << 17;
-
-		public int CompareTo(Location? other) =>
-			(other?.X) switch
-			{
-				null => 1,
-				int x when x == X => Y.CompareTo(other.Y),
-				_ => X.CompareTo(other.X)
-			};
-
-		public static bool operator !=(Location l, Location r) =>
-			!(l.Equals(r));
-
-		public static bool operator ==(Location l, Location r) =>
-			l.Equals(r);
 
 		public static Vector operator -(Location l, Location r) =>
 			new Vector
@@ -60,5 +38,7 @@
 
 		public Location Transpose() =>
 			new Location(Y, X);
+
 	}
+
 }

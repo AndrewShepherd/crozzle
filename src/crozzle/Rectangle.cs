@@ -95,43 +95,48 @@
 			Action<Location> handleCell
 		)
 		{
-			Location lineBeginning = null;
-			Location lineEnd = null;
-			Location terminationPoint = null;
-			Vector lineIncrement = null;
-			Vector cellIncrement = null;
-
-			switch (traversalDirection)
+			(
+				Location lineBeginning,
+				Location lineEnd,
+				Location terminationPoint,
+				Vector lineIncrement,
+				Vector cellIncrement
+			) = traversalDirection switch
 			{
-				case TraversalDirection.LeftToRight:
-					lineBeginning = rectangle.TopLeft;
-					lineEnd = new Location(rectangle.Right + 1, rectangle.Top);
-					terminationPoint = new Location(rectangle.Left, rectangle.Bottom + 1);
-					lineIncrement = Vectors.DownOne;
-					cellIncrement = Vectors.RightOne;
-					break;
-				case TraversalDirection.RightToLeft:
-					lineBeginning = new Location(rectangle.Right, rectangle.Top);
-					lineEnd = new Location(rectangle.Left - 1, rectangle.Top);
-					terminationPoint = new Location(rectangle.Right, rectangle.Bottom + 1);
-					lineIncrement = Vectors.DownOne;
-					cellIncrement = Vectors.LeftOne;
-					break;
-				case TraversalDirection.UpToDown:
-					lineBeginning = rectangle.TopLeft;
-					lineEnd = new Location(rectangle.Left, rectangle.Bottom + 1);
-					terminationPoint = new Location(rectangle.Right + 1, rectangle.Top);
-					lineIncrement = Vectors.RightOne;
-					cellIncrement = Vectors.DownOne;
-					break;
-				case TraversalDirection.DownToUp:
-					lineBeginning = new Location(rectangle.Left, rectangle.Bottom);
-					lineEnd = new Location(rectangle.Left, rectangle.Top - 1);
-					terminationPoint = new Location(rectangle.Right + 1, rectangle.Bottom);
-					lineIncrement = Vectors.RightOne;
-					cellIncrement = Vectors.UpOne;
-					break;
-			}
+				TraversalDirection.LeftToRight =>
+				(
+					rectangle.TopLeft,
+					new Location(rectangle.Right + 1, rectangle.Top),
+					new Location(rectangle.Left, rectangle.Bottom + 1),
+					Vectors.DownOne,
+					Vectors.RightOne
+				),
+				TraversalDirection.RightToLeft =>
+				(
+					new Location(rectangle.Right, rectangle.Top),
+					new Location(rectangle.Left - 1, rectangle.Top),
+					new Location(rectangle.Right, rectangle.Bottom + 1),
+					Vectors.DownOne,
+					Vectors.LeftOne
+				),
+				TraversalDirection.UpToDown =>
+				(
+					rectangle.TopLeft,
+					new Location(rectangle.Left, rectangle.Bottom + 1),
+					new Location(rectangle.Right + 1, rectangle.Top),
+					Vectors.RightOne,
+					Vectors.DownOne
+				),
+				TraversalDirection.DownToUp =>
+				(
+					new Location(rectangle.Left, rectangle.Bottom),
+					new Location(rectangle.Left, rectangle.Top - 1),
+					new Location(rectangle.Right + 1, rectangle.Bottom),
+					Vectors.RightOne,
+					Vectors.UpOne
+				),
+				_ => throw new InvalidOperationException("Not all traversal directions handled")
+			};
 
 			for (
 				;

@@ -11,11 +11,7 @@ namespace crozzle
 
 		const int EachQueueLength = 80000;
 		const int OverflowThreshold = EachQueueLength * 2 / 3;
-<<<<<<< Updated upstream
-		const int LengthWhereYouJustEmptyIt = 32;
-=======
 		const int LengthWhereYouJustEmptyIt = 30;
->>>>>>> Stashed changes
 		
 		int IWorkspaceQueue.Capacity => 31*EachQueueLength;
 
@@ -42,7 +38,7 @@ namespace crozzle
 			{
 				lock(mutex)
 				{
-					WorkspacePriorityQueue wpq = null;
+					WorkspacePriorityQueue? wpq = null;
 					if (!(
 						_queues.TryGetValue(
 							g.Key,
@@ -50,7 +46,7 @@ namespace crozzle
 						)
 					))
 					{
-						wpq = new WorkspacePriorityQueue(EachQueueLength, g.Key % 2 == 1 ? Preference.WordCount : Preference.IntersectionCount);
+						wpq = new WorkspacePriorityQueue(EachQueueLength);
 						_queues.Add(g.Key, wpq);
 					}
 					
@@ -107,10 +103,7 @@ namespace crozzle
 						rv.AddRange(
 							wpq.Swap(
 								Enumerable.Empty<WorkspaceNode>(),
-								Math.Min(
-									maxCount - rv.Count,
-									Math.Max(wpq.Count- OverflowThreshold, 0)
-								)
+								maxCount - rv.Count
 							)
 						);
 					}
