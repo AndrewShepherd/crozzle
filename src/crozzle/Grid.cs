@@ -7,7 +7,7 @@ namespace crozzle
 {
 	public class Grid
 	{
-		internal Rectangle Rectangle { get; set; }
+		internal Rectangle Rectangle { get; init; }
 		internal GridCell[] Cells { get; set; }
 
 		public HashSet<PartialWord> PartialWords = new HashSet<PartialWord>();

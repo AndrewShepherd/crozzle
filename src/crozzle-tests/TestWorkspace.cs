@@ -14,8 +14,13 @@ namespace crozzle_tests
 		[Test]
 		public void TestOneWord()
 		{
-			var workspace = Workspace.Generate(new[] { "Apple" });
+			Workspace? workspace = Workspace.Generate(new[] { "Apple" });
 			workspace = workspace.PlaceWord(Direction.Across, "Apple", 0, 0);
+			Assert.That(workspace, Is.Not.Null);
+			if(workspace == null)
+			{
+				throw new System.Exception("Assertion failed");
+			}
 			Assert.That(workspace.Board.Rectangle.TopLeft.X, Is.EqualTo(-1));
 			Assert.That(workspace.Board.Rectangle.TopLeft.Y, Is.EqualTo(0));
 			Assert.That(workspace.Board.Rectangle.Width, Is.EqualTo(7));
@@ -39,8 +44,8 @@ namespace crozzle_tests
 		public void TestDetectAdjacencies()
 		{
 			var workspace = Workspace.Generate(new[] { "A", "B", "CAB" });
-			var workspaceOne = workspace.PlaceWord(Direction.Across, "A", 3, 3);
-			var workspaceTwo = workspaceOne.PlaceWord(Direction.Across, "B", 3, 4);
+			Workspace? workspaceOne = workspace.PlaceWord(Direction.Across, "A", 3, 3);
+			var workspaceTwo = workspaceOne?.PlaceWord(Direction.Across, "B", 3, 4);
 			Assert.That(workspaceTwo.IsValid, Is.False);
 			INextStepGenerator generator = new SpaceFillingNextStepGenerator(
 					new SpaceFillingGenerationSettings { MaxContiguousSpaces = int.MaxValue }
