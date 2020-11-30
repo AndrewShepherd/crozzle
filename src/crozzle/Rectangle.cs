@@ -2,11 +2,11 @@
 {
 	using System;
 
-	public class Rectangle
+	public record Rectangle
 	{
-		public readonly Location TopLeft;
-		public readonly int Width;
-		public readonly int Height;
+		public Location TopLeft { get; init; }
+		public int Width { get; init; }
+		public int Height { get; init; }
 
 		public int Left => TopLeft.X;
 		public int Top => TopLeft.Y;
@@ -66,92 +66,12 @@
 		public override string ToString() =>
 			$"({TopLeft}), {Width}x{Height}";
 
-		public override bool Equals(object? obj)
-		{
-			if (object.ReferenceEquals(this, obj))
-				return true;
-			var other = obj as Rectangle;
-			if (object.ReferenceEquals(other, null))
-				return false;
-			return this.TopLeft.Equals(other.TopLeft)
-				&& this.Width == other.Width
-				&& this.Height == other.Height;
-		}
-
-		public override int GetHashCode() =>
-			this.TopLeft.GetHashCode()
-			^ this.Width
-			^ this.Height;
 	}
 
 	enum TraversalDirection { LeftToRight, RightToLeft, UpToDown, DownToUp };
 
 	public static class RectangleExtensions
 	{
-		internal static void Traverse(
-			this Rectangle rectangle,
-			TraversalDirection traversalDirection,
-			Action handleLineStart,
-			Action<Location> handleCell
-		)
-		{
-			Location lineBeginning = null;
-			Location lineEnd = null;
-			Location terminationPoint = null;
-			Vector lineIncrement = null;
-			Vector cellIncrement = null;
-
-			switch (traversalDirection)
-			{
-				case TraversalDirection.LeftToRight:
-					lineBeginning = rectangle.TopLeft;
-					lineEnd = new Location(rectangle.Right + 1, rectangle.Top);
-					terminationPoint = new Location(rectangle.Left, rectangle.Bottom + 1);
-					lineIncrement = Vectors.DownOne;
-					cellIncrement = Vectors.RightOne;
-					break;
-				case TraversalDirection.RightToLeft:
-					lineBeginning = new Location(rectangle.Right, rectangle.Top);
-					lineEnd = new Location(rectangle.Left - 1, rectangle.Top);
-					terminationPoint = new Location(rectangle.Right, rectangle.Bottom + 1);
-					lineIncrement = Vectors.DownOne;
-					cellIncrement = Vectors.LeftOne;
-					break;
-				case TraversalDirection.UpToDown:
-					lineBeginning = rectangle.TopLeft;
-					lineEnd = new Location(rectangle.Left, rectangle.Bottom + 1);
-					terminationPoint = new Location(rectangle.Right + 1, rectangle.Top);
-					lineIncrement = Vectors.RightOne;
-					cellIncrement = Vectors.DownOne;
-					break;
-				case TraversalDirection.DownToUp:
-					lineBeginning = new Location(rectangle.Left, rectangle.Bottom);
-					lineEnd = new Location(rectangle.Left, rectangle.Top - 1);
-					terminationPoint = new Location(rectangle.Right + 1, rectangle.Bottom);
-					lineIncrement = Vectors.RightOne;
-					cellIncrement = Vectors.UpOne;
-					break;
-			}
-
-			for (
-				;
-					lineBeginning != terminationPoint;
-					lineBeginning = lineBeginning + lineIncrement,
-					lineEnd = lineEnd + lineIncrement
-				)
-			{
-				handleLineStart.Invoke();
-				for (
-					var l = lineBeginning;
-					l != lineEnd;
-					l = l + cellIncrement
-				)
-				{
-					handleCell.Invoke(l);
-				}
-			}
-		}
-
 		public static Rectangle Union(this Rectangle r1, Rectangle r2) =>
 			Rectangle.Union(r1, r2);
 
@@ -188,11 +108,6 @@
 		}
 
 		public static Rectangle Move(this Rectangle r, Vector v) =>
-			new Rectangle
-			(
-				r.TopLeft + v,
-				r.Width,
-				r.Height
-			);
+			r with { TopLeft = r.TopLeft + v };
 	}
 }

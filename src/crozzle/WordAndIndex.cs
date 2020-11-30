@@ -3,10 +3,10 @@
 	using System;
 	using System.Diagnostics.CodeAnalysis;
 
-	public class WordAndIndex : IComparable<WordAndIndex>
+	public sealed record WordAndIndex : IComparable<WordAndIndex>
 	{
-		public readonly string Word;
-		public readonly int Index;
+		public string Word { get; init; }
+		public int Index { get; init; }
 		public WordAndIndex(string word, int index)
 		{
 			this.Word = word;
@@ -21,16 +21,25 @@
 				0 => this.Index.CompareTo(other.Index),
 				int n => n
 			};
+	}
 
-		public override int GetHashCode() =>
-			this.Word.GetHashCode() ^ this.Index.GetHashCode();
-
-		public override bool Equals(object? obj) =>
-			object.ReferenceEquals(this, obj)
-			|| (
-				obj is WordAndIndex other
-				&& other.Word.Equals(this.Word)
-				&& other.Index.Equals(this.Index)
+	public static class WordAndIndexExtensions
+	{
+		public static WordPlacement CreateWordPlacement(
+			this WordAndIndex candidateWord,
+			Location location,
+			Direction direction
+		)
+		{
+			Location l = direction == Direction.Across
+				? new Location(location.X - candidateWord.Index, location.Y)
+				: new Location(location.X, location.Y - candidateWord.Index);
+			return new WordPlacement
+			(
+				direction,
+				l,
+				candidateWord.Word
 			);
+		}
 	}
 }

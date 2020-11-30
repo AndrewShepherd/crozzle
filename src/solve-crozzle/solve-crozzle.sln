@@ -16,7 +16,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "crozzle-tests", "..\crozzle
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "crozzle-graph-desktop", "..\crozzle-graph-desktop\crozzle-graph-desktop.csproj", "{530D678B-ABA8-4846-A4D1-5D333FD4D289}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "crozzle-graph", "..\crozzle-graph\crozzle-graph.csproj", "{24D4487A-AD4F-4AE0-8E51-46AACAA4C352}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "crozzle-graph", "..\crozzle-graph\crozzle-graph.csproj", "{24D4487A-AD4F-4AE0-8E51-46AACAA4C352}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "crozzle-controls", "..\crozzle-controls\crozzle-controls.csproj", "{C8CF5806-5A3B-4D1E-BF3B-8722D607DC43}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,6 +50,10 @@ Global
 		{24D4487A-AD4F-4AE0-8E51-46AACAA4C352}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{24D4487A-AD4F-4AE0-8E51-46AACAA4C352}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{24D4487A-AD4F-4AE0-8E51-46AACAA4C352}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8CF5806-5A3B-4D1E-BF3B-8722D607DC43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8CF5806-5A3B-4D1E-BF3B-8722D607DC43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8CF5806-5A3B-4D1E-BF3B-8722D607DC43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8CF5806-5A3B-4D1E-BF3B-8722D607DC43}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

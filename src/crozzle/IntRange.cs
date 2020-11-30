@@ -5,11 +5,10 @@ using System.Text;
 namespace crozzle
 {
 	// I was using System.Range, but that does not allow for negative values
-	class IntRange
+	record IntRange
 	{
-		public int Start { get; set; }
-		public int EndExclusive { get; set; }
-
+		public int Start { get; init; }
+		public int EndExclusive { get; init; }
 		public override string ToString() => $"{Start}..{EndExclusive - 1}";
 	}
 
