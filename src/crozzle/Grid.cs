@@ -7,17 +7,14 @@ namespace crozzle
 {
 	public class Grid
 	{
-		internal Rectangle Rectangle { get; set; }
-		internal GridCell[] Cells { get; set; }
+		internal Rectangle Rectangle { get; init; }
+		internal GridCell[] Cells { get; init; }
 
-		public HashSet<PartialWord> PartialWords = new HashSet<PartialWord>();
+		public readonly HashSet<PartialWord> PartialWords = new HashSet<PartialWord>();
 	}
 
-	class RowIndexAndRange
+	record RowIndexAndRange(int RowIndex, IntRange Range)
 	{
-		public int RowIndex;
-		public IntRange Range;
-
 		public IEnumerable<Location> GetLocations()
 		{
 			for (int i = Range.Start; i < Range.EndExclusive; ++i)
@@ -135,10 +132,10 @@ namespace crozzle
 						else
 						{
 							yield return new RowIndexAndRange
-							{
-								RowIndex = row,
-								Range = contiguousSpan
-							};
+							(
+								row,
+								contiguousSpan
+							);
 							contiguousSpan = new IntRange
 							{
 								Start = l.Start,
@@ -147,10 +144,10 @@ namespace crozzle
 						}
 					}
 					yield return new RowIndexAndRange
-					{
-						RowIndex = row,
-						Range = contiguousSpan
-					};
+					(
+						row,
+						contiguousSpan
+					);
 				}
 			}
 		}

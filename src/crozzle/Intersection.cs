@@ -3,10 +3,10 @@
 	using System;
 	using System.Diagnostics.CodeAnalysis;
 
-	public class Intersection : IComparable<Intersection>
+	public record Intersection : IComparable<Intersection>
 	{
-		public readonly WordAndIndex First;
-		public readonly WordAndIndex Second;
+		public WordAndIndex First { get; init; }
+		public WordAndIndex Second { get; init; }
 
 		public Intersection(WordAndIndex first, WordAndIndex second) =>
 			(this.First, this.Second) = first.CompareTo(second) switch
@@ -23,17 +23,6 @@
 				0 => this.Second.CompareTo(other.Second),
 				int n => n
 			};
-
-		public override bool Equals(object? obj) =>
-			ReferenceEquals(this, obj)
-			|| (
-				obj is Intersection other
-				&& this.First.Equals(other.First)
-				&& this.Second.Equals(other.Second)
-			);
-
-		public override int GetHashCode() =>
-			this.First.GetHashCode() ^ this.Second.GetHashCode();
 	}
 
 }

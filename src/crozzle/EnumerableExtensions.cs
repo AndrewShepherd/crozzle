@@ -15,7 +15,7 @@ namespace crozzle
 			this._buffer = buffer;
 		}
 
-		object System.Collections.IEnumerator.Current
+		object? System.Collections.IEnumerator.Current
 		{
 			get
 			{

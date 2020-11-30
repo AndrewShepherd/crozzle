@@ -44,10 +44,10 @@ namespace crozzle
 						{
 							list.Add(
 								new RowIndexAndRange
-								{
-									RowIndex = rr1.RowIndex,
-									Range = rr1.Range.Intersection(rr2.Range)
-								}
+								(
+									rr1.RowIndex,
+									rr1.Range.Intersection(rr2.Range)
+								)
 							);
 						}
 					}
@@ -101,7 +101,7 @@ namespace crozzle
 				RowIndexAndRanges = merged
 					.SelectMany(
 						m =>
-							m.Ranges.Select(r => new RowIndexAndRange { RowIndex = m.RowIndex, Range = r })
+							m.Ranges.Select(r => new RowIndexAndRange(m.RowIndex, r))
 					).ToList()
 			};
 		}

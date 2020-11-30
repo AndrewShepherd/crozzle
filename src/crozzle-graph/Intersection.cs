@@ -1,3 +1,0 @@
-﻿namespace crozzle_graph
-{
-}

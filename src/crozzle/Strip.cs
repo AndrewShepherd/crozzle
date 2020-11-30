@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace crozzle
+﻿namespace crozzle
 {
-	internal class Strip
+	internal record Strip
 	{
-		public GridCell[] GridCells;
-		public int StartAt;
-		public int SlotIndex { get; internal set; }
+		public GridCell[] GridCells { get; init; }
+		public int StartAt { get; init; }
+		public int SlotIndex { get; internal init; }
 	}
 }
