@@ -12,17 +12,6 @@ namespace crozzle_graph_desktop
 	using System.Linq;
 	public class MainWindowViewModel
 	{
-		//public const string FilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\too-many-zeds.txt";
-		public const string FilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\20190814.txt";
-
-
-		private async Task<WordDatabase> GenerateWordDatabaseAsync()
-		{
-			using var stream = File.OpenRead(FilePath);
-			var words = await WordStreamReader.Read(stream);
-			return WordDatabase.Generate(words);
-		}
-
 		private IEnumerable<IntersectionSolution> Split(
 			IntersectionSolution intersectionSolution,
 			GraphEnvironment graphEnvironment
@@ -163,9 +152,9 @@ namespace crozzle_graph_desktop
 			yield break;
 		}
 
-		private async Task DoStuff()
+		private void DoStuff()
 		{
-			WordDatabase wordDatabase = await GenerateWordDatabaseAsync();
+			WordDatabase wordDatabase = WordDatabase.Generate(this._words);
 			var graphEnvironment = GraphEnvironment.Generate(wordDatabase);
 			var intersection = graphEnvironment.Intersections.First();
 
@@ -192,7 +181,18 @@ namespace crozzle_graph_desktop
 
 		public MainWindowViewModel()
 		{
-			var task = DoStuff();
+		}
+
+		private IEnumerable<string> _words;
+
+		public IEnumerable<string> Words
+		{
+			get => _words;
+			set
+			{
+				_words = value;
+				Task.Run(() => DoStuff());
+			}
 		}
 	}
 }

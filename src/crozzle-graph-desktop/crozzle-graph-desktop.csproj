@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\crozzle-controls\crozzle-controls.csproj" />
     <ProjectReference Include="..\crozzle-graph\crozzle-graph.csproj" />
     <ProjectReference Include="..\crozzle\crozzle.csproj" />
   </ItemGroup>
