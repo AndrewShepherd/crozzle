@@ -52,6 +52,7 @@ namespace crozzle_controls
 				{
 					return;
 				}
+				value ??= Enumerable.Empty<string>();
 				this.ViewModel.Words = value;
 				this.SetValue(WordsDependencyProperty, value);
 			}
