@@ -21,14 +21,14 @@ namespace crozzle
 		{
 			get
 			{
-				lock(mutex)
+				lock(_mutex)
 				{
 					return !(_queues.Any(kvp => !kvp.Value.IsEmpty));
 				}
 			}
 		}
 
-		private readonly object mutex = new object();
+		private readonly object _mutex = new object();
 
 		IEnumerable<WorkspaceNode> IWorkspaceQueue.Swap(IEnumerable<WorkspaceNode> workspaceNodes, int maxReturnCount)
 		{
@@ -36,9 +36,8 @@ namespace crozzle
 			List<WorkspaceNode> rv = new List<WorkspaceNode>();
 			foreach(var g in grouped)
 			{
-				lock(mutex)
+				lock(_mutex)
 				{
-					WorkspacePriorityQueue? wpq = null;
 					if (!(
 						_queues.TryGetValue(
 							g.Key,
@@ -76,7 +75,7 @@ namespace crozzle
 		IEnumerable<WorkspaceNode> Pop(int maxCount)
 		{
 			List<WorkspaceNode> rv = new List<WorkspaceNode>();
-			lock(mutex)
+			lock(_mutex)
 			{
 				foreach(var kvp in _queues.Reverse())
 				{
