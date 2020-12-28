@@ -1,16 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace crozzle_graph_desktop
+﻿namespace crozzle_graph_desktop
 {
-    using crozzle;
-	using crozzle_graph;
+	using System;
+	using System.Collections.Generic;
+	using System.Threading.Tasks;
 	using System.Collections.Immutable;
-	using System.IO;
 	using System.Linq;
-	public class MainWindowViewModel
+
+	using crozzle;
+	using crozzle_controls;
+	using crozzle_graph;
+	public class MainWindowViewModel : PropertyChangedEventSource
 	{
 		private IEnumerable<IntersectionSolution> Split(
 			IntersectionSolution intersectionSolution,
@@ -154,11 +153,14 @@ namespace crozzle_graph_desktop
 
 		private void DoStuff()
 		{
+			this.StatusText = "Generating Word Database";
 			WordDatabase wordDatabase = WordDatabase.Generate(this._words);
+			this.StatusText = "Generating Graph Environment";
 			var graphEnvironment = GraphEnvironment.Generate(wordDatabase);
+			this.StatusText = $"Graph Environment Generated with { graphEnvironment.Intersections.Count } intersections";
 			var intersection = graphEnvironment.Intersections.First();
 
-			var solution = new IntersectionSolution
+			var solution = new IntersectionSolution	
 			{
 				Intersections = ImmutableHashSet<Intersection>
 					.Empty
@@ -192,6 +194,20 @@ namespace crozzle_graph_desktop
 			{
 				_words = value;
 				Task.Run(() => DoStuff());
+			}
+		}
+
+		private string _statusText;
+		public string StatusText 
+		{
+			get => _statusText;
+			set
+			{
+				if(_statusText != value)
+				{
+					_statusText = value;
+					base.FirePropertyChangedEvents(nameof(StatusText));
+				}
 			}
 		}
 	}

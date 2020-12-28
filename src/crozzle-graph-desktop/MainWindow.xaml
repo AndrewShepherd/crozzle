@@ -13,6 +13,13 @@
         <local:MainWindowViewModel x:Key="MainWindowViewModel" />
     </Window.Resources>
     <Grid DataContext="{StaticResource MainWindowViewModel}">
-        <crozzle_controls:WordsSelector Words="{Binding Words, Mode=OneWayToSource}" />
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <crozzle_controls:WordsSelector Words="{Binding Words, Mode=OneWayToSource}" Grid.Column="0" />
+        <GridSplitter Grid.Column="1" Width="5" Background="Gray" />
+        <TextBlock Grid.Column="2" Text="{Binding StatusText}" />
     </Grid>
 </Window>
