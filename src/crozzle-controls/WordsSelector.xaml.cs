@@ -38,6 +38,14 @@ namespace crozzle_controls
 		}
 		private WordsSelectorViewModel ViewModel => (WordsSelectorViewModel)(this.Resources["ViewModel"]);
 
+
+		private static string Sanitize(string word) =>
+			new string(
+				word.ToUpper()
+					.Where(c => Char.IsLetter(c))
+					.ToArray()
+				);
+
 		public IEnumerable<string> Words
 		{
 			get => (IEnumerable<string>)((DependencyObject)this).GetValue(WordsDependencyProperty);
@@ -48,12 +56,9 @@ namespace crozzle_controls
 				{
 					return;
 				}
-				if ((value != null) && (currentWords?.SequenceEqual(value) == true))
-				{
-					return;
-				}
-				this.ViewModel.Words = value;
-				this.SetValue(WordsDependencyProperty, value);
+				currentWords = value?.Select(Sanitize).ToArray();
+				this.ViewModel.Words = currentWords;
+				this.SetValue(WordsDependencyProperty, currentWords);
 			}
 		}
 
