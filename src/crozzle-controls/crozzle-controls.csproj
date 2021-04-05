@@ -4,6 +4,7 @@
     <TargetFramework>net5.0-windows</TargetFramework>
     <RootNamespace>crozzle_controls</RootNamespace>
     <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -10,7 +10,7 @@
 	{
 		private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
 
-		public event PropertyChangedEventHandler PropertyChanged;
+		public event PropertyChangedEventHandler? PropertyChanged;
 
 		private ConcurrentDictionary<String, bool> _propertyNamesToFire = new ConcurrentDictionary<string, bool>();
 		private AutoResetEvent _dispatchPending = new AutoResetEvent(true);

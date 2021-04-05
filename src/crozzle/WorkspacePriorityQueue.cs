@@ -204,21 +204,6 @@
 			return result;
 		}
 
-		private void PurgeDuplicates()
-		{
-			Array.Sort(_workspaces, new Comparison<WorkspaceNode?>(Compare));
-			int i = 0;
-			for(int j=1; j < _workspaces.Length; ++j)
-			{
-				if(!(_workspaces[j].Equals(_workspaces[i])))
-				{
-					++i;
-					_workspaces[i] = _workspaces[j];
-				}
-			}
-			this._length = i+1;
-		}
-
 		internal void RemoveItems(Func<WorkspaceNode, bool> pred)
 		{
 			for(int i = this._length-1; i >= 0; --i)

@@ -1,28 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace crozzle_graph_desktop
+﻿namespace crozzle_graph_desktop
 {
-    using crozzle;
-	using crozzle_graph;
+	using System;
+	using System.Collections.Generic;
+	using System.Threading.Tasks;
 	using System.Collections.Immutable;
-	using System.IO;
 	using System.Linq;
-	public class MainWindowViewModel
+
+	using crozzle;
+	using crozzle_controls;
+	using crozzle_graph;
+	public class MainWindowViewModel : PropertyChangedEventSource
 	{
-		//public const string FilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\too-many-zeds.txt";
-		public const string FilePath = @"C:\Users\sheph\Documents\GitHub\crozzle\wordlists\20190814.txt";
-
-
-		private async Task<WordDatabase> GenerateWordDatabaseAsync()
-		{
-			using var stream = File.OpenRead(FilePath);
-			var words = await WordStreamReader.Read(stream);
-			return WordDatabase.Generate(words);
-		}
-
 		private IEnumerable<IntersectionSolution> Split(
 			IntersectionSolution intersectionSolution,
 			GraphEnvironment graphEnvironment
@@ -163,13 +151,16 @@ namespace crozzle_graph_desktop
 			yield break;
 		}
 
-		private async Task DoStuff()
+		private void DoStuff()
 		{
-			WordDatabase wordDatabase = await GenerateWordDatabaseAsync();
+			this.StatusText = "Generating Word Database";
+			WordDatabase wordDatabase = WordDatabase.Generate(this._words);
+			this.StatusText = "Generating Graph Environment";
 			var graphEnvironment = GraphEnvironment.Generate(wordDatabase);
+			this.StatusText = $"Graph Environment Generated with { graphEnvironment.Intersections.Count } intersections";
 			var intersection = graphEnvironment.Intersections.First();
 
-			var solution = new IntersectionSolution
+			var solution = new IntersectionSolution	
 			{
 				Intersections = ImmutableHashSet<Intersection>
 					.Empty
@@ -192,7 +183,32 @@ namespace crozzle_graph_desktop
 
 		public MainWindowViewModel()
 		{
-			var task = DoStuff();
+		}
+
+		private IEnumerable<string> _words;
+
+		public IEnumerable<string> Words
+		{
+			get => _words;
+			set
+			{
+				_words = value;
+				Task.Run(() => DoStuff());
+			}
+		}
+
+		private string _statusText;
+		public string StatusText 
+		{
+			get => _statusText;
+			set
+			{
+				if(_statusText != value)
+				{
+					_statusText = value;
+					base.FirePropertyChangedEvents(nameof(StatusText));
+				}
+			}
 		}
 	}
 }
