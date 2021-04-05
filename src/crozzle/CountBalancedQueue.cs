@@ -11,7 +11,7 @@ namespace crozzle
 
 		const int EachQueueLength = 80000;
 		const int OverflowThreshold = EachQueueLength * 2 / 3;
-		const int LengthWhereYouJustEmptyIt = 30;
+		const int LengthWhereYouJustEmptyIt = 20;
 		
 		int IWorkspaceQueue.Capacity => 31*EachQueueLength;
 
@@ -38,7 +38,6 @@ namespace crozzle
 			{
 				lock(mutex)
 				{
-					WorkspacePriorityQueue? wpq = null;
 					if (!(
 						_queues.TryGetValue(
 							g.Key,
